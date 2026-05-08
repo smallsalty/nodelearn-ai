@@ -1,0 +1,2 @@
+class MySQLDatabase:
+    pass

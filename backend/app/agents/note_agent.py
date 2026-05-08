@@ -1,0 +1,2 @@
+class NoteAgent:
+    pass

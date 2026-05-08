@@ -1,0 +1,2 @@
+class FaissStore:
+    pass
