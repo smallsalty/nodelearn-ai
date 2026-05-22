@@ -1,0 +1,64 @@
+services:
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    env_file:
+      - ../backend/.env.example
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - neo4j
+      - chroma
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nodelearn
+      POSTGRES_USER: nodelearn
+      POSTGRES_PASSWORD: nodelearn
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/nodelearn
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+
+  # TODO: add MySQL profile if the project chooses MySQL instead of PostgreSQL.
+  # TODO: add FAISS file-volume adapter if VECTOR_STORE_TYPE=faiss.
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  chroma_data:
