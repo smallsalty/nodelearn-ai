@@ -114,6 +114,14 @@ def demo_knowledge_relations() -> list[KnowledgeRelation]:
     ]
 
 
+def mastery_status_from_score(score: float) -> MasteryStatus:
+    if score < 60:
+        return MasteryStatus.weak
+    if score < 80:
+        return MasteryStatus.basic
+    return MasteryStatus.mastered
+
+
 class LearningPathRepository:
     def __init__(self) -> None:
         self._nodes: dict[str, KnowledgeNode] = {node.id: node for node in demo_knowledge_nodes()}
@@ -131,6 +139,28 @@ class LearningPathRepository:
     def get_node(self, node_id: str) -> KnowledgeNode | None:
         node = self._nodes.get(node_id)
         return node.model_copy(deep=True) if node is not None else None
+
+    def update_node_mastery(
+        self,
+        node_id: str,
+        mastery_score: float,
+        mastery_status: MasteryStatus | None = None,
+    ) -> KnowledgeNode | None:
+        node = self._nodes.get(node_id)
+        if node is None:
+            return None
+        score = min(100, max(0, mastery_score))
+        status = mastery_status or mastery_status_from_score(score)
+        updated = node.model_copy(update={"mastery_score": score, "mastery_status": status, "updated_at": DEMO_TIME})
+        self._nodes[node_id] = updated
+        return updated.model_copy(deep=True)
+
+    def adjust_node_mastery(self, node_id: str, delta: float) -> KnowledgeNode | None:
+        node = self._nodes.get(node_id)
+        if node is None:
+            return None
+        current_score = node.mastery_score if node.mastery_score is not None else 0
+        return self.update_node_mastery(node_id, current_score + delta)
 
     def save_path(self, path: LearningPath, tasks: list[LearningTask]) -> None:
         self._paths[path.id] = path.model_copy(deep=True)

@@ -51,6 +51,8 @@
 - 2026-05-28 新增课程规划智能体与学习路径 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `25 passed`。
 - 2026-05-28 完成 `resource_agent` 资源分配智能体，基于画像、画像分析、知识节点掌握度和学习目标生成规则式资源组合；资源 API、推荐 API 和 `/api/v1/audit/check` 已接入 in-memory `ResourceRepository` 与最小审计规则。
 - 2026-05-28 新增资源智能体、资源 API 和推荐 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `37 passed`。
+- 2026-05-28 完成 `practice_agent` 题目评测智能体，支持规则式题目生成、客观题批改、主观题 mock 评分、代码题基础 mock 评测、错题记录、画像反馈和节点掌握度 mock 更新。
+- 2026-05-28 新增练习智能体与练习 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `45 passed`。
 
 ### 进行中
 
@@ -69,7 +71,7 @@
 - 学习路径规划的完整图搜索逻辑。
 - 资源推荐排序的真实行为数据融合。
 - 结合画像、图谱、RAG 和错题上下文的智能答疑。
-- 超出模拟行为的练习生成、批改、错因分析和反馈。
+- 超出规则/mock 行为的练习生成、批改、错因分析、代码运行沙箱和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
 - 浮窗笔记界面和笔记/错题复习流程。
 - 前端页面从 TODO 占位升级为可演示页面。

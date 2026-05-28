@@ -47,12 +47,14 @@ def get_user_course_graph(user_id: str = Path(alias="userId"), course_id: str = 
 
 @router.put("/users/{userId}/nodes/{nodeId}/mastery")
 def update_node_mastery(payload: MasteryUpdateRequest, user_id: str = Path(alias="userId"), node_id: str = Path(alias="nodeId")):
-    node = GraphNode(
-        id=node_id,
-        label="Array",
-        node_type=NodeType.concept,
-        difficulty=DifficultyLevel.easy,
-        mastery_status=payload.mastery_status,
-        mastery_score=payload.mastery_score,
-    )
+    node = graph_service.update_node_mastery(node_id, payload.mastery_score, payload.mastery_status)
+    if node is None:
+        node = GraphNode(
+            id=node_id,
+            label="Array",
+            node_type=NodeType.concept,
+            difficulty=DifficultyLevel.easy,
+            mastery_status=payload.mastery_status,
+            mastery_score=payload.mastery_score,
+        )
     return success_response(node)

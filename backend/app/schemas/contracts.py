@@ -14,6 +14,7 @@ from app.schemas.common import (
     CognitiveStyle,
     DifficultyLevel,
     MasteryStatus,
+    MasteryUpdateRequest,
     PracticePreference,
     QuestionType,
     ResourceType,
@@ -21,8 +22,8 @@ from app.schemas.common import (
 )
 from app.schemas.course import KnowledgeNode
 from app.schemas.learning_path import LearningPath
-from app.schemas.practice import PracticeQuestion, PracticeRecord
-from app.schemas.profile import StudentProfile
+from app.schemas.practice import PracticeGenerateRequest, PracticeQuestion, PracticeRecord, PracticeSubmitRequest
+from app.schemas.profile import ProfileUpdateByPracticeRequest, StudentProfile
 from app.schemas.report import AuditCheckRequest, AuditResult, LearningRecord, ModelCallLog
 from app.schemas.resource import (
     GeneratedResource,
@@ -52,12 +53,16 @@ __all__ = [
     "LearningPath",
     "LearningRecord",
     "MasteryStatus",
+    "MasteryUpdateRequest",
     "ModelCallLog",
     "MultiAgentWorkflowRequest",
     "MultiAgentWorkflowResult",
     "PracticePreference",
+    "PracticeGenerateRequest",
     "PracticeQuestion",
     "PracticeRecord",
+    "PracticeSubmitRequest",
+    "ProfileUpdateByPracticeRequest",
     "QuestionType",
     "RecommendationRequest",
     "ResourceGenerateRequest",
