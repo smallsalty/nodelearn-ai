@@ -9,9 +9,6 @@ from app.schemas.resource import (
     KnowledgeSearchRequest,
     RecommendationRequest,
     ResourceGenerateRequest,
-    ResourceGenerateResult,
-    ResourcePushRecord,
-    ResourceRecommendation,
     RetrievedDocument,
     UploadedFile,
 )
@@ -118,13 +115,14 @@ def embed_text(payload: EmbedRequest):
 
 
 @router.post("/resources/generate")
-def generate_resource(payload: ResourceGenerateRequest):
-    return success_response(ResourceGenerateResult(task_id="resource_task_demo_001", resource_ids=["resource_demo_001"], status=TaskStatus.success))
+async def generate_resource(payload: ResourceGenerateRequest):
+    plan = await resource_service.generate_resources(payload)
+    return success_response(plan.result)
 
 
 @router.get("/resources/generation-tasks/{taskId}")
 def get_generation_task(task_id: str = Path(alias="taskId")):
-    return success_response(ResourceGenerateResult(task_id=task_id, resource_ids=["resource_demo_001"], status=TaskStatus.success))
+    return success_response(resource_service.get_generation_result(task_id))
 
 
 @router.get("/resources/{resourceId}")
@@ -163,7 +161,7 @@ def list_node_resources(node_id: str = Path(alias="nodeId")):
 
 @router.delete("/resources/{resourceId}")
 def delete_resource(resource_id: str = Path(alias="resourceId")):
-    return success_response(True)
+    return success_response(resource_service.delete_resource(resource_id))
 
 
 @router.get("/resources/generate/stream")
@@ -172,43 +170,20 @@ def stream_resource_generation(task_id: str = Query(alias="taskId")):
 
 
 @router.post("/recommendations/resources")
-def recommend_resources(payload: RecommendationRequest):
-    recommendation = ResourceRecommendation(
-        id="recommendation_demo_001",
-        user_id=payload.user_id,
-        course_id=payload.course_id,
-        resource_id="resource_demo_001",
-        resource_type=ResourceType.summary_note,
-        title="Mock Resource",
-        reason="mock",
-        score=1,
-        created_at=MOCK_TIME,
-    )
-    return success_response([recommendation])
+async def recommend_resources(payload: RecommendationRequest):
+    return success_response(await resource_service.recommend_resources(payload))
 
 
 @router.get("/users/{userId}/recommendations")
 def list_user_recommendations(user_id: str = Path(alias="userId")):
-    recommendation = ResourceRecommendation(
-        id="recommendation_demo_001",
-        user_id=user_id,
-        course_id="course_ds_001",
-        resource_id="resource_demo_001",
-        resource_type=ResourceType.summary_note,
-        title="Mock Resource",
-        reason="mock",
-        score=1,
-        created_at=MOCK_TIME,
-    )
-    return success_response([recommendation])
+    return success_response(resource_service.list_user_recommendations(user_id))
 
 
 @router.post("/recommendations/{recommendationId}/viewed")
 def mark_recommendation_viewed(recommendation_id: str = Path(alias="recommendationId")):
-    return success_response(True)
+    return success_response(resource_service.mark_recommendation_viewed(recommendation_id))
 
 
 @router.get("/users/{userId}/push-records")
 def list_push_records(user_id: str = Path(alias="userId")):
-    record = ResourcePushRecord(id="push_demo_001", user_id=user_id, resource_id="resource_demo_001", reason="mock", viewed=False, created_at=MOCK_TIME, updated_at=MOCK_TIME)
-    return success_response([record])
+    return success_response(resource_service.list_push_records(user_id))

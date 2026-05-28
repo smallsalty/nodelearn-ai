@@ -49,6 +49,8 @@
 - 2026-05-28 新增画像智能体与画像 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `19 passed`。
 - 2026-05-28 完成 `planner_agent` 课程规划智能体，基于画像、薄弱点、知识节点依赖、掌握度和时间预算生成规则式 `LearningPath` 与 `LearningTask[]`；学习路径 API 已接入 in-memory `LearningPathRepository`。
 - 2026-05-28 新增课程规划智能体与学习路径 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `25 passed`。
+- 2026-05-28 完成 `resource_agent` 资源分配智能体，基于画像、画像分析、知识节点掌握度和学习目标生成规则式资源组合；资源 API、推荐 API 和 `/api/v1/audit/check` 已接入 in-memory `ResourceRepository` 与最小审计规则。
+- 2026-05-28 新增资源智能体、资源 API 和推荐 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `37 passed`。
 
 ### 进行中
 
@@ -62,10 +64,10 @@
 - 真实对话式画像抽取和动态画像更新。
 - 真实多智能体编排业务流程。
 - 真实 LLM、RAG、向量库、图数据库、Redis 和缓存调用。
-- 所需资源类型的个性化生成逻辑。
-- 生成资源标记可用前的 safety/audit 强制校验。
-- 学习路径规划规则和图搜索逻辑。
-- 资源推荐排序和推荐原因解释。
+- 超出规则模板和 mock LLM 的个性化资源生成逻辑。
+- 超出最小规则的真实 safety/audit 校验。
+- 学习路径规划的完整图搜索逻辑。
+- 资源推荐排序的真实行为数据融合。
 - 结合画像、图谱、RAG 和错题上下文的智能答疑。
 - 超出模拟行为的练习生成、批改、错因分析和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。

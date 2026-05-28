@@ -23,8 +23,16 @@ from app.schemas.course import KnowledgeNode
 from app.schemas.learning_path import LearningPath
 from app.schemas.practice import PracticeQuestion, PracticeRecord
 from app.schemas.profile import StudentProfile
-from app.schemas.report import AuditResult, LearningRecord, ModelCallLog
-from app.schemas.resource import GeneratedResource, RetrievedDocument
+from app.schemas.report import AuditCheckRequest, AuditResult, LearningRecord, ModelCallLog
+from app.schemas.resource import (
+    GeneratedResource,
+    RecommendationRequest,
+    ResourceGenerateRequest,
+    ResourceGenerateResult,
+    ResourcePushRecord,
+    ResourceRecommendation,
+    RetrievedDocument,
+)
 
 __all__ = [
     "AgentContext",
@@ -33,6 +41,7 @@ __all__ = [
     "AgentTaskEvent",
     "AgentType",
     "ApiResponse",
+    "AuditCheckRequest",
     "AuditResult",
     "AuditStatus",
     "BehaviorType",
@@ -50,6 +59,11 @@ __all__ = [
     "PracticeQuestion",
     "PracticeRecord",
     "QuestionType",
+    "RecommendationRequest",
+    "ResourceGenerateRequest",
+    "ResourceGenerateResult",
+    "ResourcePushRecord",
+    "ResourceRecommendation",
     "ResourceType",
     "RetrievedDocument",
     "StudentProfile",
