@@ -53,6 +53,8 @@
 - 2026-05-28 新增资源智能体、资源 API 和推荐 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `37 passed`。
 - 2026-05-28 完成 `practice_agent` 题目评测智能体，支持规则式题目生成、客观题批改、主观题 mock 评分、代码题基础 mock 评测、错题记录、画像反馈和节点掌握度 mock 更新。
 - 2026-05-28 新增练习智能体与练习 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `45 passed`。
+- 2026-05-28 完成 `multimodal_agent` 多模态内容智能体，支持 Mermaid 思维导图、视频脚本、动画脚本、代码实操、复习卡片和讲解文档的规则式生成，并复用资源仓储与最小审计流程。
+- 2026-05-28 新增多模态智能体与多模态资源 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `54 passed`。
 
 ### 进行中
 
@@ -66,7 +68,7 @@
 - 真实对话式画像抽取和动态画像更新。
 - 真实多智能体编排业务流程。
 - 真实 LLM、RAG、向量库、图数据库、Redis 和缓存调用。
-- 超出规则模板和 mock LLM 的个性化资源生成逻辑。
+- 超出规则模板和 mock LLM 的个性化资源与多模态内容生成逻辑。
 - 超出最小规则的真实 safety/audit 校验。
 - 学习路径规划的完整图搜索逻辑。
 - 资源推荐排序的真实行为数据融合。

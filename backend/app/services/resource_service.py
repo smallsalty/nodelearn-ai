@@ -185,6 +185,7 @@ class ResourceService:
         profile_analysis: dict[str, Any] | None = None,
         learning_path: LearningPath | None = None,
         learning_tasks: list[LearningTask] | None = None,
+        retrieved_documents: list[RetrievedDocument] | None = None,
     ) -> ResourceGenerationPlan:
         profile = profile or self.profile_repository.get_by_user_id(payload.user_id)
         profile_analysis = profile_analysis or {}
@@ -202,7 +203,13 @@ class ResourceService:
             resource_id = self.repository.next_resource_id(resource_type.value)
             title = self._resource_title(node, resource_type)
             prompt = self._resource_prompt(profile, node, resource_type, target_goal, payload.custom_requirement)
-            template_content = self._render_template(resource_type, node, target_goal)
+            template_content = self._render_template(
+                resource_type,
+                node,
+                target_goal,
+                profile,
+                retrieved_documents,
+            )
             content = await self.llm_service.generate_text(prompt, mock_text=template_content)
             if payload.custom_requirement:
                 content = f"{content}\n\n{payload.custom_requirement}"
@@ -446,30 +453,48 @@ class ResourceService:
             f"知识点：{node_name}。学习目标：{target_goal}。额外要求：{requirement}。"
         )
 
-    def _render_template(self, resource_type: ResourceType, node: KnowledgeNode | None, target_goal: str) -> str:
+    def _render_template(
+        self,
+        resource_type: ResourceType,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        profile: StudentProfile | None = None,
+        retrieved_documents: list[RetrievedDocument] | None = None,
+    ) -> str:
         node_name = node.name if node else "当前知识点"
         common_mistakes = "、".join(node.common_mistakes) if node and node.common_mistakes else "注意概念边界和步骤顺序"
+        weak_hint = self._weak_node_hint(profile, node)
+        easy_hint = self._easy_level_hint(profile)
+        example_hint = self._example_style_hint(profile, node_name)
+        code_hint = self._code_preference_hint(profile)
+        document_section = self._retrieved_document_section(retrieved_documents)
         templates = {
             ResourceType.lecture_doc: (
                 f"# {node_name}讲解文档\n"
                 "## 学习目标\n"
                 f"- 面向目标：{target_goal}\n"
+                f"{easy_hint}"
                 "## 核心概念\n"
                 f"- 理解{node_name}的定义、适用场景和关键操作。\n"
                 "## 示例讲解\n"
                 f"- 使用数据结构课程中的典型例子讲解{node_name}。\n"
+                f"{example_hint}"
                 "## 常见错误\n"
                 f"- {common_mistakes}\n"
+                f"{weak_hint}"
                 "## 小结\n"
                 f"- 先掌握{node_name}的基本结构，再完成对应练习。"
+                f"{document_section}"
             ),
             ResourceType.mind_map: (
                 "mindmap\n"
                 f"  root(({node_name}))\n"
-                "    核心概念\n"
-                "    操作步骤\n"
+                "    基本概念\n"
+                "    存储结构\n"
+                "    插入操作\n"
+                "    删除操作\n"
                 "    常见错误\n"
-                "    练习方向"
+                "    补弱提示"
             ),
             ResourceType.practice_question: (
                 f"# {node_name}练习题生成任务说明\n"
@@ -479,19 +504,24 @@ class ResourceService:
             ),
             ResourceType.code_case: (
                 "# 代码实操案例\n"
-                "## 题目背景\n"
-                f"围绕{node_name}完成一个小型代码任务。\n"
-                "## 代码目标\n"
+                "## 任务目标\n"
                 f"实现并验证{node_name}的核心操作。\n"
+                "## 前置知识\n"
+                f"先理解{node_name}的基本概念和边界条件。\n"
                 "## 示例代码\n"
                 "```python\n"
                 "def demo():\n"
                 "    return \"mock code case\"\n"
                 "```\n"
-                "## 运行说明\n"
+                "## 运行步骤\n"
                 "使用 Python 运行示例并观察输出。\n"
-                "## 测试用例\n"
-                "覆盖正常输入、边界输入和易错场景。"
+                "## 测试输入\n"
+                "正常输入、边界输入和易错场景。\n"
+                "## 预期输出\n"
+                f"能够解释{node_name}的关键变化。\n"
+                "## 拓展任务\n"
+                "尝试加入异常输入和边界条件测试。"
+                f"{code_hint}"
             ),
             ResourceType.reading_material: (
                 "# 拓展阅读\n"
@@ -505,22 +535,38 @@ class ResourceService:
                 "完成一个简短总结并尝试应用到项目任务。"
             ),
             ResourceType.video_script: (
-                f"# {node_name}视频脚本\n"
-                "## 开场\n"
-                f"说明本节围绕{node_name}展开。\n"
-                "## 讲解段落\n"
-                "用分步骤方式讲解概念、示例和易错点。\n"
-                "## 收尾\n"
-                "提示学生完成配套练习。"
+                f"# 视频标题\n{node_name}图解讲解\n"
+                "## 适合对象\n"
+                f"适合正在围绕“{target_goal}”学习且需要可视化理解的学生。\n"
+                "## 时长建议\n"
+                "5-8 分钟。\n"
+                "## 分镜脚本\n"
+                f"1. 展示{node_name}的整体结构。\n2. 演示关键操作。\n3. 对比常见错误。\n"
+                "## 旁白内容\n"
+                f"用低术语密度解释{node_name}，先讲直观含义，再讲操作步骤。\n"
+                "## 屏幕元素\n"
+                "节点、箭头、关键变量、错误标记。\n"
+                "## 互动提问\n"
+                f"如果{node_name}操作中断开了关键连接，会发生什么？\n"
+                "## 总结\n"
+                f"复盘{node_name}的基本概念、操作步骤和常见错误。"
+                f"{weak_hint}"
             ),
             ResourceType.animation_script: (
-                f"# {node_name}动画脚本\n"
-                "## 场景一\n"
-                "展示知识点结构。\n"
-                "## 场景二\n"
-                "展示操作步骤变化。\n"
-                "## 场景三\n"
-                f"强调常见错误：{common_mistakes}。"
+                f"# 动画标题\n{node_name}操作过程动画\n"
+                "## 场景目标\n"
+                f"用动画展示{node_name}从初始状态到完成操作的变化。\n"
+                "## 数据结构初始状态\n"
+                "展示初始节点、连接关系和关键变量。\n"
+                "## 动画步骤\n"
+                "1. 标记当前节点。\n2. 执行核心操作。\n3. 更新结构关系。\n"
+                "## 每一步的画面变化\n"
+                "用高亮、箭头移动和颜色变化表示状态转移。\n"
+                "## 旁白说明\n"
+                f"解释每一步为什么改变{node_name}的结构。\n"
+                "## 常见误区提示\n"
+                f"{common_mistakes}。"
+                f"{weak_hint}"
             ),
             ResourceType.project_task: (
                 f"# {node_name}项目任务\n"
@@ -532,18 +578,47 @@ class ResourceService:
                 "功能正确、边界场景可运行、说明清晰。"
             ),
             ResourceType.summary_note: (
-                f"# {node_name}复习摘要\n"
-                "## 核心结论\n"
-                f"{node_name}是当前学习目标中的关键知识点。\n"
+                "# 复习卡片\n"
+                "## 必背概念\n"
+                f"{node_name}的定义、结构特征和核心操作。\n"
                 "## 高频考点\n"
                 "定义、操作流程、复杂度和典型错误。\n"
-                "## 易错提醒\n"
+                "## 常见错误\n"
                 f"{common_mistakes}\n"
-                "## 复习建议\n"
+                "## 练习建议\n"
                 "先看摘要，再做练习题和代码案例。"
+                f"{weak_hint}"
             ),
         }
         return templates[resource_type]
+
+    def _weak_node_hint(self, profile: StudentProfile | None, node: KnowledgeNode | None) -> str:
+        if profile is None or node is None or node.id not in profile.weak_node_ids:
+            return ""
+        return "\n## 补弱提示\n当前知识点属于薄弱节点，建议先看图解，再完成一个短代码练习。\n"
+
+    def _easy_level_hint(self, profile: StudentProfile | None) -> str:
+        if profile is None or profile.knowledge_base_level != DifficultyLevel.easy:
+            return ""
+        return "- 说明会优先使用基础解释，减少抽象术语。\n"
+
+    def _example_style_hint(self, profile: StudentProfile | None, node_name: str) -> str:
+        if profile is None or profile.cognitive_style != CognitiveStyle.example:
+            return ""
+        return f"- 类比：把{node_name}看作生活中的步骤清单，先看整体，再看每一步变化。\n"
+
+    def _code_preference_hint(self, profile: StudentProfile | None) -> str:
+        if profile is None or profile.practice_preference != PracticePreference.coding:
+            return ""
+        return "\n## 代码练习提示\n建议补充一个可运行函数和两个边界测试。\n"
+
+    def _retrieved_document_section(self, retrieved_documents: list[RetrievedDocument] | None) -> str:
+        if not retrieved_documents:
+            return ""
+        lines = ["\n## 参考材料补充"]
+        for document in retrieved_documents[:3]:
+            lines.append(f"- {document.title}: {document.content[:80]}")
+        return "\n" + "\n".join(lines) + "\n"
 
     def _build_recommendation(
         self,
