@@ -1,7 +1,7 @@
-# Frontend Resource Generation Boundary
+# 前端资源生成边界
 
-- Read `docs/modules/resource-generation.md`.
-- Use `src/types/resource.ts`.
-- Use `src/api/modules/resource.ts`.
-- Page shell: `src/pages/ResourcePage.vue`.
-- Knowledge-base admin also uses `src/pages/KnowledgeBaseAdminPage.vue`.
+- 阅读 `docs/modules/resource-generation.md`。
+- 使用 `src/types/resource.ts`。
+- 使用 `src/api/modules/resource.ts`。
+- 页面壳：`src/pages/ResourcePage.vue`。
+- 知识库管理页面同时使用 `src/pages/KnowledgeBaseAdminPage.vue`。

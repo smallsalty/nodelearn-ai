@@ -1,8 +1,8 @@
-# Profile Module
+# 学生画像模块
 
-Source: `docs/interface-contract.md` section 5.
+来源：`docs/interface-contract.md` 第 5 节。
 
-## Types
+## 类型
 
 - `StudentProfile`
 - `ProfileExtractRequest`
@@ -10,7 +10,7 @@ Source: `docs/interface-contract.md` section 5.
 - `ProfileUpdateByBehaviorRequest`
 - `ProfileUpdateByPracticeRequest`
 
-## Routes
+## 路由
 
 - `GET /api/v1/profiles/{userId}`
 - `PUT /api/v1/profiles/{userId}`
@@ -18,21 +18,21 @@ Source: `docs/interface-contract.md` section 5.
 - `POST /api/v1/profiles/update-by-behavior`
 - `POST /api/v1/profiles/update-by-practice`
 
-## Frontend
+## 前端
 
-- Page: `frontend/src/pages/ProfilePage.vue`
-- API: `frontend/src/api/modules/profile.ts`
-- Types: `frontend/src/types/profile.ts`
-- State variable: `currentProfile`
+- 页面：`frontend/src/pages/ProfilePage.vue`
+- API：`frontend/src/api/modules/profile.ts`
+- 类型：`frontend/src/types/profile.ts`
+- 状态变量：`currentProfile`
 
-## Backend
+## 后端
 
-- Route file: `backend/app/api/v1/profile.py`
-- Schema file: `backend/app/schemas/profile.py`
-- Service file: `backend/app/services/profile_service.py`
-- Agent file: `backend/app/agents/profile_agent.py`
+- 路由文件：`backend/app/api/v1/profile.py`
+- 结构定义文件：`backend/app/schemas/profile.py`
+- 服务文件：`backend/app/services/profile_service.py`
+- 智能体文件：`backend/app/agents/profile_agent.py`
 
-## Forbidden
+## 禁止事项
 
-- Do not add `lastUpdatedBy` values beyond `"dialogue" | "behavior" | "practice" | "manual"`.
-- Do not add profile fields outside the contract.
+- 不新增 `"dialogue" | "behavior" | "practice" | "manual"` 之外的 `lastUpdatedBy` 值。
+- 不新增契约外画像字段。

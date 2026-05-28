@@ -1,16 +1,16 @@
-# Frontend AGENTS.md
+# 前端 AGENTS.md
 
-## Required Reading
+## 必读文件
 
-- Read `../docs/context-index.md` before coding.
-- Read the matching `../docs/modules/*.md` for the current module.
-- Confirm exact field names and enum values in `../docs/interface-contract.md`.
+- 编码前阅读 `../docs/context-index.md`。
+- 当前模块开发必须阅读对应的 `../docs/modules/*.md`。
+- 字段名和枚举值必须以 `../docs/interface-contract.md` 为准。
 
-## Rules
+## 规则
 
-- Frontend names use camelCase.
-- Components and pages must not call `fetch` or `axios` directly.
-- All requests must go through `src/api/client.ts` and `src/api/modules/*`.
-- Module API files only wrap endpoints and return typed calls.
-- Do not add undefined routes, fields, variables, or enum values.
-- Missing definitions must be reported as `CONTRACT_MISSING: 缺少 xxx 定义`.
+- 前端命名使用 camelCase。
+- 组件和页面不得直接调用 `fetch` 或 `axios`。
+- 所有请求必须经过 `src/api/client.ts` 和 `src/api/modules/*`。
+- 模块 API 文件只封装接口并返回类型化调用。
+- 不允许新增未定义的路由、字段、变量或枚举值。
+- 缺少定义时必须输出 `CONTRACT_MISSING: 缺少 xxx 定义`。

@@ -1,8 +1,8 @@
-# Course Node Module
+# 课程节点模块
 
-Source: `docs/interface-contract.md` section 6.
+来源：`docs/interface-contract.md` 第 6 节。
 
-## Types
+## 类型
 
 - `Course`
 - `CourseCreateRequest`
@@ -13,7 +13,7 @@ Source: `docs/interface-contract.md` section 6.
 - `KnowledgeNodeCreateRequest`
 - `KnowledgeRelation`
 
-## Routes
+## 路由
 
 - `GET /api/v1/courses`
 - `POST /api/v1/courses`
@@ -30,20 +30,20 @@ Source: `docs/interface-contract.md` section 6.
 - `GET /api/v1/courses/{courseId}/relations`
 - `POST /api/v1/courses/{courseId}/relations`
 
-## Frontend
+## 前端
 
-- Pages: `HomePage.vue`, `KnowledgeBaseAdminPage.vue`
-- API: `frontend/src/api/modules/course.ts`
-- Types: `frontend/src/types/course.ts`
-- State variables: `currentCourse`, `currentNode`
+- 页面：`HomePage.vue`、`KnowledgeBaseAdminPage.vue`
+- API：`frontend/src/api/modules/course.ts`
+- 类型：`frontend/src/types/course.ts`
+- 状态变量：`currentCourse`、`currentNode`
 
-## Backend
+## 后端
 
-- Route file: `backend/app/api/v1/course.py`
-- Schema file: `backend/app/schemas/course.py`
-- Service file: `backend/app/services/course_service.py`
+- 路由文件：`backend/app/api/v1/course.py`
+- 结构定义文件：`backend/app/schemas/course.py`
+- 服务文件：`backend/app/services/course_service.py`
 
-## Forbidden
+## 禁止事项
 
-- Do not add `CourseStatus`, `NodeType`, `DifficultyLevel`, `MasteryStatus`, or relation type values.
-- Do not rename `orderIndex`, `learningValue`, or node id array fields.
+- 不新增 `CourseStatus`、`NodeType`、`DifficultyLevel`、`MasteryStatus` 或关系类型值。
+- 不重命名 `orderIndex`、`learningValue` 或节点 id 数组字段。

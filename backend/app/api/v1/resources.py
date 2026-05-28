@@ -15,10 +15,12 @@ from app.schemas.resource import (
     RetrievedDocument,
     UploadedFile,
 )
+from app.services.resource_service import ResourceService
 
 router = APIRouter()
 
 MOCK_TIME = "2026-05-19T10:00:00Z"
+resource_service = ResourceService()
 
 
 def mock_uploaded_file(file_id: str = "file_demo_001") -> UploadedFile:
@@ -63,6 +65,12 @@ def upload_file(file: UploadFile = File(...)):
 
 @router.get("/files/{fileId}")
 def get_file(file_id: str = Path(alias="fileId")):
+    try:
+        file = resource_service.get_file(file_id)
+        if file is not None:
+            return success_response(file)
+    except Exception:
+        pass
     return success_response(mock_uploaded_file(file_id))
 
 
@@ -78,11 +86,28 @@ def build_knowledge_base(payload: KnowledgeBuildRequest):
 
 @router.get("/knowledge-base/build-tasks/{taskId}")
 def get_build_task(task_id: str = Path(alias="taskId")):
+    try:
+        task = resource_service.get_build_task(task_id)
+        if task is not None:
+            return success_response(task)
+    except Exception:
+        pass
     return success_response(mock_build_task(task_id))
 
 
 @router.post("/knowledge-base/search")
 def search_knowledge_base(payload: KnowledgeSearchRequest):
+    try:
+        documents = resource_service.search_knowledge_base(
+            course_id=payload.course_id,
+            query_text=payload.query,
+            node_id=payload.node_id,
+            top_k=payload.top_k,
+        )
+        if documents:
+            return success_response(documents)
+    except Exception:
+        pass
     document = RetrievedDocument(id="doc_demo_001", source_id="file_demo_001", title="Mock", content="mock", score=1)
     return success_response([document])
 
@@ -104,17 +129,35 @@ def get_generation_task(task_id: str = Path(alias="taskId")):
 
 @router.get("/resources/{resourceId}")
 def get_resource(resource_id: str = Path(alias="resourceId")):
+    try:
+        resource = resource_service.get_resource(resource_id)
+        if resource is not None:
+            return success_response(resource)
+    except Exception:
+        pass
     return success_response(mock_resource(resource_id))
 
 
 @router.get("/users/{userId}/resources")
 def list_user_resources(user_id: str = Path(alias="userId"), page: int = 1, page_size: int = Query(10, alias="pageSize"), keyword: str | None = None, sort_by: str | None = Query(None, alias="sortBy"), sort_order: str | None = Query(None, alias="sortOrder")):
+    try:
+        items, total = resource_service.list_user_resources(user_id=user_id, page=page, page_size=page_size, keyword=keyword)
+        if items:
+            return success_response(page_result(items, total, page, page_size))
+    except Exception:
+        pass
     items = [mock_resource()]
     return success_response(page_result(items, len(items), page, page_size))
 
 
 @router.get("/nodes/{nodeId}/generated-resources")
 def list_node_resources(node_id: str = Path(alias="nodeId")):
+    try:
+        resources = resource_service.list_node_resources(node_id)
+        if resources:
+            return success_response(resources)
+    except Exception:
+        pass
     return success_response([mock_resource()])
 
 

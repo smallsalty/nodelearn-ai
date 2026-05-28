@@ -1,14 +1,14 @@
-# Note And Floating Menu Module
+# 笔记与浮窗模块
 
-Source: `docs/interface-contract.md` section 15.
+来源：`docs/interface-contract.md` 第 15 节。
 
-## Types
+## 类型
 
 - `Note`
 - `NoteCreateRequest`
 - `FloatingMenuState`
 
-## Routes
+## 路由
 
 - `POST /api/v1/notes`
 - `GET /api/v1/notes`
@@ -20,7 +20,7 @@ Source: `docs/interface-contract.md` section 15.
 - `GET /api/v1/users/{userId}/notes`
 - `GET /api/v1/nodes/{nodeId}/notes`
 
-## Frontend Reserved Functions
+## 前端保留函数
 
 - `openFloatingMenu(): void`
 - `closeFloatingMenu(): void`
@@ -28,20 +28,20 @@ Source: `docs/interface-contract.md` section 15.
 - `switchFloatingTab(tab: FloatingMenuState["activeTab"]): void`
 - `updateFloatingPosition(x: number, y: number): void`
 
-## Frontend
+## 前端
 
-- API: `frontend/src/api/modules/note.ts`
-- Types: `frontend/src/types/note.ts`
-- Feature: `frontend/src/features/floating-menu/MODULE.md`
-- State variable: `selectedNoteId`
+- API：`frontend/src/api/modules/note.ts`
+- 类型：`frontend/src/types/note.ts`
+- 模块说明：`frontend/src/features/floating-menu/MODULE.md`
+- 状态变量：`selectedNoteId`
 
-## Backend
+## 后端
 
-- Route file: `backend/app/api/v1/notes.py`
-- Schema file: `backend/app/schemas/note.py`
-- Service file: `backend/app/services/note_service.py`
+- 路由文件：`backend/app/api/v1/notes.py`
+- 结构定义文件：`backend/app/schemas/note.py`
+- 服务文件：`backend/app/services/note_service.py`
 
-## Forbidden
+## 禁止事项
 
-- Do not add `activeTab` values.
-- Do not add `relationType` values.
+- 不新增 `activeTab` 值。
+- 不新增 `relationType` 值。

@@ -2,6 +2,11 @@ from typing import Any, Literal
 
 from pydantic import Field
 
+from app.schemas.course import KnowledgeNode
+from app.schemas.learning_path import LearningPath
+from app.schemas.profile import StudentProfile
+from app.schemas.report import LearningRecord
+from app.schemas.resource import RetrievedDocument
 from app.schemas.common import AgentType, ContractModel, TaskStatus
 
 
@@ -54,11 +59,11 @@ class ChatStreamEvent(ContractModel):
 
 
 class AgentContext(ContractModel):
-    profile: dict[str, Any] | None = None
-    current_node: dict[str, Any] | None = None
-    learning_path: dict[str, Any] | None = None
-    recent_records: list[dict[str, Any]] | None = None
-    retrieved_documents: list[dict[str, Any]] | None = None
+    profile: StudentProfile | None = None
+    current_node: KnowledgeNode | None = None
+    learning_path: LearningPath | None = None
+    recent_records: list[LearningRecord] | None = None
+    retrieved_documents: list[RetrievedDocument] | None = None
 
 
 class AgentRunRequest(ContractModel):

@@ -1,4 +1,4 @@
-# Frontend API Rules
+# 前端 API 规则
 
 - 所有请求必须经过 `client.ts`。
 - `api/modules` 下只封装接口函数。

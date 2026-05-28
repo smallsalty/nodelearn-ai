@@ -44,7 +44,14 @@ class Settings(BaseSettings):
     enable_mock: bool = True
     cors_origins: list[str] = ["http://localhost:5173"]
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    hello_algo_repo_url: str = "https://github.com/krahets/hello-algo.git"
+    hello_algo_branch: str = "main"
+    hello_algo_local_dir: str = "./data_sources/hello-algo"
+    hello_algo_doc_language: str = "zh"
+    hello_algo_code_language: str = ""
+    hello_algo_code_languages: str = "all"
+
+    model_config = SettingsConfigDict(env_file=(".env", "../.env"), env_file_encoding="utf-8", extra="ignore")
 
 
 @lru_cache

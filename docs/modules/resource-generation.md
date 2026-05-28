@@ -1,8 +1,8 @@
-# Resource Generation Module
+# 资源生成模块
 
-Source: `docs/interface-contract.md` sections 8, 11, and 12.
+来源：`docs/interface-contract.md` 第 8、11、12 节。
 
-## Types
+## 类型
 
 - `UploadedFile`
 - `KnowledgeBuildTask`
@@ -17,7 +17,7 @@ Source: `docs/interface-contract.md` sections 8, 11, and 12.
 - `ResourcePushRecord`
 - `RecommendationRequest`
 
-## Routes
+## 路由
 
 - `POST /api/v1/files/upload`
 - `GET /api/v1/files/{fileId}`
@@ -38,21 +38,21 @@ Source: `docs/interface-contract.md` sections 8, 11, and 12.
 - `POST /api/v1/recommendations/{recommendationId}/viewed`
 - `GET /api/v1/users/{userId}/push-records`
 
-## Frontend
+## 前端
 
-- Pages: `ResourcePage.vue`, `KnowledgeBaseAdminPage.vue`
-- API: `frontend/src/api/modules/resource.ts`
-- Types: `frontend/src/types/resource.ts`
-- State variable: `selectedResourceId`
+- 页面：`ResourcePage.vue`、`KnowledgeBaseAdminPage.vue`
+- API：`frontend/src/api/modules/resource.ts`
+- 类型：`frontend/src/types/resource.ts`
+- 状态变量：`selectedResourceId`
 
-## Backend
+## 后端
 
-- Route file: `backend/app/api/v1/resources.py`
-- Schema file: `backend/app/schemas/resource.py`
-- Service file: `backend/app/services/resource_service.py`
-- Agent file: `backend/app/agents/resource_agent.py`
+- 路由文件：`backend/app/api/v1/resources.py`
+- 结构定义文件：`backend/app/schemas/resource.py`
+- 服务文件：`backend/app/services/resource_service.py`
+- 智能体文件：`backend/app/agents/resource_agent.py`
 
-## Forbidden
+## 禁止事项
 
-- Do not add `ResourceType`, `TaskStatus`, or `AuditStatus` values.
-- Generated resources must retain `userId`, `courseId`, `nodeId`, and `auditStatus`.
+- 不新增 `ResourceType`、`TaskStatus` 或 `AuditStatus` 值。
+- 生成资源必须保留 `userId`、`courseId`、`nodeId` 和 `auditStatus`。

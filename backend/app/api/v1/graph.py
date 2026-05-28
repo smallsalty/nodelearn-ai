@@ -3,14 +3,17 @@ from fastapi import APIRouter, Path
 from app.core.response import success_response
 from app.schemas.common import DifficultyLevel, MasteryStatus, MasteryUpdateRequest, NodeType
 from app.schemas.graph import GraphEdge, GraphNode, KnowledgeGraph
+from app.services.graph_service import GraphService
 
 router = APIRouter()
+
+graph_service = GraphService()
 
 
 def mock_graph(course_id: str = "course_ds_001") -> KnowledgeGraph:
     node = GraphNode(
         id="node_array_001",
-        label="数组",
+        label="Array",
         node_type=NodeType.concept,
         difficulty=DifficultyLevel.easy,
         mastery_status=MasteryStatus.basic,
@@ -22,11 +25,23 @@ def mock_graph(course_id: str = "course_ds_001") -> KnowledgeGraph:
 
 @router.get("/courses/{courseId}/graph")
 def get_course_graph(course_id: str = Path(alias="courseId")):
+    try:
+        graph = graph_service.get_course_graph(course_id)
+        if graph is not None:
+            return success_response(graph)
+    except Exception:
+        pass
     return success_response(mock_graph(course_id))
 
 
 @router.get("/users/{userId}/courses/{courseId}/graph")
 def get_user_course_graph(user_id: str = Path(alias="userId"), course_id: str = Path(alias="courseId")):
+    try:
+        graph = graph_service.get_course_graph(course_id)
+        if graph is not None:
+            return success_response(graph)
+    except Exception:
+        pass
     return success_response(mock_graph(course_id))
 
 
@@ -34,7 +49,7 @@ def get_user_course_graph(user_id: str = Path(alias="userId"), course_id: str = 
 def update_node_mastery(payload: MasteryUpdateRequest, user_id: str = Path(alias="userId"), node_id: str = Path(alias="nodeId")):
     node = GraphNode(
         id=node_id,
-        label="数组",
+        label="Array",
         node_type=NodeType.concept,
         difficulty=DifficultyLevel.easy,
         mastery_status=payload.mastery_status,

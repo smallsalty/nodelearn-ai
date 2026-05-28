@@ -1,7 +1,7 @@
-# Frontend Knowledge Graph Boundary
+# 前端知识图谱边界
 
-- Read `docs/modules/knowledge-graph.md`.
-- Use `src/types/graph.ts`.
-- Use `src/api/modules/graph.ts`.
-- Page shell: `src/pages/KnowledgeGraphPage.vue`.
-- Keep graph UI state compatible with `GraphViewState`.
+- 阅读 `docs/modules/knowledge-graph.md`。
+- 使用 `src/types/graph.ts`。
+- 使用 `src/api/modules/graph.ts`。
+- 页面壳：`src/pages/KnowledgeGraphPage.vue`。
+- 图谱 UI 状态必须兼容 `GraphViewState`。
