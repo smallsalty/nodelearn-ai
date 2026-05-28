@@ -47,6 +47,8 @@
 - 2026-05-28 新增智能体 API 与服务测试后运行 `python -m pytest backend/app/tests -q`，结果为 `12 passed`。
 - 2026-05-28 完成 `profile_agent` 画像分析智能体，基于 `StudentProfile` 输出画像分析、规划提示、资源提示和练习提示；画像 API 已改为通过 in-memory `ProfileRepository` 返回统一 demo profile。
 - 2026-05-28 新增画像智能体与画像 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `19 passed`。
+- 2026-05-28 完成 `planner_agent` 课程规划智能体，基于画像、薄弱点、知识节点依赖、掌握度和时间预算生成规则式 `LearningPath` 与 `LearningTask[]`；学习路径 API 已接入 in-memory `LearningPathRepository`。
+- 2026-05-28 新增课程规划智能体与学习路径 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `25 passed`。
 
 ### 进行中
 
