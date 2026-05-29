@@ -3,7 +3,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from app.schemas.common import AgentType, AuditStatus, CourseStatus, DifficultyLevel, NodeType, ResourceType, TaskStatus
+from app.schemas.common import (
+    AgentType,
+    AuditStatus,
+    CognitiveStyle,
+    CourseStatus,
+    DifficultyLevel,
+    NodeType,
+    PracticePreference,
+    ResourceType,
+    TaskStatus,
+)
 
 
 def test_core_enum_values_match_contract_subset():
@@ -14,4 +24,7 @@ def test_core_enum_values_match_contract_subset():
     assert AgentType.knowledge_graph_agent.value == "knowledge_graph_agent"
     assert TaskStatus.cancelled.value == "cancelled"
     assert AuditStatus.need_review.value == "need_review"
+    assert CognitiveStyle.diagram.value == "diagram"
+    assert PracticePreference.case.value == "case"
+    assert ResourceType.mind_map.value == "mind_map"
     # TODO: exhaustively compare enum values against docs/interface-contract.md.
