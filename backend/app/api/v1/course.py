@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Path, Query
 
-from app.core.response import page_result, success_response
+from app.core.config import settings
+from app.core.response import error_response, page_result, success_response
 from app.schemas.common import CourseStatus, DifficultyLevel, MasteryStatus, NodeType
 from app.schemas.course import (
     Chapter,
@@ -87,10 +88,11 @@ def list_courses(
 ):
     try:
         items, total = course_service.list_courses(page=page, page_size=page_size, keyword=keyword)
-        if items:
+        if items or not settings.enable_mock:
             return success_response(page_result(items, total, page, page_size))
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database query failed: {exc}")
     items = [mock_course()]
     return success_response(page_result(items, len(items), page, page_size))
 
@@ -99,8 +101,9 @@ def list_courses(
 def create_course(payload: CourseCreateRequest):
     try:
         return success_response(course_service.create_course(payload))
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database write failed: {exc}")
     return success_response(mock_course())
 
 
@@ -110,8 +113,11 @@ def get_course(course_id: str = Path(alias="courseId")):
         course = course_service.get_course(course_id)
         if course is not None:
             return success_response(course)
-    except Exception:
-        pass
+        if not settings.enable_mock:
+            return error_response(f"course not found: {course_id}", code=404)
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database query failed: {exc}")
     return success_response(mock_course(course_id))
 
 
@@ -121,8 +127,11 @@ def update_course(payload: CourseUpdateRequest, course_id: str = Path(alias="cou
         course = course_service.update_course(course_id, payload)
         if course is not None:
             return success_response(course)
-    except Exception:
-        pass
+        if not settings.enable_mock:
+            return error_response(f"course not found: {course_id}", code=404)
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database write failed: {exc}")
     return success_response(mock_course(course_id))
 
 
@@ -130,8 +139,9 @@ def update_course(payload: CourseUpdateRequest, course_id: str = Path(alias="cou
 def delete_course(course_id: str = Path(alias="courseId")):
     try:
         return success_response(course_service.delete_course(course_id))
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database write failed: {exc}")
     return success_response(True)
 
 
@@ -139,10 +149,11 @@ def delete_course(course_id: str = Path(alias="courseId")):
 def list_chapters(course_id: str = Path(alias="courseId")):
     try:
         chapters = course_service.list_chapters(course_id)
-        if chapters:
+        if chapters or not settings.enable_mock:
             return success_response(chapters)
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database query failed: {exc}")
     return success_response([mock_chapter(course_id)])
 
 
@@ -150,8 +161,9 @@ def list_chapters(course_id: str = Path(alias="courseId")):
 def create_chapter(payload: ChapterCreateRequest, course_id: str = Path(alias="courseId")):
     try:
         return success_response(course_service.create_chapter(course_id, payload))
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database write failed: {exc}")
     return success_response(mock_chapter(course_id))
 
 
@@ -159,10 +171,11 @@ def create_chapter(payload: ChapterCreateRequest, course_id: str = Path(alias="c
 def list_nodes(course_id: str = Path(alias="courseId")):
     try:
         nodes = course_service.list_nodes(course_id)
-        if nodes:
+        if nodes or not settings.enable_mock:
             return success_response(nodes)
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database query failed: {exc}")
     return success_response([mock_node(course_id)])
 
 
@@ -170,8 +183,9 @@ def list_nodes(course_id: str = Path(alias="courseId")):
 def create_node(payload: KnowledgeNodeCreateRequest, course_id: str = Path(alias="courseId")):
     try:
         return success_response(course_service.create_node(course_id, payload))
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database write failed: {exc}")
     return success_response(mock_node(course_id))
 
 
@@ -181,8 +195,11 @@ def get_node(node_id: str = Path(alias="nodeId")):
         node = course_service.get_node(node_id)
         if node is not None:
             return success_response(node)
-    except Exception:
-        pass
+        if not settings.enable_mock:
+            return error_response(f"node not found: {node_id}", code=404)
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database query failed: {exc}")
     return success_response(mock_node(node_id=node_id))
 
 
@@ -192,8 +209,11 @@ def update_node(payload: dict, node_id: str = Path(alias="nodeId")):
         node = course_service.update_node(node_id, payload)
         if node is not None:
             return success_response(node)
-    except Exception:
-        pass
+        if not settings.enable_mock:
+            return error_response(f"node not found: {node_id}", code=404)
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database write failed: {exc}")
     return success_response(mock_node(node_id=node_id))
 
 
@@ -201,8 +221,9 @@ def update_node(payload: dict, node_id: str = Path(alias="nodeId")):
 def delete_node(node_id: str = Path(alias="nodeId")):
     try:
         return success_response(course_service.delete_node(node_id))
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database write failed: {exc}")
     return success_response(True)
 
 
@@ -210,10 +231,11 @@ def delete_node(node_id: str = Path(alias="nodeId")):
 def list_relations(course_id: str = Path(alias="courseId")):
     try:
         relations = course_service.list_relations(course_id)
-        if relations:
+        if relations or not settings.enable_mock:
             return success_response(relations)
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database query failed: {exc}")
     return success_response([mock_relation(course_id)])
 
 
@@ -221,6 +243,7 @@ def list_relations(course_id: str = Path(alias="courseId")):
 def create_relation(payload: KnowledgeRelation, course_id: str = Path(alias="courseId")):
     try:
         return success_response(course_service.create_relation(course_id, payload))
-    except Exception:
-        pass
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database write failed: {exc}")
     return success_response(payload)

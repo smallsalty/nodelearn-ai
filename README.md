@@ -28,6 +28,21 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+## 真实数据库与 DeepSeek
+
+1. 复制 `backend/.env.example` 为 `backend/.env`，填写 `LLM_API_KEY`。
+2. 本地后端连接 Docker PostgreSQL 时，保持 `DATABASE_URL=postgresql+psycopg://nodelearn:nodelearn@localhost:5432/nodelearn`。
+3. 初始化并导入本地 Hello Algo：
+
+```bash
+docker compose -f docker/docker-compose.yml up -d postgres
+cd backend
+python -m app.importers.hello_algo --init-db --skip-git
+uvicorn app.main:app --reload
+```
+
+`ENABLE_MOCK=false` 使用真实数据库和 DeepSeek；`ENABLE_MOCK=true` 回到模拟模式。
+
 ## 契约规则
 
 开发前先阅读 `docs/context-index.md`。涉及模块开发时，还必须阅读对应的 `docs/modules/*.md`。不得新增契约未定义的路由、枚举值、变量或字段。如果契约缺少必要定义，输出：

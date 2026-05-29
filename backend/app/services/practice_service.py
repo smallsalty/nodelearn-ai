@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
+from app.core.config import settings
 from app.repositories.learning_path_repository import (
     DEMO_TIME,
     LearningPathRepository,
@@ -257,11 +258,33 @@ class PracticeService:
         matched = [keyword for keyword in keywords if keyword in user_answer]
         score = round(100 * len(matched) / len(keywords), 2) if keywords else 0
         mistake_reason = None if score >= 60 else f"回答缺少关键点：{','.join([item for item in keywords if item not in matched])}"
-        await self.llm_service.generate_json(
-            f"mock score {question.question_type} answer",
-            mock_data={"score": score, "mistakeReason": mistake_reason},
+        if settings.enable_mock:
+            await self.llm_service.generate_json(
+                f"mock score {question.question_type} answer",
+                mock_data={"score": score, "mistakeReason": mistake_reason},
+            )
+            return score, score >= 60, mistake_reason
+
+        result = await self.llm_service.generate_json(
+            "\n".join(
+                [
+                    "请根据题目、参考答案和学生答案进行评分，只返回 JSON 对象。",
+                    'JSON 字段必须是 {"score": number, "isCorrect": boolean, "mistakeReason": string | null}。',
+                    f"题型：{question.question_type}",
+                    f"题目：{question.content}",
+                    f"参考答案：{question.answer}",
+                    f"学生答案：{user_answer}",
+                    f"关键点：{','.join(keywords)}",
+                ]
+            ),
+            mock_data={"score": score, "isCorrect": score >= 60, "mistakeReason": mistake_reason},
+            temperature=0.2,
         )
-        return score, score >= 60, mistake_reason
+        llm_score = float(result.get("score", score))
+        llm_score = min(100, max(0, llm_score))
+        is_correct = bool(result.get("isCorrect", llm_score >= 60))
+        llm_mistake_reason = result.get("mistakeReason")
+        return llm_score, is_correct, llm_mistake_reason if isinstance(llm_mistake_reason, str) else None
 
     def _score_coding_answer(self, question: PracticeQuestion, user_answer: str) -> tuple[float, bool, str | None]:
         # TODO: replace this mock evaluator with a real sandbox runner when runtime isolation is available.

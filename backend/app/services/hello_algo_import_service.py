@@ -22,7 +22,7 @@ from app.models import (
 )
 
 HELLO_ALGO_LICENSE = "CC BY-NC-SA 4.0"
-HELLO_ALGO_COURSE_ID = "course_hello_algo"
+HELLO_ALGO_COURSE_ID = "course_ds_001"
 HELLO_ALGO_USER_ID = "system"
 
 CODE_EXTENSIONS = {

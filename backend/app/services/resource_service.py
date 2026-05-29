@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy import func, or_, select
 
+from app.core.config import settings
 from app.db.session import session_context
 from app.models import GeneratedResourceModel, KnowledgeBuildTaskModel, UploadedFileModel
 from app.repositories.learning_path_repository import (
@@ -238,6 +239,8 @@ class ResourceService:
                 created_at=DEMO_TIME,
                 updated_at=DEMO_TIME,
             )
+            if not settings.enable_mock:
+                self._persist_generated_resource(resource)
             resources.append(self.repository.save_resource(resource))
             resource_plan.append(
                 {
@@ -653,3 +656,28 @@ class ResourceService:
             created_at=DEMO_TIME,
             updated_at=DEMO_TIME,
         )
+
+    def _persist_generated_resource(self, resource: GeneratedResource) -> None:
+        now = now_utc()
+        with session_context() as session:
+            session.merge(
+                GeneratedResourceModel(
+                    id=resource.id,
+                    user_id=resource.user_id,
+                    course_id=resource.course_id,
+                    node_id=resource.node_id,
+                    title=resource.title,
+                    resource_type=self._enum_value(resource.resource_type),
+                    content=resource.content,
+                    file_url=resource.file_url,
+                    prompt=resource.prompt,
+                    model_name=resource.model_name,
+                    status=self._enum_value(resource.status),
+                    audit_status=self._enum_value(resource.audit_status),
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
+
+    def _enum_value(self, value: Any) -> Any:
+        return value.value if hasattr(value, "value") else value

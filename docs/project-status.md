@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-05-28
+最后更新：2026-05-29
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -55,11 +55,17 @@
 - 2026-05-28 新增练习智能体与练习 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `45 passed`。
 - 2026-05-28 完成 `multimodal_agent` 多模态内容智能体，支持 Mermaid 思维导图、视频脚本、动画脚本、代码实操、复习卡片和讲解文档的规则式生成，并复用资源仓储与最小审计流程。
 - 2026-05-28 新增多模态智能体与多模态资源 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `54 passed`。
+- 2026-05-28 完成最小可演示多智能体工作流串联，`profile_build`、`path_plan`、`resource_generate`、`practice_review`、`qa` 和 `report_generate` 均通过现有 `workflowType` 接入 `/api/v1/agents/workflows/run`，并写入 `AgentRunResult[]` 与 `AgentTaskEvent[]`。
+- 2026-05-28 新增多智能体工作流 runner 与 API 测试后运行 `python -m pytest backend/app/tests -q`，结果为 `63 passed`。
+- 2026-05-29 完成前端智能体链路测试面板，新增仅开发环境可访问的 `/dev/agent-flow-test`，支持 5 个智能体单测、`resource_generate` 工作流测试、练习提交测试、`ApiResponse<T>` 结构校验和 API module 层 `VITE_ENABLE_MOCK` mock 模式。
+- 2026-05-29 前端测试面板实现后运行 `npm run build`，结果为通过；当前前端未定义独立 `type-check`、`lint`、`test` 脚本。
+- 2026-05-29 完成真实 PostgreSQL Hello Algo 数据接入计划的代码准备：`backend/.env.example` 改为真实运行模板，Hello Algo 导入使用 `course_ds_001`，学习路径/图谱/资源/练习链路在 `ENABLE_MOCK=false` 时优先读取数据库，不再静默回退 mock。
+- 2026-05-29 完成 DeepSeek OpenAI-compatible Chat Completions 接入：`LLMService` 通过 `LLM_PROVIDER`、`LLM_BASE_URL`、`LLM_API_KEY` 和 `LLM_MODEL_NAME` 统一调用真实模型，`/chat/send`、资源生成和主观题评分经该边界接入；本次按用户要求未运行测试。
 
 ### 进行中
 
 - 数据结构课程知识库和节点导入工作。
-- 课程、图谱和资源服务从纯模拟占位逐步转向数据库占位读取。
+- 课程、图谱和资源服务从纯模拟占位逐步转向真实数据库读取。
 - `data_sources/hello-algo` 与后端导入代码相关的 Hello Algo 来源导入支持。
 - 项目状态和 Codex 同步文档维护。
 
@@ -67,7 +73,7 @@
 
 - 真实对话式画像抽取和动态画像更新。
 - 真实多智能体编排业务流程。
-- 真实 LLM、RAG、向量库、图数据库、Redis 和缓存调用。
+- 真实 RAG、向量库、图数据库、Redis 和缓存调用。
 - 超出规则模板和 mock LLM 的个性化资源与多模态内容生成逻辑。
 - 超出最小规则的真实 safety/audit 校验。
 - 学习路径规划的完整图搜索逻辑。
@@ -87,7 +93,7 @@
 CONTRACT_MISSING: 缺少 xxx 定义
 ```
 
-- 当前开发阶段不允许接入真实 LLM、向量库、图数据库、Redis 或缓存。除非开发边界调整，否则这些能力只保留接口和占位。
+- 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 
 ## 功能待办
