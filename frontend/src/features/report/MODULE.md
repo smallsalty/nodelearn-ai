@@ -1,7 +1,7 @@
-# Frontend Report Boundary
+# 前端报告边界
 
-- Read `docs/modules/report.md`.
-- Use `src/types/report.ts`.
-- Use `src/api/modules/report.ts`.
-- Page shell: `src/pages/ReportPage.vue`.
-- Keep report, audit, and learning evaluation fields contract-only.
+- 阅读 `docs/modules/report.md`。
+- 使用 `src/types/report.ts`。
+- 使用 `src/api/modules/report.ts`。
+- 页面壳：`src/pages/ReportPage.vue`。
+- 报告、audit 和学习评估字段只能来自契约。

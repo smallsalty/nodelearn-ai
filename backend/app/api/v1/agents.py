@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Path, Query
 
-from app.core.response import page_result, success_response
+from app.core.config import settings
+from app.core.response import error_response, page_result, success_response
+from app.agents.workflow import MultiAgentWorkflowRunner, get_task_events, get_task_result
 from app.schemas.agent import (
     AgentRunRequest,
-    AgentRunResult,
-    AgentTaskEvent,
     ChatMessage,
     ChatRequest,
     ChatResult,
@@ -13,22 +13,23 @@ from app.schemas.agent import (
     MultiAgentWorkflowResult,
 )
 from app.schemas.common import AgentType, TaskStatus
+from app.services.agent_service import AgentService
+from app.services.llm_service import LLMService
 
 router = APIRouter()
 
 MOCK_TIME = "2026-05-19T10:00:00Z"
+agent_service = AgentService()
+workflow_runner = MultiAgentWorkflowRunner(agent_service)
+llm_service = LLMService()
 
 
 def mock_session(session_id: str = "session_demo_001") -> ChatSession:
     return ChatSession(id=session_id, user_id="user_demo_001", title="Demo Session", session_type="qa", created_at=MOCK_TIME, updated_at=MOCK_TIME)
 
 
-def mock_agent_result(task_id: str = "agent_task_demo_001") -> AgentRunResult:
-    return AgentRunResult(task_id=task_id, agent_type=AgentType.resource_agent, status=TaskStatus.success, output={})
-
-
 def mock_workflow(task_id: str = "workflow_task_demo_001") -> MultiAgentWorkflowResult:
-    return MultiAgentWorkflowResult(task_id=task_id, workflow_type="qa", status=TaskStatus.success, steps=[mock_agent_result()], final_output={})
+    return MultiAgentWorkflowResult(task_id=task_id, workflow_type="qa", status=TaskStatus.failed, steps=[], final_output={})
 
 
 @router.post("/chat/sessions")
@@ -54,8 +55,30 @@ def list_chat_messages(session_id: str = Path(alias="sessionId")):
 
 
 @router.post("/chat/send")
-def send_chat(payload: ChatRequest):
-    result = ChatResult(session_id=payload.session_id or "session_demo_001", message_id="message_demo_001", answer="mock", used_agent_types=[AgentType.resource_agent])
+async def send_chat(payload: ChatRequest):
+    if settings.enable_mock:
+        result = ChatResult(session_id=payload.session_id or "session_demo_001", message_id="message_demo_001", answer="mock", used_agent_types=[AgentType.resource_agent])
+        return success_response(result)
+
+    try:
+        answer = await llm_service.generate_text(
+            "\n".join(
+                [
+                    "你是 NodeLearn AI 的学习助手，请基于学生问题给出清晰、简洁、可执行的学习建议。",
+                    f"userId: {payload.user_id}",
+                    f"courseId: {payload.course_id or ''}",
+                    f"nodeId: {payload.node_id or ''}",
+                    f"useRag: {payload.use_rag}",
+                    f"useProfile: {payload.use_profile}",
+                    "",
+                    payload.message,
+                ]
+            )
+        )
+    except Exception as exc:
+        return error_response(f"chat completion failed: {exc}")
+
+    result = ChatResult(session_id=payload.session_id or "session_deepseek_001", message_id="message_deepseek_001", answer=answer, used_agent_types=[AgentType.resource_agent])
     return success_response(result)
 
 
@@ -65,21 +88,27 @@ def stream_chat(session_id: str = Query(alias="sessionId")):
 
 
 @router.post("/agents/run")
-def run_agent(payload: AgentRunRequest):
-    return success_response(mock_agent_result())
+async def run_agent(payload: AgentRunRequest):
+    result = await agent_service.run_agent(payload)
+    return success_response(result)
 
 
 @router.post("/agents/workflows/run")
-def run_workflow(payload: MultiAgentWorkflowRequest):
-    return success_response(mock_workflow())
+async def run_workflow(payload: MultiAgentWorkflowRequest):
+    result = await workflow_runner.run(payload)
+    return success_response(result)
 
 
 @router.get("/agents/tasks/{taskId}")
 def get_agent_task(task_id: str = Path(alias="taskId")):
+    result = get_task_result(task_id)
+    if result is not None:
+        return success_response(result)
+    if not settings.enable_mock:
+        return error_response(f"agent task not found: {task_id}", code=404)
     return success_response(mock_workflow(task_id))
 
 
 @router.get("/agents/tasks/{taskId}/events")
 def list_agent_events(task_id: str = Path(alias="taskId")):
-    event = AgentTaskEvent(task_id=task_id, agent_type=AgentType.resource_agent, event_type="done", created_at=MOCK_TIME)
-    return success_response([event])
+    return success_response(get_task_events(task_id))

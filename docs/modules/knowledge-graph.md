@@ -1,21 +1,21 @@
-# Knowledge Graph Module
+# 知识图谱模块
 
-Source: `docs/interface-contract.md` section 7.
+来源：`docs/interface-contract.md` 第 7 节。
 
-## Types
+## 类型
 
 - `GraphNode`
 - `GraphEdge`
 - `KnowledgeGraph`
 - `GraphViewState`
 
-## Routes
+## 路由
 
 - `GET /api/v1/courses/{courseId}/graph`
 - `GET /api/v1/users/{userId}/courses/{courseId}/graph`
 - `PUT /api/v1/users/{userId}/nodes/{nodeId}/mastery`
 
-## Frontend Reserved Functions
+## 前端保留函数
 
 - `selectNode(nodeId: string): void`
 - `zoomIn(): void`
@@ -24,21 +24,21 @@ Source: `docs/interface-contract.md` section 7.
 - `jumpToNode(nodeId: string): void`
 - `openNodeDetail(nodeId: string): void`
 
-## Frontend
+## 前端
 
-- Page: `frontend/src/pages/KnowledgeGraphPage.vue`
-- API: `frontend/src/api/modules/graph.ts`
-- Types: `frontend/src/types/graph.ts`
-- State variable: `selectedNodeId`
+- 页面：`frontend/src/pages/KnowledgeGraphPage.vue`
+- API：`frontend/src/api/modules/graph.ts`
+- 类型：`frontend/src/types/graph.ts`
+- 状态变量：`selectedNodeId`
 
-## Backend
+## 后端
 
-- Route file: `backend/app/api/v1/graph.py`
-- Schema file: `backend/app/schemas/graph.py`
-- Service file: `backend/app/services/graph_service.py`
-- Agent file: `backend/app/agents/knowledge_graph_agent.py`
+- 路由文件：`backend/app/api/v1/graph.py`
+- 结构定义文件：`backend/app/schemas/graph.py`
+- 服务文件：`backend/app/services/graph_service.py`
+- 智能体文件：`backend/app/agents/knowledge_graph_agent.py`
 
-## Forbidden
+## 禁止事项
 
-- Do not add mastery status values.
-- Do not change graph edge `source` or `target` names.
+- 不新增掌握状态值。
+- 不修改图边的 `source` 或 `target` 名称。

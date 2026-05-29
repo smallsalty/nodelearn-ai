@@ -1,30 +1,30 @@
-# Architecture
+# 架构说明
 
-NodeLearn AI is split into a Vue frontend, a FastAPI backend, and reserved infrastructure adapters.
+NodeLearn AI 分为 Vue 前端、FastAPI 后端和预留基础设施适配层。
 
-## Frontend
+## 前端
 
 - Vue 3 + TypeScript + Vite + Element Plus.
-- Pages live in `frontend/src/pages`.
-- API calls live only in `frontend/src/api/client.ts` and `frontend/src/api/modules/*`.
-- Contract types live in `frontend/src/types`.
-- Feature context notes live in `frontend/src/features/*/MODULE.md`.
+- 页面位于 `frontend/src/pages`。
+- API 调用只能位于 `frontend/src/api/client.ts` 和 `frontend/src/api/modules/*`。
+- 契约类型位于 `frontend/src/types`。
+- 前端模块边界说明位于 `frontend/src/features/*/MODULE.md`。
 
-## Backend
+## 后端
 
-- FastAPI entrypoint: `backend/app/main.py`.
-- Contract response helper: `backend/app/core/response.py`.
-- Routes: `backend/app/api/v1/*`.
-- Schemas: `backend/app/schemas/*`.
-- Services: `backend/app/services/*`.
-- Agent stubs: `backend/app/agents/*`.
+- FastAPI 入口：`backend/app/main.py`。
+- 契约响应工具：`backend/app/core/response.py`。
+- 路由：`backend/app/api/v1/*`。
+- 结构定义：`backend/app/schemas/*`。
+- 服务：`backend/app/services/*`。
+- 智能体占位：`backend/app/agents/*`。
 
-## Reserved Adapters
+## 预留适配层
 
-- Database: PostgreSQL/MySQL placeholders in `backend/app/db`.
-- Cache: Redis configuration in `backend/.env.example`.
-- Vector store: Chroma/FAISS placeholders in config.
-- Graph DB: Neo4j placeholders in config.
-- LLM: unified `backend/app/services/llm_service.py`.
+- 数据库：PostgreSQL/MySQL 占位位于 `backend/app/db`。
+- 缓存：Redis 配置位于 `backend/.env.example`。
+- 向量库：Chroma/FAISS 占位配置。
+- 图数据库：Neo4j 占位配置。
+- LLM：统一封装位于 `backend/app/services/llm_service.py`。
 
-No real external API key call is implemented in this scaffold.
+当前骨架不实现真实外部 API Key 调用。

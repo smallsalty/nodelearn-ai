@@ -9,13 +9,16 @@ router = APIRouter()
 
 @router.get("/system/health")
 def health_check():
+    database_status = "ok" if settings.database_url or settings.enable_mock else "error"
+    llm_status = "ok" if settings.enable_mock or (settings.llm_api_key and settings.llm_base_url) else "error"
+    status = "ok" if database_status == "ok" and llm_status == "ok" else "error"
     result = HealthCheckResult(
-        status="ok",
-        database="ok",
+        status=status,
+        database=database_status,
         redis="ok",
         vector_store="ok",
         graph_db="ok",
-        llm_service="ok",
+        llm_service=llm_status,
     )
     return success_response(result)
 

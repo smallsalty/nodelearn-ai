@@ -26,6 +26,14 @@ const routes = [
   }
 ];
 
+if (import.meta.env.DEV) {
+  routes.push({
+    path: "/dev/agent-flow-test",
+    name: "dev-agent-flow-test",
+    component: () => import("@/pages/dev/AgentFlowTestPage.vue")
+  });
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes

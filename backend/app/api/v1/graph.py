@@ -1,16 +1,20 @@
 from fastapi import APIRouter, Path
 
-from app.core.response import success_response
+from app.core.config import settings
+from app.core.response import error_response, success_response
 from app.schemas.common import DifficultyLevel, MasteryStatus, MasteryUpdateRequest, NodeType
 from app.schemas.graph import GraphEdge, GraphNode, KnowledgeGraph
+from app.services.graph_service import GraphService
 
 router = APIRouter()
+
+graph_service = GraphService()
 
 
 def mock_graph(course_id: str = "course_ds_001") -> KnowledgeGraph:
     node = GraphNode(
         id="node_array_001",
-        label="数组",
+        label="Array",
         node_type=NodeType.concept,
         difficulty=DifficultyLevel.easy,
         mastery_status=MasteryStatus.basic,
@@ -22,22 +26,44 @@ def mock_graph(course_id: str = "course_ds_001") -> KnowledgeGraph:
 
 @router.get("/courses/{courseId}/graph")
 def get_course_graph(course_id: str = Path(alias="courseId")):
+    try:
+        graph = graph_service.get_course_graph(course_id)
+        if graph is not None:
+            return success_response(graph)
+        if not settings.enable_mock:
+            return error_response(f"graph not found for course: {course_id}", code=404)
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database query failed: {exc}")
     return success_response(mock_graph(course_id))
 
 
 @router.get("/users/{userId}/courses/{courseId}/graph")
 def get_user_course_graph(user_id: str = Path(alias="userId"), course_id: str = Path(alias="courseId")):
+    try:
+        graph = graph_service.get_course_graph(course_id)
+        if graph is not None:
+            return success_response(graph)
+        if not settings.enable_mock:
+            return error_response(f"graph not found for course: {course_id}", code=404)
+    except Exception as exc:
+        if not settings.enable_mock:
+            return error_response(f"database query failed: {exc}")
     return success_response(mock_graph(course_id))
 
 
 @router.put("/users/{userId}/nodes/{nodeId}/mastery")
 def update_node_mastery(payload: MasteryUpdateRequest, user_id: str = Path(alias="userId"), node_id: str = Path(alias="nodeId")):
-    node = GraphNode(
-        id=node_id,
-        label="数组",
-        node_type=NodeType.concept,
-        difficulty=DifficultyLevel.easy,
-        mastery_status=payload.mastery_status,
-        mastery_score=payload.mastery_score,
-    )
+    node = graph_service.update_node_mastery(node_id, payload.mastery_score, payload.mastery_status)
+    if node is None:
+        if not settings.enable_mock:
+            return error_response(f"node not found: {node_id}", code=404)
+        node = GraphNode(
+            id=node_id,
+            label="Array",
+            node_type=NodeType.concept,
+            difficulty=DifficultyLevel.easy,
+            mastery_status=payload.mastery_status,
+            mastery_score=payload.mastery_score,
+        )
     return success_response(node)

@@ -25,6 +25,16 @@ def success_response(data: Any = None, message: str = "success", code: int = 200
     }
 
 
+def error_response(message: str, data: Any = None, code: int = 500) -> dict[str, Any]:
+    return {
+        "code": code,
+        "message": message,
+        "data": serialize_contract(data),
+        "traceId": f"trace_{uuid4().hex}",
+        "timestamp": datetime.now(UTC).isoformat(),
+    }
+
+
 def page_result(items: list[Any], total: int, page: int, page_size: int) -> dict[str, Any]:
     return {
         "list": serialize_contract(items),

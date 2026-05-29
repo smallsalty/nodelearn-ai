@@ -1,7 +1,7 @@
-# Frontend Profile Boundary
+# 前端画像边界
 
-- Read `docs/modules/profile.md`.
-- Use `src/types/profile.ts`.
-- Use `src/api/modules/profile.ts`.
-- Page shell: `src/pages/ProfilePage.vue`.
-- Do not request backend directly from Vue components.
+- 阅读 `docs/modules/profile.md`。
+- 使用 `src/types/profile.ts`。
+- 使用 `src/api/modules/profile.ts`。
+- 页面壳：`src/pages/ProfilePage.vue`。
+- Vue 组件不得直接请求后端。

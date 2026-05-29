@@ -1,15 +1,15 @@
-# Practice Module
+# 练习模块
 
-Source: `docs/interface-contract.md` section 14.
+来源：`docs/interface-contract.md` 第 14 节。
 
-## Types
+## 类型
 
 - `PracticeQuestion`
 - `PracticeGenerateRequest`
 - `PracticeSubmitRequest`
 - `PracticeRecord`
 
-## Routes
+## 路由
 
 - `POST /api/v1/practices/generate`
 - `GET /api/v1/practices/questions`
@@ -19,21 +19,21 @@ Source: `docs/interface-contract.md` section 14.
 - `GET /api/v1/users/{userId}/wrong-questions`
 - `DELETE /api/v1/users/{userId}/wrong-questions/{questionId}`
 
-## Frontend
+## 前端
 
-- Page: `frontend/src/pages/PracticePage.vue`
-- API: `frontend/src/api/modules/practice.ts`
-- Types: `frontend/src/types/practice.ts`
-- State variable: `selectedQuestionId`
+- 页面：`frontend/src/pages/PracticePage.vue`
+- API：`frontend/src/api/modules/practice.ts`
+- 类型：`frontend/src/types/practice.ts`
+- 状态变量：`selectedQuestionId`
 
-## Backend
+## 后端
 
-- Route file: `backend/app/api/v1/practice.py`
-- Schema file: `backend/app/schemas/practice.py`
-- Service file: `backend/app/services/practice_service.py`
-- Agent file: `backend/app/agents/practice_agent.py`
+- 路由文件：`backend/app/api/v1/practice.py`
+- 结构定义文件：`backend/app/schemas/practice.py`
+- 服务文件：`backend/app/services/practice_service.py`
+- 智能体文件：`backend/app/agents/practice_agent.py`
 
-## Forbidden
+## 禁止事项
 
-- Do not add `QuestionType` or `DifficultyLevel` values.
-- Do not rename answer fields: `userAnswer`, `correctAnswer`, `isCorrect`.
+- 不新增 `QuestionType` 或 `DifficultyLevel` 值。
+- 不重命名答案字段：`userAnswer`、`correctAnswer`、`isCorrect`。
