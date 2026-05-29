@@ -1,17 +1,17 @@
-# Backend AGENTS.md
+# 后端 AGENTS.md
 
-## Required Reading
+## 必读文件
 
-- Read `../docs/context-index.md` before coding.
-- Read the matching `../docs/modules/*.md` for the current module.
-- Check exact paths, fields, enum values, and database fields in `../docs/interface-contract.md`.
+- 编码前阅读 `../docs/context-index.md`。
+- 当前模块开发必须阅读对应的 `../docs/modules/*.md`。
+- 涉及接口路径、字段、枚举值和数据库字段时，必须核对 `../docs/interface-contract.md`。
 
-## Rules
+## 规则
 
-- All interfaces must return the unified `ApiResponse<T>` envelope.
-- All request and response schemas must come from `app/schemas`.
-- `app/api/v1` is only responsible for route binding and request/response orchestration.
-- `app/services` contains business logic and integration boundaries.
-- Backend Python variables and database fields use snake_case.
-- Do not add undefined routes, fields, or enum values.
-- Missing definitions must be reported as `CONTRACT_MISSING: 缺少 xxx 定义`.
+- 所有接口必须返回统一的 `ApiResponse<T>` 包装结构。
+- 所有请求和响应结构定义必须来自 `app/schemas`。
+- `app/api/v1` 只负责路由绑定、请求接收和响应编排。
+- `app/services` 放置业务逻辑和外部集成边界。
+- 后端 Python 变量和数据库字段使用 snake_case。
+- 不允许新增未定义的路由、字段或枚举值。
+- 缺少定义时必须输出 `CONTRACT_MISSING: 缺少 xxx 定义`。

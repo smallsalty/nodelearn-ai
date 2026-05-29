@@ -1,8 +1,8 @@
-# Database Schema Summary
+# 数据库结构摘要
 
-Source: `docs/interface-contract.md` sections 2.5 and 25.
+来源：`docs/interface-contract.md` 第 2.5 和 25 节。
 
-## Base Fields
+## 基础字段
 
 ```sql
 id
@@ -12,7 +12,7 @@ deleted_at
 version
 ```
 
-## Tables
+## 数据表
 
 ### 用户与画像
 
@@ -86,4 +86,4 @@ model_call_log
 audit_log
 ```
 
-When creating real models or migrations later, copy exact field lists from `docs/interface-contract.md`; do not infer missing columns.
+后续创建真实模型或迁移时，必须从 `docs/interface-contract.md` 复制准确字段列表，不得自行推断缺失列。

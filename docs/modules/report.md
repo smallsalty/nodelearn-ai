@@ -1,8 +1,8 @@
-# Report Module
+# 报告模块
 
-Source: `docs/interface-contract.md` sections 16, 17, and 18.
+来源：`docs/interface-contract.md` 第 16、17、18 节。
 
-## Types
+## 类型
 
 - `LearningRecord`
 - `LearningRecordCreateRequest`
@@ -13,7 +13,7 @@ Source: `docs/interface-contract.md` sections 16, 17, and 18.
 - `AuditCheckRequest`
 - `ModelCallLog`
 
-## Routes
+## 路由
 
 - `POST /api/v1/learning-records`
 - `GET /api/v1/users/{userId}/learning-records`
@@ -28,20 +28,20 @@ Source: `docs/interface-contract.md` sections 16, 17, and 18.
 - `GET /api/v1/audit/logs`
 - `GET /api/v1/model-call-logs`
 
-## Frontend
+## 前端
 
-- Page: `frontend/src/pages/ReportPage.vue`
-- API: `frontend/src/api/modules/report.ts`
-- Types: `frontend/src/types/report.ts`
+- 页面：`frontend/src/pages/ReportPage.vue`
+- API：`frontend/src/api/modules/report.ts`
+- 类型：`frontend/src/types/report.ts`
 
-## Backend
+## 后端
 
-- Route file: `backend/app/api/v1/reports.py`
-- Schema file: `backend/app/schemas/report.py`
-- Service file: `backend/app/services/report_service.py`
-- Agent files: `backend/app/agents/report_agent.py`, `backend/app/agents/safety_agent.py`
+- 路由文件：`backend/app/api/v1/reports.py`
+- 结构定义文件：`backend/app/schemas/report.py`
+- 服务文件：`backend/app/services/report_service.py`
+- 智能体文件：`backend/app/agents/report_agent.py`、`backend/app/agents/safety_agent.py`
 
-## Forbidden
+## 禁止事项
 
-- Do not add `AuditStatus`, `BehaviorType`, or audit `targetType` values.
-- Do not bypass safety or audit before generated report/resource availability.
+- 不新增 `AuditStatus`、`BehaviorType` 或 audit `targetType` 值。
+- 生成报告/资源可用前不得绕过 safety 或 audit。

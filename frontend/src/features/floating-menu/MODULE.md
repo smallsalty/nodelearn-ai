@@ -1,7 +1,7 @@
-# Frontend Floating Menu Boundary
+# 前端浮窗边界
 
-- Read `docs/modules/note-floating.md`.
-- Use `src/types/note.ts`.
-- Use `src/api/modules/note.ts`.
-- Only use `FloatingMenuState.activeTab` values from the contract.
-- Do not add floating menu tabs without a contract update.
+- 阅读 `docs/modules/note-floating.md`。
+- 使用 `src/types/note.ts`。
+- 使用 `src/api/modules/note.ts`。
+- 只使用契约中的 `FloatingMenuState.activeTab` 值。
+- 未更新契约前，不新增浮窗标签页。

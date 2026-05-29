@@ -1,16 +1,16 @@
 # NodeLearn AI
 
-Multi-Agent Personalized Learning System scaffold generated from `docs/interface-contract.md`.
+基于 `docs/interface-contract.md` 生成的多智能体个性化学习系统骨架。
 
-This repository is currently an architecture and contract skeleton. The focus is stable folders, API names, types, schemas, mock route stubs, Docker placeholders, and context documents for later module work.
+当前仓库处于架构和接口契约骨架阶段，重点是稳定目录结构、接口名称、类型、schema、mock 路由占位、Docker 占位和后续模块开发所需的上下文文档。
 
-## Stack
+## 技术栈
 
-- Frontend: Vue 3, TypeScript, Vite, Element Plus
-- Backend: FastAPI, Python, Pydantic
-- Reserved infrastructure: PostgreSQL/MySQL, Redis, Chroma/FAISS, Neo4j, unified LLM service
+- 前端：Vue 3、TypeScript、Vite、Element Plus
+- 后端：FastAPI、Python、Pydantic
+- 预留基础设施：PostgreSQL/MySQL、Redis、Chroma/FAISS、Neo4j、统一 LLM Service
 
-## Start Frontend
+## 启动前端
 
 ```bash
 cd frontend
@@ -18,7 +18,7 @@ npm install
 npm run dev
 ```
 
-## Start Backend
+## 启动后端
 
 ```bash
 cd backend
@@ -28,9 +28,24 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-## Contract Rules
+## 真实数据库与 DeepSeek
 
-Read `docs/context-index.md` before development. For module work, also read the matching `docs/modules/*.md` file. Do not add undefined routes, enum values, variables, or fields. If a required definition is absent from the contract, output:
+1. 复制 `backend/.env.example` 为 `backend/.env`，填写 `LLM_API_KEY`。
+2. 本地后端连接 Docker PostgreSQL 时，保持 `DATABASE_URL=postgresql+psycopg://nodelearn:nodelearn@localhost:5432/nodelearn`。
+3. 初始化并导入本地 Hello Algo：
+
+```bash
+docker compose -f docker/docker-compose.yml up -d postgres
+cd backend
+python -m app.importers.hello_algo --init-db --skip-git
+uvicorn app.main:app --reload
+```
+
+`ENABLE_MOCK=false` 使用真实数据库和 DeepSeek；`ENABLE_MOCK=true` 回到模拟模式。
+
+## 契约规则
+
+开发前先阅读 `docs/context-index.md`。涉及模块开发时，还必须阅读对应的 `docs/modules/*.md`。不得新增契约未定义的路由、枚举值、变量或字段。如果契约缺少必要定义，输出：
 
 ```text
 CONTRACT_MISSING: 缺少 xxx 定义
