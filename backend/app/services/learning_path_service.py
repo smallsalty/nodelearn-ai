@@ -27,7 +27,10 @@ class LearningPathService:
 
     def generate_learning_path(self, payload: LearningPathGenerateRequest, profile: StudentProfile | None = None) -> LearningPathPlan:
         profile = profile or self.profile_repository.get_by_user_id(payload.user_id)
-        weak_node_ids = self._unique(payload.weak_node_ids or profile.weak_node_ids)
+        weak_node_ids = self.repository.normalize_node_ids(
+            self._unique(payload.weak_node_ids or profile.weak_node_ids),
+            payload.course_id,
+        )
         target_goal = payload.target_goal or profile.learning_goal or "完成数据结构学习"
         time_budget = payload.time_budget or profile.available_study_time or ""
         nodes = {node.id: node for node in self.repository.list_nodes(payload.course_id)}

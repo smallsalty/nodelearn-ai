@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Any
 
 from app.schemas.common import CognitiveStyle, DifficultyLevel, PracticePreference, ResourceType
@@ -47,7 +48,7 @@ class ProfileRepository:
     def get_by_user_id(self, user_id: str) -> StudentProfile:
         profile = self._profiles.get(user_id)
         if profile is None:
-            profile = demo_student_profile().model_copy(update={"user_id": user_id})
+            profile = self._empty_profile(user_id)
             self._profiles[user_id] = profile
         return profile.model_copy(deep=True)
 
@@ -56,10 +57,29 @@ class ProfileRepository:
         payload = profile.model_dump(by_alias=True)
         payload.update(updates)
         payload["userId"] = user_id
-        payload["updatedAt"] = DEMO_TIME
+        payload["updatedAt"] = self._now()
         updated = StudentProfile(**payload)
         self._profiles[user_id] = updated
         return updated.model_copy(deep=True)
+
+    def _empty_profile(self, user_id: str) -> StudentProfile:
+        now = self._now()
+        return StudentProfile(
+            id=f"profile_{user_id}",
+            user_id=user_id,
+            weak_node_ids=[],
+            cognitive_style=CognitiveStyle.mixed,
+            practice_preference=PracticePreference.mixed,
+            resource_preference=[ResourceType.lecture_doc],
+            common_mistakes=[],
+            confidence_score=0.1,
+            last_updated_by="manual",
+            created_at=now,
+            updated_at=now,
+        )
+
+    def _now(self) -> str:
+        return datetime.now(UTC).isoformat()
 
     def update_by_behavior(self, payload: ProfileUpdateByBehaviorRequest) -> StudentProfile:
         profile = self.get_by_user_id(payload.user_id)

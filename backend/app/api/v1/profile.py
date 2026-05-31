@@ -23,8 +23,8 @@ def update_profile(payload: dict, user_id: str = Path(alias="userId")):
 
 
 @router.post("/profiles/extract")
-def extract_profile(payload: ProfileExtractRequest):
-    return success_response(profile_service.extract_profile(payload))
+async def extract_profile(payload: ProfileExtractRequest):
+    return success_response(await profile_service.extract_profile(payload))
 
 
 @router.post("/profiles/update-by-behavior")

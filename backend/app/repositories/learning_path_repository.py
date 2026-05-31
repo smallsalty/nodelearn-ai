@@ -16,6 +16,10 @@ DEMO_NODE_NAME_ALIASES = {
     "node_linked_list_001": "链表",
     "node_recursion_001": "递归",
     "node_stack_001": "栈",
+    "node_queue_001": "队列",
+    "node_tree_001": "树",
+    "node_graph_001": "图",
+    "node_sort_001": "排序",
 }
 
 
@@ -175,23 +179,27 @@ class LearningPathRepository:
     def get_node(self, node_id: str) -> KnowledgeNode | None:
         if not settings.enable_mock:
             with session_context() as session:
-                model = session.get(KnowledgeNodeModel, node_id)
-                if model is None and node_id in DEMO_NODE_NAME_ALIASES:
-                    model = session.scalars(
-                        select(KnowledgeNodeModel)
-                        .where(
-                            KnowledgeNodeModel.course_id == DEMO_COURSE_ID,
-                            KnowledgeNodeModel.deleted_at.is_(None),
-                            KnowledgeNodeModel.name.like(f"%{DEMO_NODE_NAME_ALIASES[node_id]}%"),
-                        )
-                        .order_by(KnowledgeNodeModel.created_at.asc())
-                        .limit(1)
-                    ).first()
+                model = self._resolve_model(session, node_id)
                 if model is None or model.deleted_at is not None:
                     return None
                 return self._node_from_model(model)
         node = self._nodes.get(node_id)
+        if node is None:
+            expected_name = DEMO_NODE_NAME_ALIASES.get(node_id, node_id)
+            node = next((item for item in self._nodes.values() if item.name == expected_name), None)
         return node.model_copy(deep=True) if node is not None else None
+
+    def resolve_node_id(self, node_id_or_name: str, course_id: str = DEMO_COURSE_ID) -> str | None:
+        node = self.get_node(node_id_or_name)
+        return node.id if node is not None and node.course_id == course_id else None
+
+    def normalize_node_ids(self, values: list[str], course_id: str = DEMO_COURSE_ID) -> list[str]:
+        normalized: list[str] = []
+        for value in values:
+            node_id = self.resolve_node_id(value, course_id)
+            if node_id is not None and node_id not in normalized:
+                normalized.append(node_id)
+        return normalized
 
     def update_node_mastery(
         self,
@@ -201,18 +209,7 @@ class LearningPathRepository:
     ) -> KnowledgeNode | None:
         if not settings.enable_mock:
             with session_context() as session:
-                model = session.get(KnowledgeNodeModel, node_id)
-                if model is None and node_id in DEMO_NODE_NAME_ALIASES:
-                    model = session.scalars(
-                        select(KnowledgeNodeModel)
-                        .where(
-                            KnowledgeNodeModel.course_id == DEMO_COURSE_ID,
-                            KnowledgeNodeModel.deleted_at.is_(None),
-                            KnowledgeNodeModel.name.like(f"%{DEMO_NODE_NAME_ALIASES[node_id]}%"),
-                        )
-                        .order_by(KnowledgeNodeModel.created_at.asc())
-                        .limit(1)
-                    ).first()
+                model = self._resolve_model(session, node_id)
                 if model is None or model.deleted_at is not None:
                     return None
                 score = min(100, max(0, mastery_score))
@@ -282,6 +279,22 @@ class LearningPathRepository:
                 tasks[index] = updated
                 return updated.model_copy(deep=True)
         return None
+
+    def _resolve_model(self, session, node_id_or_name: str) -> KnowledgeNodeModel | None:
+        model = session.get(KnowledgeNodeModel, node_id_or_name)
+        if model is not None:
+            return model
+        expected_name = DEMO_NODE_NAME_ALIASES.get(node_id_or_name, node_id_or_name)
+        return session.scalars(
+            select(KnowledgeNodeModel)
+            .where(
+                KnowledgeNodeModel.course_id == DEMO_COURSE_ID,
+                KnowledgeNodeModel.deleted_at.is_(None),
+                KnowledgeNodeModel.name.like(f"%{expected_name}%"),
+            )
+            .order_by((KnowledgeNodeModel.name == expected_name).desc(), KnowledgeNodeModel.created_at.asc())
+            .limit(1)
+        ).first()
 
     def _node_from_model(self, model: KnowledgeNodeModel) -> KnowledgeNode:
         mastery = self._mastery_by_node_id.get(model.id)

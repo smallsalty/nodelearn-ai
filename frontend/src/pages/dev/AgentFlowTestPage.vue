@@ -6,6 +6,7 @@ import type { ApiResponse, AgentType, TaskStatus } from "@/types/contracts";
 import type {
   AgentRunRequest,
   AgentRunResult,
+  ChatResult,
   MultiAgentWorkflowRequest,
   MultiAgentWorkflowResult
 } from "@/types/agent";
@@ -68,10 +69,14 @@ const currentTitle = ref("等待测试");
 const currentRequest = ref<Record<string, any> | null>(null);
 const currentResponse = ref<Record<string, any> | null>(null);
 const currentAgentResult = ref<AgentRunResult | null>(null);
+const currentChatResult = ref<ChatResult | null>(null);
 const currentWorkflowResult = ref<MultiAgentWorkflowResult | null>(null);
 const testLogs = ref<TestLog[]>([]);
 const answers = ref<Record<string, string>>({});
 const submittedRecords = ref<Record<string, PracticeRecord>>({});
+const naturalLanguageMessage = ref(
+  "我是计算机专业大二学生，正在复习数据结构。链表指针操作比较薄弱，请结合 Hello 算法材料先解释链表，再生成一份图解讲义。"
+);
 
 const mockEnabled = computed(() => import.meta.env.VITE_ENABLE_MOCK === "true");
 const practiceQuestions = computed<PracticeQuestion[]>(() => {
@@ -142,7 +147,8 @@ function buildAgentRequest(agentType: AgentType): AgentRunRequest {
     return {
       ...base,
       input: {
-        mode: "analyze_profile"
+        mode: "analyze_profile",
+        message: naturalLanguageMessage.value
       }
     };
   }
@@ -205,10 +211,12 @@ function buildWorkflowRequest(): MultiAgentWorkflowRequest {
     workflowType: "resource_generate",
     input: {
       profile: demoProfile,
+      message: naturalLanguageMessage.value,
       targetGoal: "准备数据结构期末考试",
       timeBudget: "每天30分钟",
       weakNodeIds: ["node_linked_list_001", "node_recursion_001"],
-      resourceTypes: ["lecture_doc", "mind_map", "practice_question", "code_case"]
+      resourceTypes: ["lecture_doc", "mind_map", "practice_question", "code_case"],
+      multimodalResourceTypes: ["mind_map"]
     }
   };
 }
@@ -221,6 +229,7 @@ async function runSingleAgent(agentType: AgentType) {
   currentRequest.value = request;
   currentResponse.value = null;
   currentAgentResult.value = null;
+  currentChatResult.value = null;
   currentWorkflowResult.value = null;
 
   try {
@@ -260,6 +269,7 @@ async function runWorkflow() {
   currentRequest.value = request;
   currentResponse.value = null;
   currentAgentResult.value = null;
+  currentChatResult.value = null;
   currentWorkflowResult.value = null;
 
   try {
@@ -278,6 +288,51 @@ async function runWorkflow() {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "接口调用失败";
+    callStatus.value = "failed";
+    errorMessage.value = message;
+    addLog({
+      title: currentTitle.value,
+      status: "failed",
+      request,
+      errorMessage: message
+    });
+  }
+}
+
+async function runRagChat() {
+  const request = {
+    userId: testConfig.userId,
+    courseId: testConfig.courseId,
+    nodeId: testConfig.nodeId,
+    message: naturalLanguageMessage.value,
+    useRag: true,
+    useProfile: true
+  };
+  callStatus.value = "loading";
+  errorMessage.value = "";
+  currentTitle.value = "真实 RAG 问答";
+  currentRequest.value = request;
+  currentResponse.value = null;
+  currentAgentResult.value = null;
+  currentChatResult.value = null;
+  currentWorkflowResult.value = null;
+
+  try {
+    const response = await agentApi.sendChat(request);
+    const validationError = validateApiResponse(response);
+    currentResponse.value = response as unknown as Record<string, any>;
+    currentChatResult.value = response.data;
+    callStatus.value = validationError ? "failed" : "success";
+    errorMessage.value = validationError ?? "";
+    addLog({
+      title: currentTitle.value,
+      status: validationError ? "failed" : "success",
+      request,
+      response: response as unknown as Record<string, any>,
+      errorMessage: validationError ?? undefined
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "RAG 问答失败";
     callStatus.value = "failed";
     errorMessage.value = message;
     addLog({
@@ -364,6 +419,16 @@ function isMindmap(content: string) {
         </el-card>
 
         <el-card shadow="never">
+          <template #header>自然语言入口</template>
+          <el-input v-model="naturalLanguageMessage" type="textarea" :rows="6" />
+          <div class="action-row">
+            <el-button type="primary" :loading="callStatus === 'loading'" @click="runRagChat">
+              真实 RAG 问答
+            </el-button>
+          </div>
+        </el-card>
+
+        <el-card shadow="never">
           <template #header>单智能体测试区</template>
           <div class="button-grid">
             <el-button
@@ -381,7 +446,7 @@ function isMindmap(content: string) {
         <el-card shadow="never">
           <template #header>多智能体工作流测试区</template>
           <el-button type="success" :loading="callStatus === 'loading'" @click="runWorkflow">
-            一键测试完整链路
+            自然语言完整工作流
           </el-button>
         </el-card>
       </aside>
@@ -526,6 +591,16 @@ function isMindmap(content: string) {
             </el-card>
           </section>
 
+          <section v-if="currentChatResult" class="summary-section">
+            <h3>真实 RAG 问答结果</h3>
+            <el-card shadow="never">
+              <template #header>回答</template>
+              <p>{{ currentChatResult.answer }}</p>
+              <h4>retrievedDocuments</h4>
+              <pre class="json-block compact">{{ formatJson(currentChatResult.retrievedDocuments) }}</pre>
+            </el-card>
+          </section>
+
           <section v-if="currentWorkflowResult" class="summary-section">
             <h3>工作流步骤卡片</h3>
             <el-descriptions :column="1" border size="small">
@@ -628,6 +703,10 @@ function isMindmap(content: string) {
 .button-grid {
   display: grid;
   gap: 10px;
+}
+
+.action-row {
+  margin-top: 12px;
 }
 
 .card-header {

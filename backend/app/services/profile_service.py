@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.agents.profile_agent import ProfileAgent
+from app.repositories.profile_repository import ProfileRepository, default_profile_repository
 from app.schemas.common import CognitiveStyle, DifficultyLevel, PracticePreference, ResourceType
 from app.schemas.profile import (
     ProfileExtractRequest,
@@ -70,14 +71,16 @@ CAMEL_TO_SNAKE = {value: key for key, value in SNAKE_TO_CAMEL.items()}
 class ProfileService:
     """Profile orchestration with mock persistence and agent boundaries."""
 
-    def __init__(self, profile_agent: ProfileAgent | None = None) -> None:
-        self.profile_agent = profile_agent or ProfileAgent()
-        self._profiles: dict[str, StudentProfile] = {}
+    def __init__(
+        self,
+        repository: ProfileRepository | None = None,
+        profile_agent: ProfileAgent | None = None,
+    ) -> None:
+        self.repository = repository or default_profile_repository
+        self.profile_agent = profile_agent or ProfileAgent(repository=self.repository)
 
     def get_profile(self, user_id: str) -> StudentProfile:
-        if user_id not in self._profiles:
-            self._profiles[user_id] = self._create_default_profile(user_id)
-        return self._profiles[user_id]
+        return self.repository.get_by_user_id(user_id)
 
     def update_profile(self, user_id: str, payload: dict[str, Any], updated_by: str = "manual") -> StudentProfile:
         profile_data = self._to_camel_dict(self.get_profile(user_id))
@@ -90,11 +93,10 @@ class ProfileService:
         profile_data["profileSummary"] = self._build_profile_summary(profile_data)
         profile_data["confidenceScore"] = self._calculate_confidence(profile_data)
         profile = StudentProfile.model_validate(self._to_snake_dict(profile_data))
-        self._profiles[user_id] = profile
-        return profile
+        return self.repository.update_profile(user_id, profile.model_dump(by_alias=True))
 
-    def extract_profile(self, payload: ProfileExtractRequest) -> ProfileExtractResult:
-        extracted_fields = self.profile_agent.extract_fields(payload.message, payload.history_messages)
+    async def extract_profile(self, payload: ProfileExtractRequest) -> ProfileExtractResult:
+        extracted_fields = await self.profile_agent.extract_fields(payload.message, payload.history_messages)
         profile_data = self._to_camel_dict(self.get_profile(payload.user_id))
         merged = {**profile_data, **extracted_fields}
         merged["lastUpdatedBy"] = "dialogue"
@@ -103,6 +105,7 @@ class ProfileService:
         missing_fields = self._missing_fields(merged)
         follow_up_questions = self._build_follow_up_questions(missing_fields)
         extracted_fields["profileSummary"] = merged["profileSummary"]
+        self.repository.update_profile(payload.user_id, merged)
         return ProfileExtractResult(
             extracted_fields=extracted_fields,
             missing_fields=missing_fields,

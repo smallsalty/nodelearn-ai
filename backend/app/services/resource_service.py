@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+import re
+
 from sqlalchemy import func, or_, select
 
 from app.core.config import settings
@@ -32,6 +34,8 @@ from app.schemas.resource import (
 )
 from app.services.audit_service import AuditService
 from app.services.llm_service import LLMService
+
+SOURCE_USER_ID = "system"
 
 
 def now_utc() -> datetime:
@@ -203,7 +207,14 @@ class ResourceService:
         for order_index, resource_type in enumerate(resource_types, start=1):
             resource_id = self.repository.next_resource_id(resource_type.value)
             title = self._resource_title(node, resource_type)
-            prompt = self._resource_prompt(profile, node, resource_type, target_goal, payload.custom_requirement)
+            prompt = self._resource_prompt(
+                profile,
+                node,
+                resource_type,
+                target_goal,
+                payload.custom_requirement,
+                retrieved_documents,
+            )
             template_content = self._render_template(
                 resource_type,
                 node,
@@ -310,14 +321,26 @@ class ResourceService:
 
     def search_knowledge_base(self, course_id: str, query_text: str, node_id: str | None = None, top_k: int | None = None) -> list[RetrievedDocument]:
         limit = top_k or 5
+        resolved_node_id = self.learning_path_repository.resolve_node_id(node_id, course_id) if node_id else None
         with session_context() as session:
-            query = select(GeneratedResourceModel).where(GeneratedResourceModel.course_id == course_id)
-            if node_id:
-                query = query.where(GeneratedResourceModel.node_id == node_id)
-            if query_text:
-                pattern = f"%{query_text}%"
-                query = query.where(or_(GeneratedResourceModel.title.like(pattern), GeneratedResourceModel.content.like(pattern)))
-            models = session.scalars(query.order_by(GeneratedResourceModel.created_at.desc()).limit(limit)).all()
+            base_query = select(GeneratedResourceModel).where(
+                GeneratedResourceModel.course_id == course_id,
+                GeneratedResourceModel.user_id == SOURCE_USER_ID,
+            )
+            terms = self._search_terms(query_text)
+            models = []
+            if terms:
+                filters = []
+                for term in terms:
+                    pattern = f"%{term}%"
+                    filters.extend([GeneratedResourceModel.title.like(pattern), GeneratedResourceModel.content.like(pattern)])
+                models = session.scalars(base_query.where(or_(*filters)).order_by(GeneratedResourceModel.created_at.desc()).limit(limit)).all()
+            if not models and resolved_node_id:
+                models = session.scalars(
+                    base_query.where(GeneratedResourceModel.node_id == resolved_node_id).order_by(GeneratedResourceModel.created_at.desc()).limit(limit)
+                ).all()
+            if not models:
+                models = session.scalars(base_query.order_by(GeneratedResourceModel.created_at.desc()).limit(limit)).all()
             return [
                 RetrievedDocument(
                     id=model.id,
@@ -329,6 +352,10 @@ class ResourceService:
                 )
                 for model in models
             ]
+
+    def _search_terms(self, query_text: str) -> list[str]:
+        terms = [item for item in re.split(r"[\s，。；、,;：:！？!?]+", query_text.strip()) if len(item) >= 2]
+        return list(dict.fromkeys(terms))[:5]
 
     def _resolve_node(
         self,
@@ -391,7 +418,7 @@ class ResourceService:
 
         mastery_score = node.mastery_score if node else None
         if mastery_score is not None and mastery_score < 60:
-            selected.extend([ResourceType.lecture_doc, ResourceType.mind_map, ResourceType.practice_question])
+            selected.extend([ResourceType.lecture_doc, ResourceType.mind_map, ResourceType.practice_question, ResourceType.code_case])
         if mastery_score is not None and mastery_score > 80:
             selected.extend([ResourceType.reading_material, ResourceType.project_task, ResourceType.code_case])
 
@@ -448,12 +475,15 @@ class ResourceService:
         resource_type: ResourceType,
         target_goal: str,
         custom_requirement: str | None,
+        retrieved_documents: list[RetrievedDocument] | None,
     ) -> str:
         node_name = node.name if node else "当前知识点"
         requirement = custom_requirement or "无"
+        source_section = self._retrieved_document_section(retrieved_documents)
         return (
             f"为用户 {profile.user_id} 生成 {resource_type.value}。"
             f"知识点：{node_name}。学习目标：{target_goal}。额外要求：{requirement}。"
+            f"{source_section}"
         )
 
     def _render_template(

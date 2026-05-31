@@ -1,7 +1,9 @@
 from fastapi import APIRouter
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.response import success_response
+from app.db.session import engine
 from app.schemas.common import HealthCheckResult, SystemConfig, VersionResult
 
 router = APIRouter()
@@ -9,7 +11,7 @@ router = APIRouter()
 
 @router.get("/system/health")
 def health_check():
-    database_status = "ok" if settings.database_url or settings.enable_mock else "error"
+    database_status = _database_status()
     llm_status = "ok" if settings.enable_mock or (settings.llm_api_key and settings.llm_base_url) else "error"
     status = "ok" if database_status == "ok" and llm_status == "ok" else "error"
     result = HealthCheckResult(
@@ -21,6 +23,19 @@ def health_check():
         llm_service=llm_status,
     )
     return success_response(result)
+
+
+def _database_status() -> str:
+    if settings.enable_mock:
+        return "ok"
+    if engine is None:
+        return "error"
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return "ok"
+    except Exception:
+        return "error"
 
 
 @router.get("/system/config")

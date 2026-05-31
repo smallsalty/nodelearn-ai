@@ -1,14 +1,14 @@
 # NodeLearn AI
 
-基于 `docs/interface-contract.md` 生成的多智能体个性化学习系统骨架。
+基于 `docs/interface-contract.md` 实现的多智能体个性化学习系统。
 
-当前仓库处于架构和接口契约骨架阶段，重点是稳定目录结构、接口名称、类型、schema、mock 路由占位、Docker 占位和后续模块开发所需的上下文文档。
+当前演示链路支持 DeepSeek `deepseek-v4-pro`、PostgreSQL Hello Algo 来源材料、本地文本 RAG、对话式画像抽取、学习路径规划、资源生成、多模态生成、安全审计和生成资源持久化。向量库、图数据库和 Redis 仍为预留能力。
 
 ## 技术栈
 
 - 前端：Vue 3、TypeScript、Vite、Element Plus
 - 后端：FastAPI、Python、Pydantic
-- 预留基础设施：PostgreSQL/MySQL、Redis、Chroma/FAISS、Neo4j、统一 LLM Service
+- 基础设施：PostgreSQL 16、统一 LLM Service；预留 Redis、Chroma/FAISS 和 Neo4j
 
 ## 启动前端
 
@@ -42,6 +42,25 @@ uvicorn app.main:app --reload
 ```
 
 `ENABLE_MOCK=false` 使用真实数据库和 DeepSeek；`ENABLE_MOCK=true` 回到模拟模式。
+
+Docker Compose 中后端容器会自动使用主机名 `postgres` 连接数据库；宿主机直接启动 FastAPI 时继续使用 `localhost`。
+
+显式执行真实 DeepSeek 烟测：
+
+```bash
+cd backend
+python -m app.smoke.real_agent_flow
+```
+
+该命令会产生少量 DeepSeek API 费用，并验证模型列表、Hello Algo 导入数量、画像抽取、RAG 问答、逐智能体调用、自然语言完整工作流和 PostgreSQL 持久化。普通测试强制使用 mock，不会产生 API 费用：
+
+```bash
+python -m pytest backend/app/tests -q
+cd frontend
+npm run build
+```
+
+开发环境前端可访问 `/dev/agent-flow-test`，通过自然语言输入触发真实 RAG 问答和 `resource_generate` 完整工作流。
 
 ## 契约规则
 
