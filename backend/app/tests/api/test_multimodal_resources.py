@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 
@@ -64,9 +65,12 @@ def test_node_generated_resources_include_multimodal_resource():
 
     resource = next(item for item in node_resources if item["id"] == generated["resourceIds"][0])
 
+    assert generated["status"] == "failed"
     assert resource["resourceType"] == "video_script"
-    assert "# 视频标题" in resource["content"]
-    assert "## 分镜脚本" in resource["content"]
+    assert json.loads(resource["content"])["scenes"] == []
+    assert resource["fileUrl"] is None
+    assert resource["status"] == "failed"
+    assert resource["auditStatus"] == "unchecked"
 
 
 def test_audit_check_marks_abnormal_multimodal_content_need_review():

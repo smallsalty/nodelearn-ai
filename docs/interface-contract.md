@@ -1244,6 +1244,63 @@ interface GeneratedResource {
 }
 ```
 
+### 11.1.1 知识点讲解视频结构化内容
+
+当 `resourceType` 为 `video_script` 或 `animation_script` 时，`GeneratedResource.content` 保存以下结构的 JSON 字符串。两类资源共享同一个最终 MP4 地址；`GeneratedResource.fileUrl` 与 `AnimationScriptContent.output.videoUrl` 均指向该文件。
+
+```ts
+type VideoVisualType = "stack_animation" | "text_slide";
+type StackOperationType = "push" | "pop";
+
+interface StackOperation {
+  type: StackOperationType;
+  value?: number;
+}
+
+interface StackAnimationVisualData {
+  items: number[];
+  operations: StackOperation[];
+}
+
+interface TextSlideVisualData {
+  bullets: string[];
+}
+
+interface VideoLessonScene {
+  sceneId: string;
+  title: string;
+  narration: string;
+  visualType: VideoVisualType;
+  visualData: Record<string, any>;
+  codeSnippet: string;
+  durationSeconds: number;
+  audioUrl: string;
+}
+
+interface VideoLessonOutput {
+  videoUrl: string;
+  audioUrls: string[];
+}
+
+interface AnimationScriptContent {
+  title: string;
+  durationSeconds: number;
+  aspectRatio: "16:9";
+  scenes: VideoLessonScene[];
+  output: VideoLessonOutput;
+}
+```
+
+约束：
+
+```text
+1. 栈知识点优先使用 stack_animation，visualData 使用 StackAnimationVisualData。
+2. 其他知识点使用 text_slide，visualData 使用 TextSlideVisualData。
+3. 每个 scene.audioUrl 必须指向真实 TTS 音频文件，不允许使用占位音频。
+4. output.videoUrl 必须指向真实 MP4 文件，不允许使用占位视频。
+5. 视频输出前必须调用 POST /api/v1/audit/check；只有 auditStatus=passed 时才能设置 status=success。
+```
+
 数据库表：
 
 ```sql
@@ -2275,10 +2332,32 @@ NEO4J_PASSWORD=
 
 FILE_STORAGE_TYPE=local
 FILE_STORAGE_PATH=./storage
+FILE_STORAGE_URL_PREFIX=/storage
+FILE_STORAGE_PUBLIC_BASE_URL=http://localhost:8000/storage
 MINIO_ENDPOINT=
 MINIO_ACCESS_KEY=
 MINIO_SECRET_KEY=
 MINIO_BUCKET=
+
+TTS_PROVIDER=doubao_v3_http_chunked
+TTS_BASE_URL=https://openspeech.bytedance.com/api/v3/tts/unidirectional
+TTS_API_KEY=
+TTS_RESOURCE_ID=seed-tts-2.0
+TTS_VOICE_NAME=
+TTS_AUDIO_FORMAT=mp3
+TTS_SAMPLE_RATE=24000
+TTS_TIMEOUT_SECONDS=120
+
+VIDEO_RENDER_PROVIDER=remotion
+VIDEO_RENDER_PROJECT_PATH=../video-renderer
+VIDEO_RENDER_BROWSER_EXECUTABLE=
+VIDEO_RENDER_TIMEOUT_SECONDS=600
+FFMPEG_BINARY=ffmpeg
+FFPROBE_BINARY=ffprobe
+
+AUDIT_API_BASE_URL=http://127.0.0.1:8000/api/v1
+AUDIT_TIMEOUT_SECONDS=30
+RUN_REAL_VIDEO_TESTS=false
 
 ENABLE_SAFETY_AUDIT=true
 ENABLE_STREAM_OUTPUT=true

@@ -34,10 +34,32 @@ class Settings(BaseSettings):
 
     file_storage_type: str = "local"
     file_storage_path: str = "./storage"
+    file_storage_url_prefix: str = "/storage"
+    file_storage_public_base_url: str = "http://localhost:8000/storage"
     minio_endpoint: str = ""
     minio_access_key: str = ""
     minio_secret_key: str = ""
     minio_bucket: str = ""
+
+    tts_provider: str = "doubao_v3_http_chunked"
+    tts_base_url: str = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
+    tts_api_key: str = ""
+    tts_resource_id: str = "seed-tts-2.0"
+    tts_voice_name: str = ""
+    tts_audio_format: str = "mp3"
+    tts_sample_rate: int = 24000
+    tts_timeout_seconds: int = 120
+
+    video_render_provider: str = "remotion"
+    video_render_project_path: str = "../video-renderer"
+    video_render_browser_executable: str = ""
+    video_render_timeout_seconds: int = 600
+    ffmpeg_binary: str = "ffmpeg"
+    ffprobe_binary: str = "ffprobe"
+
+    audit_api_base_url: str = "http://127.0.0.1:8000/api/v1"
+    audit_timeout_seconds: int = 30
+    run_real_video_tests: bool = False
 
     enable_safety_audit: bool = True
     enable_stream_output: bool = True

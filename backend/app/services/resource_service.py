@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import json
+import logging
 from typing import Any
 
 import re
@@ -32,10 +34,14 @@ from app.schemas.resource import (
     RetrievedDocument,
     UploadedFile,
 )
+from app.schemas.video import AnimationScriptContent
+from app.agents.multimodal_skills import VideoAuditError, VideoGenerationService
 from app.services.audit_service import AuditService
 from app.services.llm_service import LLMService
 
 SOURCE_USER_ID = "system"
+VIDEO_RESOURCE_TYPES = {ResourceType.video_script, ResourceType.animation_script}
+logger = logging.getLogger(__name__)
 
 
 def now_utc() -> datetime:
@@ -102,6 +108,7 @@ class ResourceGenerationPlan:
     recommendations: list[ResourceRecommendation]
     push_records: list[ResourcePushRecord]
     resource_plan: list[dict[str, Any]]
+    error_message: str | None = None
 
 
 class ResourceService:
@@ -114,12 +121,14 @@ class ResourceService:
         learning_path_repository: LearningPathRepository | None = None,
         llm_service: LLMService | None = None,
         audit_service: AuditService | None = None,
+        video_generation_service: VideoGenerationService | None = None,
     ) -> None:
         self.repository = repository or default_resource_repository
         self.profile_repository = profile_repository or default_profile_repository
         self.learning_path_repository = learning_path_repository or default_learning_path_repository
         self.llm_service = llm_service or LLMService()
         self.audit_service = audit_service or AuditService()
+        self.video_generation_service = video_generation_service or VideoGenerationService(self.llm_service)
 
     def get_file(self, file_id: str) -> UploadedFile | None:
         with session_context() as session:
@@ -197,12 +206,34 @@ class ResourceService:
         node = self._resolve_node(payload.node_id, profile, learning_path, learning_tasks)
         target_goal = self._target_goal(payload, profile, profile_analysis)
         resource_types = self._select_resource_types(payload.resource_types, profile, profile_analysis, node, target_goal)
+        video_requested = any(resource_type in VIDEO_RESOURCE_TYPES for resource_type in payload.resource_types)
+        resource_types = [resource_type for resource_type in resource_types if resource_type not in VIDEO_RESOURCE_TYPES]
 
         task_id = self.repository.next_task_id()
         resources: list[GeneratedResource] = []
         recommendations: list[ResourceRecommendation] = []
         push_records: list[ResourcePushRecord] = []
         resource_plan: list[dict[str, Any]] = []
+        error_message: str | None = None
+
+        if video_requested:
+            video_resources, video_error = await self._generate_video_resources(
+                task_id=task_id,
+                payload=payload,
+                profile=profile,
+                node=node,
+                target_goal=target_goal,
+                retrieved_documents=retrieved_documents,
+            )
+            resources.extend(video_resources)
+            error_message = video_error
+            for resource in video_resources:
+                resource_plan.append(self._resource_plan_item(len(resource_plan) + 1, resource))
+                if resource.status == TaskStatus.success and resource.audit_status == AuditStatus.passed:
+                    recommendation = self._build_recommendation(resource, profile, node)
+                    push_record = self._build_push_record(resource, recommendation.reason)
+                    recommendations.append(self.repository.save_recommendation(recommendation))
+                    push_records.append(self.repository.save_push_record(push_record))
 
         for order_index, resource_type in enumerate(resource_types, start=1):
             resource_id = self.repository.next_resource_id(resource_type.value)
@@ -253,16 +284,7 @@ class ResourceService:
             if not settings.enable_mock:
                 self._persist_generated_resource(resource)
             resources.append(self.repository.save_resource(resource))
-            resource_plan.append(
-                {
-                    "orderIndex": order_index,
-                    "nodeId": resource.node_id,
-                    "resourceType": resource_type.value,
-                    "title": title,
-                    "auditStatus": audit_status.value,
-                    "status": status.value,
-                }
-            )
+            resource_plan.append(self._resource_plan_item(len(resource_plan) + 1, resource))
 
             if audit_status == AuditStatus.passed:
                 recommendation = self._build_recommendation(resource, profile, node)
@@ -270,7 +292,7 @@ class ResourceService:
                 recommendations.append(self.repository.save_recommendation(recommendation))
                 push_records.append(self.repository.save_push_record(push_record))
 
-        result_status = TaskStatus.success if recommendations else TaskStatus.failed
+        result_status = TaskStatus.success if resources and all(resource.status == TaskStatus.success for resource in resources) else TaskStatus.failed
         result = self.repository.save_generation_result(
             ResourceGenerateResult(
                 task_id=task_id,
@@ -284,7 +306,122 @@ class ResourceService:
             recommendations=recommendations,
             push_records=push_records,
             resource_plan=resource_plan,
+            error_message=error_message,
         )
+
+    async def _generate_video_resources(
+        self,
+        task_id: str,
+        payload: ResourceGenerateRequest,
+        profile: StudentProfile,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        retrieved_documents: list[RetrievedDocument] | None,
+    ) -> tuple[list[GeneratedResource], str | None]:
+        node_name = node.name if node else "当前知识点"
+        placeholder = AnimationScriptContent(title=f"{node_name}图解讲解", duration_seconds=0)
+        placeholder_content = json.dumps(placeholder.model_dump(by_alias=True), ensure_ascii=False)
+        resources = [
+            GeneratedResource(
+                id=self.repository.next_resource_id(resource_type.value),
+                user_id=payload.user_id,
+                course_id=payload.course_id,
+                node_id=node.id if node else payload.node_id,
+                title=self._resource_title(node, resource_type),
+                resource_type=resource_type,
+                content=placeholder_content,
+                file_url=None,
+                prompt=f"生成{node_name}知识点讲解视频",
+                model_name=self.llm_service.model_name,
+                status=TaskStatus.running,
+                audit_status=AuditStatus.unchecked,
+                created_at=DEMO_TIME,
+                updated_at=DEMO_TIME,
+            )
+            for resource_type in (ResourceType.video_script, ResourceType.animation_script)
+        ]
+        for resource in resources:
+            self._save_generated_resource(resource)
+
+        try:
+            documents = retrieved_documents or []
+            if not documents and not settings.enable_mock:
+                documents = self.search_knowledge_base(
+                    course_id=payload.course_id,
+                    query_text=node_name,
+                    node_id=node.id if node else payload.node_id,
+                    top_k=3,
+                )
+            lesson = await self.video_generation_service.generate(
+                task_id=task_id,
+                target_id=resources[0].id,
+                user_id=payload.user_id,
+                course_id=payload.course_id,
+                node=node,
+                target_goal=target_goal,
+                documents=documents,
+            )
+            content = json.dumps(lesson.model_dump(by_alias=True), ensure_ascii=False)
+            resources = [
+                resource.model_copy(
+                    update={
+                        "content": content,
+                        "file_url": lesson.output.video_url,
+                        "status": TaskStatus.success,
+                        "audit_status": AuditStatus.passed,
+                        "updated_at": as_iso(None),
+                    }
+                )
+                for resource in resources
+            ]
+            for resource in resources:
+                self._save_generated_resource(resource)
+            return resources, None
+        except Exception as exc:
+            audit_status = exc.audit_status if isinstance(exc, VideoAuditError) else AuditStatus.unchecked
+            message = str(exc)
+            logger.error(
+                json.dumps(
+                    {
+                        "event": "video_generation_failed",
+                        "taskId": task_id,
+                        "userId": payload.user_id,
+                        "courseId": payload.course_id,
+                        "nodeId": node.id if node else payload.node_id,
+                        "errorMessage": message,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            resources = [
+                resource.model_copy(
+                    update={
+                        "file_url": None,
+                        "status": TaskStatus.failed,
+                        "audit_status": audit_status,
+                        "updated_at": as_iso(None),
+                    }
+                )
+                for resource in resources
+            ]
+            for resource in resources:
+                self._save_generated_resource(resource)
+            return resources, message
+
+    def _save_generated_resource(self, resource: GeneratedResource) -> GeneratedResource:
+        if not settings.enable_mock:
+            self._persist_generated_resource(resource)
+        return self.repository.save_resource(resource)
+
+    def _resource_plan_item(self, order_index: int, resource: GeneratedResource) -> dict[str, Any]:
+        return {
+            "orderIndex": order_index,
+            "nodeId": resource.node_id,
+            "resourceType": ResourceType(resource.resource_type).value,
+            "title": resource.title,
+            "auditStatus": AuditStatus(resource.audit_status).value,
+            "status": TaskStatus(resource.status).value,
+        }
 
     async def recommend_resources(self, payload: RecommendationRequest) -> list[ResourceRecommendation]:
         existing = self.repository.list_recommendations(

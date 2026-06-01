@@ -8,3 +8,5 @@ dist/
 .env
 data_sources/
 backend/data_sources/
+storage/
+backend/storage/

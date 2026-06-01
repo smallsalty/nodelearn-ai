@@ -56,7 +56,7 @@ def test_resource_generate_workflow_runs_resource_multimodal_and_safety_steps():
                 user_id="user_workflow_resource_001",
                 input_payload={
                     "resourceTypes": ["lecture_doc", "mind_map", "practice_question", "code_case"],
-                    "multimodalResourceTypes": ["mind_map", "animation_script"],
+                    "multimodalResourceTypes": ["mind_map"],
                 },
             )
         )

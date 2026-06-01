@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-06-01
+最后更新：2026-06-02
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -70,6 +70,10 @@
 - 2026-06-01 启动 PostgreSQL 并幂等导入 Hello Algo，回查为 `20` 个章节、`105` 个节点、`85` 条关系和 `459` 个 `system` 来源资源。
 - 2026-06-01 运行 `python -m pytest backend/app/tests -q`，结果为 `70 passed`；运行 `npm run build`，结果为通过。
 - 2026-06-01 显式运行付费烟测 `python -m app.smoke.real_agent_flow`，确认 `/models` 包含 `deepseek-v4-pro`，真实 RAG 返回 3 条材料，逐智能体和 5 步完整工作流均成功，生成资源已持久化且 `modelName=deepseek-v4-pro`、`auditStatus=passed`。
+- 2026-06-02 补齐知识点讲解视频契约，登记 `AnimationScriptContent`、`VideoLessonScene`、`stack_animation`、`text_slide` 和豆包 TTS、Remotion、文件存储、内部审计环境变量。
+- 2026-06-02 完成真实知识点讲解视频同步链路：显式请求 `video_script` 或 `animation_script` 时，执行 RAG、DeepSeek 脚本和分镜、豆包 V3 HTTP Chunked TTS、真实 MP3 校验、Remotion H.264/AAC MP4、`/api/v1/audit/check` 和 `generated_resource` 更新；失败时不发布假 `fileUrl`。
+- 2026-06-02 新增 `VideoLessonPlayer` 和资源页演示闭环，支持分镜标题、字幕、代码高亮、音频、上一步、下一步、自动播放、进度条、栈动画、通用文本动态舞台和 MP4 播放入口。
+- 2026-06-02 新增视频失败测试、契约测试和显式付费真实流程测试；运行 `python -m pytest backend/app/tests -q`，结果为 `77 passed, 1 skipped`；运行前端 `npm run build` 和 `video-renderer` 的 `npx tsc --noEmit`，结果均为通过。
 
 ### 进行中
 
@@ -86,7 +90,7 @@
 - 超出规则/mock 行为的练习生成、批改、错因分析、代码运行沙箱和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
 - 浮窗笔记界面和笔记/错题复习流程。
-- 前端页面从 TODO 占位升级为可演示页面。
+- 其余前端 TODO 页面升级为可演示页面。
 - 生产迁移和真实持久化发布流程。
 
 ### 阻塞
@@ -98,6 +102,7 @@ CONTRACT_MISSING: 缺少 xxx 定义
 ```
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
+- 宿主机直接运行真实视频链路前需要安装 `ffmpeg` 和 `ffprobe`，并在 `backend/.env` 填写豆包 `TTS_API_KEY` 与 `TTS_VOICE_NAME`。当前普通测试跳过付费真实视频测试。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 
 ## 功能待办
@@ -115,6 +120,7 @@ CONTRACT_MISSING: 缺少 xxx 定义
 - 将前端 TODO 页面升级为可演示视图，并调用现有 API 模块。
 - 使用模拟或空实现推进画像、对话、资源生成、学习路径、练习、报告和笔记流程，保持契约一致。
 - 增加前端 API 模块、路由路径、响应包装、枚举值和数据库字段的契约测试。
+- 配置豆包 TTS 与宿主机媒体依赖后，显式运行 `RUN_REAL_VIDEO_TESTS=true` 的付费真实视频流程测试。
 
 ### 第三优先级
 

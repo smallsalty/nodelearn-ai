@@ -208,7 +208,7 @@ class MultiAgentWorkflowRunner:
             input_payload={
                 "profileAnalysis": profile_analysis,
                 "resourceTypes": request.input.get("multimodalResourceTypes")
-                or [ResourceType.mind_map.value, ResourceType.animation_script.value],
+                or self._default_multimodal_resource_types(),
                 "targetGoal": request.input.get("targetGoal") or profile.learning_goal,
                 "customRequirement": request.input.get("customRequirement"),
             },
@@ -433,3 +433,9 @@ class MultiAgentWorkflowRunner:
     def _resource_content_summary(self, generated_resources: list[dict[str, Any]]) -> str:
         contents = [str(resource.get("content", ""))[:300] for resource in generated_resources if resource.get("content")]
         return "\n\n".join(contents) if contents else "workflow resource content"
+
+    @staticmethod
+    def _default_multimodal_resource_types() -> list[str]:
+        if settings.enable_mock:
+            return [ResourceType.mind_map.value]
+        return [ResourceType.mind_map.value, ResourceType.animation_script.value]

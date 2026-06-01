@@ -16,6 +16,10 @@
 - `ResourceRecommendation`
 - `ResourcePushRecord`
 - `RecommendationRequest`
+- `VideoVisualType`
+- `StackOperationType`
+- `VideoLessonScene`
+- `AnimationScriptContent`
 
 ## 路由
 
@@ -51,6 +55,17 @@
 - 结构定义文件：`backend/app/schemas/resource.py`
 - 服务文件：`backend/app/services/resource_service.py`
 - 智能体文件：`backend/app/agents/resource_agent.py`
+- 视频技能文件：`backend/app/agents/multimodal_skills.py`
+- 视频渲染器：`video-renderer/`
+
+## 知识点讲解视频
+
+- 当 `resourceTypes` 包含 `video_script` 或 `animation_script` 时，统一执行真实视频生成流程。
+- `GeneratedResource.content` 保存 `AnimationScriptContent` JSON 字符串。
+- `GeneratedResource.fileUrl` 保存审核通过后的 MP4 地址。
+- 两种视频资源类型必须同时保存，并共享最终 MP4。
+- TTS 使用豆包 V3 HTTP Chunked，由后端聚合为真实 MP3。
+- MP4 使用 Remotion 导出；音频、视频和依赖失败必须明确标记 `failed`。
 
 ## 禁止事项
 

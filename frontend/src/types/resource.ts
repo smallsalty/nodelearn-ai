@@ -63,6 +63,47 @@ export interface GeneratedResource {
   updatedAt: string;
 }
 
+export type VideoVisualType = "stack_animation" | "text_slide";
+export type StackOperationType = "push" | "pop";
+
+export interface StackOperation {
+  type: StackOperationType;
+  value?: number;
+}
+
+export interface StackAnimationVisualData {
+  items: number[];
+  operations: StackOperation[];
+}
+
+export interface TextSlideVisualData {
+  bullets: string[];
+}
+
+export interface VideoLessonScene {
+  sceneId: string;
+  title: string;
+  narration: string;
+  visualType: VideoVisualType;
+  visualData: Record<string, any>;
+  codeSnippet: string;
+  durationSeconds: number;
+  audioUrl: string;
+}
+
+export interface VideoLessonOutput {
+  videoUrl: string;
+  audioUrls: string[];
+}
+
+export interface AnimationScriptContent {
+  title: string;
+  durationSeconds: number;
+  aspectRatio: "16:9";
+  scenes: VideoLessonScene[];
+  output: VideoLessonOutput;
+}
+
 export interface ResourceGenerateRequest {
   userId: string;
   courseId: string;

@@ -134,7 +134,11 @@ def embed_text(payload: EmbedRequest):
 async def generate_resource(payload: ResourceGenerateRequest):
     try:
         plan = await resource_service.generate_resources(payload)
-        return success_response(plan.result)
+        return success_response(
+            plan.result,
+            message=plan.error_message or "success",
+            code=500 if plan.error_message else 200,
+        )
     except Exception as exc:
         if not settings.enable_mock:
             return error_response(f"resource generation failed: {exc}")

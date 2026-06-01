@@ -1,4 +1,5 @@
 import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -71,7 +72,7 @@ def test_multimodal_agent_generates_mermaid_mind_map():
     assert set(resource.keys()) == GENERATED_RESOURCE_FIELDS
 
 
-def test_multimodal_agent_generates_video_script_structure():
+def test_multimodal_agent_video_request_fails_without_real_tts_configuration():
     result = run(
         make_agent().run(
             AgentRunRequest(
@@ -84,16 +85,14 @@ def test_multimodal_agent_generates_video_script_structure():
         )
     )
 
-    content = result.output["generatedResources"][0]["content"]
+    resources = result.output["generatedResources"]
 
-    assert "# 视频标题" in content
-    assert "## 适合对象" in content
-    assert "## 时长建议" in content
-    assert "## 分镜脚本" in content
-    assert "## 旁白内容" in content
-    assert "## 屏幕元素" in content
-    assert "## 互动提问" in content
-    assert "## 总结" in content
+    assert result.status == "failed"
+    assert [resource["resourceType"] for resource in resources] == ["video_script", "animation_script"]
+    assert all(json.loads(resource["content"])["scenes"] == [] for resource in resources)
+    assert all(resource["fileUrl"] is None for resource in resources)
+    assert all(resource["status"] == "failed" for resource in resources)
+    assert all(resource["auditStatus"] == "unchecked" for resource in resources)
 
 
 def test_multimodal_agent_prioritizes_diagram_resources_for_demo_profile():
@@ -111,7 +110,8 @@ def test_multimodal_agent_prioritizes_diagram_resources_for_demo_profile():
 
     resource_types = [resource["resourceType"] for resource in result.output["generatedResources"]]
 
-    assert resource_types[:2] == ["mind_map", "animation_script"]
+    assert resource_types[:2] == ["mind_map", "code_case"]
+    assert "animation_script" not in resource_types
     assert "code_case" in resource_types
 
 

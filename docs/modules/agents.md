@@ -42,6 +42,17 @@
 - 结构定义文件：`backend/app/schemas/agent.py`
 - 智能体占位：`backend/app/agents/*`
 
+## multimodal_agent 视频技能
+
+- `VideoScriptSkill`
+- `StoryboardSkill`
+- `AnimationSpecSkill`
+- `TtsSkill`
+- `VideoRenderSkill`
+- `SafetyAuditSkill`
+
+视频技能复用现有 `multimodal_agent`，不新增 `AgentType`。最终资源输出必须通过已有 `POST /api/v1/audit/check`。
+
 ## 禁止事项
 
 - 不新增 `AgentType` 值。

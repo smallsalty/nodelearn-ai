@@ -37,7 +37,12 @@ export const resourceApi = {
     return request<number[]>({ method: "POST", url: "/knowledge-base/embed", data: payload });
   },
   generateResource(payload: ResourceGenerateRequest) {
-    return request<ResourceGenerateResult>({ method: "POST", url: "/resources/generate", data: payload });
+    return request<ResourceGenerateResult>({
+      method: "POST",
+      url: "/resources/generate",
+      data: payload,
+      timeout: 10 * 60 * 1000
+    });
   },
   getGenerationTask(taskId: string) {
     return request<ResourceGenerateResult>({ method: "GET", url: `/resources/generation-tasks/${taskId}` });

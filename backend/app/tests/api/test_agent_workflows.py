@@ -23,7 +23,7 @@ def test_workflow_run_returns_api_response_multi_agent_workflow_result():
             "workflowType": "resource_generate",
             "input": {
                 "resourceTypes": ["lecture_doc", "mind_map", "practice_question", "code_case"],
-                "multimodalResourceTypes": ["mind_map", "animation_script"],
+                "multimodalResourceTypes": ["mind_map"],
             },
         },
     ).json()
