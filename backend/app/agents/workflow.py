@@ -178,6 +178,20 @@ class MultiAgentWorkflowRunner:
             retrieved_documents=retrieved_documents or None,
         )
 
+        qa_step = await self._run_step(
+            request,
+            task_id,
+            events,
+            AgentType.qa_agent,
+            input_payload={
+                "message": request.input.get("message") or f"请结合 Hello 算法材料讲解{current_node.name if current_node else '当前知识点'}。",
+                "useRag": True,
+                "useProfile": True,
+            },
+            context=context,
+            node_id=node_id,
+        )
+
         resource_step = await self._run_step(
             request,
             task_id,
@@ -196,6 +210,24 @@ class MultiAgentWorkflowRunner:
                 ],
                 "targetGoal": request.input.get("targetGoal") or profile.learning_goal,
                 "customRequirement": request.input.get("customRequirement"),
+            },
+            context=context,
+            node_id=node_id,
+        )
+        practice_step = await self._run_step(
+            request,
+            task_id,
+            events,
+            AgentType.practice_agent,
+            input_payload={
+                "questionTypes": request.input.get("questionTypes")
+                or [
+                    QuestionType.single_choice.value,
+                    QuestionType.short_answer.value,
+                    QuestionType.coding.value,
+                ],
+                "count": request.input.get("count", 3),
+                "difficulty": request.input.get("difficulty"),
             },
             context=context,
             node_id=node_id,
@@ -231,14 +263,24 @@ class MultiAgentWorkflowRunner:
         final_output = {
             "learningPath": learning_path_payload,
             "learningTasks": learning_tasks,
+            "answer": qa_step.output.get("answer", ""),
             "resourceAgentOutput": resource_step.output,
+            "questions": practice_step.output.get("questions", []),
             "multimodalAgentOutput": multimodal_step.output,
             "safetyAudit": safety_step.output,
             "generatedResources": generated_resources,
             "recommendations": resource_step.output.get("recommendations", []),
             "retrievedDocuments": [document.model_dump(by_alias=True) for document in retrieved_documents],
         }
-        return [profile_step, planner_step, resource_step, multimodal_step, safety_step], final_output
+        return [
+            profile_step,
+            planner_step,
+            qa_step,
+            resource_step,
+            practice_step,
+            multimodal_step,
+            safety_step,
+        ], final_output
 
     async def _run_practice_review(
         self,
@@ -302,15 +344,19 @@ class MultiAgentWorkflowRunner:
         task_id: str,
         events: list[AgentTaskEvent],
     ) -> tuple[list[AgentRunResult], dict[str, Any]]:
-        profile = self.profile_repository.get_by_user_id(request.user_id)
         node_id = request.node_id or DEFAULT_DEMO_NODE_ID
+        profile = self.profile_repository.get_by_user_id(request.user_id)
         current_node = self.learning_path_repository.get_node(node_id)
         step = await self._run_step(
             request,
             task_id,
             events,
-            AgentType.multimodal_agent,
-            input_payload=request.input,
+            AgentType.qa_agent,
+            input_payload={
+                "message": request.input.get("message") or f"请讲解{current_node.name if current_node else '当前知识点'}。",
+                "useRag": request.input.get("useRag", True),
+                "useProfile": request.input.get("useProfile", True),
+            },
             context=AgentContext(profile=profile, current_node=current_node),
             node_id=node_id,
         )

@@ -8,7 +8,7 @@ from typing import Any
 
 import re
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 
 from app.core.config import settings
 from app.db.session import session_context
@@ -205,6 +205,15 @@ class ResourceService:
         profile_analysis = profile_analysis or {}
         node = self._resolve_node(payload.node_id, profile, learning_path, learning_tasks)
         target_goal = self._target_goal(payload, profile, profile_analysis)
+        if not settings.enable_mock and not retrieved_documents:
+            retrieved_documents = self.search_knowledge_base(
+                course_id=payload.course_id,
+                query_text=payload.custom_requirement or target_goal or (node.name if node else "数据结构"),
+                node_id=node.id if node else payload.node_id,
+                top_k=3,
+            )
+            if not retrieved_documents:
+                raise RuntimeError("Hello Algo knowledge base returned no source documents for resource generation")
         resource_types = self._select_resource_types(payload.resource_types, profile, profile_analysis, node, target_goal)
         video_requested = any(resource_type in VIDEO_RESOURCE_TYPES for resource_type in payload.resource_types)
         resource_types = [resource_type for resource_type in resource_types if resource_type not in VIDEO_RESOURCE_TYPES]
@@ -254,7 +263,8 @@ class ResourceService:
                 retrieved_documents,
             )
             content = await self.llm_service.generate_text(prompt, mock_text=template_content)
-            if payload.custom_requirement:
+            content = self._normalize_generated_content(resource_type, content)
+            if payload.custom_requirement and resource_type != ResourceType.mind_map:
                 content = f"{content}\n\n{payload.custom_requirement}"
 
             audit_result = await self.audit_service.check_content(
@@ -466,16 +476,19 @@ class ResourceService:
             )
             terms = self._search_terms(query_text)
             models = []
-            if terms:
+            if resolved_node_id:
+                resource_type_order = case((GeneratedResourceModel.resource_type == ResourceType.reading_material.value, 0), else_=1)
+                models = session.scalars(
+                    base_query.where(GeneratedResourceModel.node_id == resolved_node_id)
+                    .order_by(resource_type_order, GeneratedResourceModel.created_at.desc())
+                    .limit(limit)
+                ).all()
+            if not models and terms:
                 filters = []
                 for term in terms:
                     pattern = f"%{term}%"
                     filters.extend([GeneratedResourceModel.title.like(pattern), GeneratedResourceModel.content.like(pattern)])
                 models = session.scalars(base_query.where(or_(*filters)).order_by(GeneratedResourceModel.created_at.desc()).limit(limit)).all()
-            if not models and resolved_node_id:
-                models = session.scalars(
-                    base_query.where(GeneratedResourceModel.node_id == resolved_node_id).order_by(GeneratedResourceModel.created_at.desc()).limit(limit)
-                ).all()
             if not models:
                 models = session.scalars(base_query.order_by(GeneratedResourceModel.created_at.desc()).limit(limit)).all()
             return [
@@ -617,11 +630,44 @@ class ResourceService:
         node_name = node.name if node else "当前知识点"
         requirement = custom_requirement or "无"
         source_section = self._retrieved_document_section(retrieved_documents)
+        format_requirement = ""
+        if resource_type == ResourceType.mind_map:
+            format_requirement = "只输出以 mindmap 开头的 Mermaid 思维导图源码，不要使用 Markdown 代码围栏。"
         return (
             f"为用户 {profile.user_id} 生成 {resource_type.value}。"
             f"知识点：{node_name}。学习目标：{target_goal}。额外要求：{requirement}。"
+            f"{format_requirement}"
             f"{source_section}"
         )
+
+    @staticmethod
+    def _normalize_generated_content(resource_type: ResourceType, content: str) -> str:
+        normalized = content.strip()
+        if resource_type != ResourceType.mind_map:
+            return normalized
+
+        if normalized.startswith("```"):
+            lines = normalized.splitlines()
+            if lines and lines[0].strip() in {"```", "```mermaid"}:
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            normalized = "\n".join(lines).strip()
+
+        if not normalized.startswith("mindmap"):
+            raise RuntimeError("LLM mind_map output must start with Mermaid mindmap syntax")
+        punctuation_map = str.maketrans({"(": "（", ")": "）", "[": "【", "]": "】", "{": "｛", "}": "｝"})
+        lines = []
+        for index, line in enumerate(normalized.splitlines()):
+            stripped = line.strip()
+            if stripped.startswith("::icon("):
+                continue
+            if index == 0 or not stripped or stripped.startswith("root("):
+                lines.append(line)
+                continue
+            indentation = line[: len(line) - len(line.lstrip())]
+            lines.append(f"{indentation}{stripped.translate(punctuation_map)}")
+        return "\n".join(lines)
 
     def _render_template(
         self,

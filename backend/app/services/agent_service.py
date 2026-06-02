@@ -3,6 +3,7 @@ from app.agents.multimodal_agent import MultimodalAgent
 from app.agents.planner_agent import PlannerAgent
 from app.agents.practice_agent import PracticeAgent
 from app.agents.profile_agent import ProfileAgent
+from app.agents.qa_agent import QaAgent
 from app.agents.resource_agent import ResourceAgent
 from app.agents.safety_agent import SafetyAgent
 from app.agents.workflow import record_single_agent_result
@@ -15,6 +16,7 @@ class AgentService:
         self.agents = agents or {
             AgentType.profile_agent: ProfileAgent(),
             AgentType.planner_agent: PlannerAgent(),
+            AgentType.qa_agent: QaAgent(),
             AgentType.resource_agent: ResourceAgent(),
             AgentType.practice_agent: PracticeAgent(),
             AgentType.multimodal_agent: MultimodalAgent(),

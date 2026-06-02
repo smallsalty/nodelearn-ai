@@ -65,6 +65,7 @@ export type ResourceType =
 export type AgentType =
   | "profile_agent"
   | "planner_agent"
+  | "qa_agent"
   | "resource_agent"
   | "practice_agent"
   | "multimodal_agent"

@@ -4,8 +4,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.main import app
 
 RESOURCE_GENERATE_RESULT_FIELDS = {"taskId", "resourceIds", "status"}
@@ -50,7 +52,9 @@ def test_generate_mind_map_resource_can_be_read_back():
     assert detail["status"] == "success"
 
 
-def test_node_generated_resources_include_multimodal_resource():
+def test_node_generated_resources_include_multimodal_resource(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(settings, "tts_api_key", "")
+
     client = TestClient(app)
     generated = client.post(
         "/api/v1/resources/generate",

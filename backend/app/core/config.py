@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     enable_safety_audit: bool = True
     enable_stream_output: bool = True
     enable_mock: bool = True
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     hello_algo_repo_url: str = "https://github.com/krahets/hello-algo.git"
     hello_algo_branch: str = "main"

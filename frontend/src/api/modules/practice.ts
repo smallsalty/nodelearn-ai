@@ -20,19 +20,19 @@ function mockResponse<T>(data: T): ApiResponse<T> {
 }
 
 function mockPracticeRecord(payload: PracticeSubmitRequest): ApiResponse<PracticeRecord> {
-  const correctAnswer = "新节点的 next";
+  const correctAnswer = "栈顶";
   const isCorrect = payload.userAnswer.trim() === correctAnswer;
 
   return mockResponse({
     id: `practice_record_${Date.now()}`,
     userId: payload.userId,
     questionId: payload.questionId,
-    nodeId: "node_linked_list_001",
+    nodeId: "node_stack_001",
     userAnswer: payload.userAnswer,
     correctAnswer,
     isCorrect,
     score: isCorrect ? 100 : 60,
-    mistakeReason: isCorrect ? "" : "需要先连接新节点和后继节点，避免链表断开。",
+    mistakeReason: isCorrect ? "" : "需要区分栈顶和栈底，出栈遵循后进先出。",
     durationSeconds: payload.durationSeconds,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

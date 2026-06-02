@@ -17,8 +17,10 @@ from app.schemas.practice import (
     PracticeSubmitRequest,
 )
 from app.schemas.profile import ProfileUpdateByPracticeRequest, StudentProfile
+from app.schemas.resource import RetrievedDocument
 from app.services.llm_service import LLMService
 from app.services.profile_service import ProfileService
+from app.services.resource_service import ResourceService
 
 
 @dataclass
@@ -35,36 +37,76 @@ class PracticeService:
         learning_path_repository: LearningPathRepository | None = None,
         profile_service: ProfileService | None = None,
         llm_service: LLMService | None = None,
+        resource_service: ResourceService | None = None,
     ) -> None:
         self.repository = repository or default_practice_repository
         self.learning_path_repository = learning_path_repository or default_learning_path_repository
         self.profile_service = profile_service or ProfileService()
         self.llm_service = llm_service or LLMService()
+        self.resource_service = resource_service or ResourceService(llm_service=self.llm_service)
 
-    def generate_questions(self, payload: PracticeGenerateRequest) -> list[PracticeQuestion]:
+    async def generate_questions(
+        self,
+        payload: PracticeGenerateRequest,
+        retrieved_documents: list[RetrievedDocument] | None = None,
+    ) -> list[PracticeQuestion]:
         node = self._resolve_node(payload.node_id, payload.user_id, payload.course_id)
         question_types = payload.question_types or [QuestionType.single_choice]
         difficulty = payload.difficulty or (node.difficulty if node else DifficultyLevel.easy)
+        if settings.enable_mock:
+            return self._generate_template_questions(payload.course_id, node, question_types, difficulty, payload.count)
+
+        documents = list(retrieved_documents or [])
+        if not documents:
+            documents = self.resource_service.search_knowledge_base(
+                course_id=payload.course_id,
+                query_text=node.name if node else "数据结构",
+                node_id=node.id if node else payload.node_id,
+                top_k=3,
+            )
+        if not documents:
+            raise RuntimeError("Hello Algo knowledge base returned no source documents for practice generation")
+        generated = await self.llm_service.generate_json(
+            self._question_generation_prompt(node, question_types, difficulty, payload.count, documents),
+            mock_data={},
+            temperature=0.2,
+        )
+        return self.repository.save_questions(
+            self._parse_generated_questions(
+                generated,
+                course_id=payload.course_id,
+                node=node,
+                question_types=question_types,
+                difficulty=difficulty,
+                count=payload.count,
+            )
+        )
+
+    def _generate_template_questions(
+        self,
+        course_id: str,
+        node: KnowledgeNode | None,
+        question_types: list[QuestionType],
+        difficulty: DifficultyLevel,
+        count: int,
+    ) -> list[PracticeQuestion]:
         questions: list[PracticeQuestion] = []
 
-        for index in range(max(payload.count, 1)):
+        for index in range(max(count, 1)):
             question_type = QuestionType(question_types[index % len(question_types)])
-            questions.append(self._build_question(payload.course_id, node, question_type, difficulty))
+            questions.append(self._build_question(course_id, node, question_type, difficulty))
 
         return self.repository.save_questions(questions)
 
     def list_questions(self, page: int, page_size: int, keyword: str | None = None) -> tuple[list[PracticeQuestion], int]:
         questions = self.repository.list_questions(keyword=keyword)
         if not questions:
-            questions = self.generate_questions(
-                PracticeGenerateRequest(
-                    user_id="user_demo_001",
-                    course_id="course_ds_001",
-                    node_id="node_array_001",
-                    question_types=[QuestionType.single_choice],
-                    difficulty=DifficultyLevel.easy,
-                    count=1,
-                )
+            questions = self._generate_template_questions(
+                course_id="course_ds_001",
+                node=self.learning_path_repository.get_node("node_array_001"),
+                question_types=[QuestionType.single_choice],
+                difficulty=DifficultyLevel.easy,
+                count=1,
             )
         total = len(questions)
         start = (page - 1) * page_size
@@ -178,6 +220,103 @@ class PracticeService:
             created_at=DEMO_TIME,
             updated_at=DEMO_TIME,
         )
+
+    def _question_generation_prompt(
+        self,
+        node: KnowledgeNode | None,
+        question_types: list[QuestionType],
+        difficulty: DifficultyLevel,
+        count: int,
+        documents: list[RetrievedDocument],
+    ) -> str:
+        node_name = node.name if node else "当前知识点"
+        source_text = "\n\n".join(
+            f"[{index}] {document.title}\n{document.content[:1600]}"
+            for index, document in enumerate(documents[:3], start=1)
+        )
+        expected_types = [QuestionType(value).value for value in question_types]
+        return "\n".join(
+            [
+                "你是 NodeLearn AI 的 practice_agent。请严格依据 Hello 算法参考材料生成练习题，只返回 JSON 对象。",
+                f'JSON 顶层字段必须是 {{"questions": array}}，questions 必须恰好包含 {count} 项。',
+                "每道题只包含 questionType、title、content、options、answer、explanation、difficulty、tags。",
+                "单选题和多选题 options 必须是字符串数组；其他题型 options 使用 null。",
+                "title、content、answer、explanation 必须完整，tags 必须是非空字符串数组。",
+                f"知识点：{node_name}",
+                f"难度：{DifficultyLevel(difficulty).value}",
+                f"题型顺序：{','.join(expected_types)}",
+                f"参考材料：\n{source_text}",
+            ]
+        )
+
+    def _parse_generated_questions(
+        self,
+        generated: dict[str, Any],
+        *,
+        course_id: str,
+        node: KnowledgeNode | None,
+        question_types: list[QuestionType],
+        difficulty: DifficultyLevel,
+        count: int,
+    ) -> list[PracticeQuestion]:
+        values = generated.get("questions")
+        if not isinstance(values, list) or len(values) != count:
+            raise RuntimeError(f"LLM practice questions count mismatch: expected {count}")
+
+        parsed: list[PracticeQuestion] = []
+        for index, value in enumerate(values):
+            if not isinstance(value, dict):
+                raise RuntimeError(f"LLM practice question {index + 1} is not an object")
+            expected_type = QuestionType(question_types[index % len(question_types)])
+            try:
+                question_type = QuestionType(value.get("questionType"))
+                generated_difficulty = DifficultyLevel(value.get("difficulty"))
+            except ValueError as exc:
+                raise RuntimeError(f"LLM practice question {index + 1} contains an invalid enum value") from exc
+            if question_type != expected_type:
+                raise RuntimeError(
+                    f"LLM practice question {index + 1} type mismatch: expected {expected_type.value}"
+                )
+            if generated_difficulty != DifficultyLevel(difficulty):
+                raise RuntimeError(
+                    f"LLM practice question {index + 1} difficulty mismatch: expected {DifficultyLevel(difficulty).value}"
+                )
+
+            options = value.get("options")
+            if question_type in {QuestionType.single_choice, QuestionType.multiple_choice}:
+                if not isinstance(options, list) or not options or not all(isinstance(item, str) and item.strip() for item in options):
+                    raise RuntimeError(f"LLM practice question {index + 1} options are invalid")
+            elif options is not None:
+                raise RuntimeError(f"LLM practice question {index + 1} options must be null")
+
+            tags = value.get("tags")
+            if not isinstance(tags, list) or not tags or not all(isinstance(item, str) and item.strip() for item in tags):
+                raise RuntimeError(f"LLM practice question {index + 1} tags are invalid")
+
+            parsed.append(
+                PracticeQuestion(
+                    id=self.repository.next_question_id(question_type.value),
+                    course_id=course_id,
+                    node_id=node.id if node else None,
+                    question_type=question_type,
+                    title=self._required_generated_text(value, "title", index),
+                    content=self._required_generated_text(value, "content", index),
+                    options=options,
+                    answer=self._required_generated_text(value, "answer", index),
+                    explanation=self._required_generated_text(value, "explanation", index),
+                    difficulty=generated_difficulty,
+                    tags=tags,
+                    created_at=DEMO_TIME,
+                    updated_at=DEMO_TIME,
+                )
+            )
+        return parsed
+
+    def _required_generated_text(self, value: dict[str, Any], field: str, index: int) -> str:
+        text = value.get(field)
+        if not isinstance(text, str) or not text.strip():
+            raise RuntimeError(f"LLM practice question {index + 1} is missing {field}")
+        return text.strip()
 
     def _single_choice_payload(self, node_name: str) -> dict[str, Any]:
         return {

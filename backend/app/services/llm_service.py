@@ -38,8 +38,7 @@ class LLMService:
         if settings.enable_mock:
             return mock_text if mock_text is not None else "mock response"
 
-        response = await self._create_completion(prompt, temperature=temperature)
-        return self._extract_content(response)
+        return await self._generate_content(prompt, temperature=temperature)
 
     async def generate_json(
         self,
@@ -51,12 +50,12 @@ class LLMService:
         if settings.enable_mock:
             return dict(mock_data or {})
 
-        response = await self._create_completion(
+        content = await self._generate_content(
             prompt,
             temperature=temperature,
             response_format={"type": "json_object"},
         )
-        content = self._extract_content(response).strip()
+        content = content.strip()
         if content.startswith("```") and content.endswith("```"):
             content = content.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         try:
@@ -66,6 +65,26 @@ class LLMService:
         if not isinstance(parsed, dict):
             raise RuntimeError("LLM returned JSON that is not an object")
         return parsed
+
+    async def _generate_content(
+        self,
+        prompt: str,
+        *,
+        temperature: float,
+        response_format: dict[str, str] | None = None,
+    ) -> str:
+        for attempt in range(2):
+            response = await self._create_completion(
+                prompt,
+                temperature=temperature,
+                response_format=response_format,
+            )
+            try:
+                return self._extract_content(response)
+            except RuntimeError as exc:
+                if str(exc) != "DeepSeek response message content is empty" or attempt == 1:
+                    raise
+        raise RuntimeError("DeepSeek response message content is empty")
 
     async def _create_completion(
         self,

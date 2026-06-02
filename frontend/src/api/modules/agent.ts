@@ -14,6 +14,27 @@ import type {
 
 const enableMock = import.meta.env.VITE_ENABLE_MOCK === "true";
 const mockTimestamp = "2026-05-28T10:00:00Z";
+const chatTimeout = 2 * 60 * 1000;
+const agentTimeout = 10 * 60 * 1000;
+const workflowTimeout = 20 * 60 * 1000;
+const mockVideoContent = JSON.stringify({
+  title: "栈图解讲解",
+  durationSeconds: 40,
+  aspectRatio: "16:9",
+  scenes: [
+    {
+      sceneId: "scene_001",
+      title: "栈是什么",
+      narration: "栈遵循后进先出原则。",
+      visualType: "stack_animation",
+      visualData: { items: [1, 2, 3], operations: [{ type: "push", value: 4 }, { type: "pop" }] },
+      codeSnippet: "stack.push(4);\nstack.pop();",
+      durationSeconds: 40,
+      audioUrl: ""
+    }
+  ],
+  output: { videoUrl: "", audioUrls: [] }
+});
 
 function mockResponse<T>(data: T): ApiResponse<T> {
   return {
@@ -32,13 +53,13 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
     return {
       learningStage: "基础补强阶段",
       riskLevel: "medium",
-      weakNodeSummary: "链表指针断链、递归终止条件和数组下标越界需要优先复习。",
+      weakNodeSummary: "栈顶边界、递归终止条件和数组下标越界需要优先复习。",
       preferredResourceTypes: ["mind_map", "code_case", "practice_question"],
       recommendedQuestionTypes: ["single_choice", "short_answer", "coding"],
       nextAgentInput: {
         targetGoal: profile?.learningGoal ?? "准备数据结构期末考试",
         timeBudget: profile?.availableStudyTime ?? "每天30分钟",
-        weakNodeIds: profile?.weakNodeIds ?? ["node_linked_list_001", "node_recursion_001"]
+        weakNodeIds: profile?.weakNodeIds ?? ["node_stack_001", "node_recursion_001"]
       }
     };
   }
@@ -49,11 +70,11 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
         id: "path_demo_001",
         userId: payload.userId,
         courseId: payload.courseId ?? "course_ds_001",
-        title: "数据结构期末链表补强路径",
-        description: "围绕链表和递归薄弱点安排讲解、练习和复习。",
+      title: "数据结构期末栈补强路径",
+      description: "围绕栈和递归薄弱点安排讲解、练习和复习。",
         currentStage: "基础补强阶段",
         targetGoal: "准备数据结构期末考试",
-        pathNodeIds: ["node_array_001", "node_linked_list_001", "node_recursion_001"],
+      pathNodeIds: ["node_array_001", "node_linked_list_001", "node_stack_001", "node_recursion_001"],
         currentNodeId: payload.nodeId,
         status: "success",
         createdAt: mockTimestamp,
@@ -65,8 +86,8 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
           pathId: "path_demo_001",
           userId: payload.userId,
           courseId: payload.courseId ?? "course_ds_001",
-          nodeId: "node_linked_list_001",
-          title: "复习链表结构与指针变更",
+          nodeId: "node_stack_001",
+          title: "复习栈结构与后进先出",
           taskType: "learn",
           resourceIds: ["resource_mind_map_001", "resource_code_case_001"],
           orderIndex: 1,
@@ -89,7 +110,17 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
           updatedAt: mockTimestamp
         }
       ],
-      planningReason: "学生已有数组基础，当前应先补链表指针操作，再用递归题巩固边界条件。"
+      planningReason: "学生已有数组和链表基础，当前应补强栈操作，再用递归题巩固边界条件。"
+    };
+  }
+
+  if (payload.agentType === "qa_agent") {
+    return {
+      sessionId: "session_demo_001",
+      messageId: "message_demo_001",
+      answer: "栈遵循后进先出原则，最后压入的元素最先从栈顶弹出。",
+      usedAgentTypes: ["qa_agent", "resource_agent", "profile_agent"],
+      retrievedDocuments: []
     };
   }
 
@@ -109,7 +140,7 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
           nodeId: payload.nodeId,
           resourceId: "resource_mind_map_001",
           resourceType: "mind_map",
-          title: "链表结构思维导图",
+          title: "栈结构思维导图",
           reason: "匹配图解偏好，适合先建立结构理解。",
           score: 0.91,
           createdAt: mockTimestamp
@@ -121,7 +152,7 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
           userId: payload.userId,
           resourceId: "resource_mind_map_001",
           nodeId: payload.nodeId,
-          reason: "链表薄弱点优先推送",
+          reason: "栈薄弱点优先推送",
           viewed: false,
           createdAt: mockTimestamp,
           updatedAt: mockTimestamp
@@ -139,9 +170,9 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
           userId: payload.userId,
           courseId: payload.courseId ?? "course_ds_001",
           nodeId: payload.nodeId,
-          title: "链表思维导图",
+          title: "栈思维导图",
           resourceType: "mind_map",
-          content: "mindmap\n  root((链表))\n    单链表\n    双链表\n    插入\n    删除\n    指针断链",
+          content: "mindmap\n  root((栈))\n    后进先出\n    入栈 push\n    出栈 pop\n    栈顶 top\n    边界判断",
           status: "success",
           auditStatus: "passed",
           createdAt: mockTimestamp,
@@ -152,9 +183,9 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
           userId: payload.userId,
           courseId: payload.courseId ?? "course_ds_001",
           nodeId: payload.nodeId,
-          title: "链表视频脚本",
+          title: "栈视频脚本",
           resourceType: "video_script",
-          content: "### 链表入门\n先解释节点结构，再演示插入和删除时指针如何变化。",
+          content: mockVideoContent,
           status: "success",
           auditStatus: "passed",
           createdAt: mockTimestamp,
@@ -165,9 +196,9 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
           userId: payload.userId,
           courseId: payload.courseId ?? "course_ds_001",
           nodeId: payload.nodeId,
-          title: "链表动画脚本",
+          title: "栈动画脚本",
           resourceType: "animation_script",
-          content: "### 动画步骤\n1. 高亮前驱节点。\n2. 创建新节点。\n3. 调整 next 指针。",
+          content: mockVideoContent,
           status: "success",
           auditStatus: "passed",
           createdAt: mockTimestamp,
@@ -183,6 +214,17 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
     };
   }
 
+  if (payload.agentType === "safety_agent") {
+    return {
+      id: "audit_demo_001",
+      targetType: "resource",
+      targetId: "resource_mind_map_001",
+      auditStatus: "passed",
+      riskLabels: [],
+      createdAt: mockTimestamp
+    };
+  }
+
   return {
     questions: [
       {
@@ -190,13 +232,13 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
         courseId: payload.courseId ?? "course_ds_001",
         nodeId: payload.nodeId,
         questionType: "single_choice",
-        title: "链表插入操作",
-        content: "在单链表中插入新节点时，通常应先修改哪个指针？",
-        options: ["新节点的 next", "头节点的 value", "尾节点的 value", "数组下标"],
-        answer: "新节点的 next",
-        explanation: "应先让新节点指向后继节点，再让前驱节点指向新节点。",
-        difficulty: "easy",
-        tags: ["链表", "指针"],
+        title: "栈的出栈位置",
+        content: "栈执行 pop 操作时，应从哪个位置移除元素？",
+        options: ["栈顶", "栈底", "任意位置", "数组中间"],
+        answer: "栈顶",
+        explanation: "栈遵循后进先出原则，入栈和出栈都发生在栈顶。",
+        difficulty: "medium",
+        tags: ["栈", "pop"],
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp
       },
@@ -205,12 +247,12 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
         courseId: payload.courseId ?? "course_ds_001",
         nodeId: payload.nodeId,
         questionType: "short_answer",
-        title: "指针断链原因",
-        content: "简述链表删除节点时为什么可能出现指针断链。",
-        answer: "没有保存或正确连接被删除节点的前驱与后继。",
-        explanation: "删除前需要确保前驱节点直接指向后继节点。",
-        difficulty: "easy",
-        tags: ["链表", "错因"],
+        title: "后进先出原则",
+        content: "简述栈为什么被称为后进先出的数据结构。",
+        answer: "最后入栈的元素位于栈顶，因此最先出栈。",
+        explanation: "栈只允许在栈顶进行入栈和出栈操作。",
+        difficulty: "medium",
+        tags: ["栈", "后进先出"],
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp
       },
@@ -219,12 +261,12 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
         courseId: payload.courseId ?? "course_ds_001",
         nodeId: payload.nodeId,
         questionType: "coding",
-        title: "实现链表查找",
-        content: "编写函数查找单链表中第一个值等于 target 的节点。",
-        answer: "遍历链表，逐个比较节点值。",
-        explanation: "链表不支持随机访问，需要从头节点顺序遍历。",
-        difficulty: "easy",
-        tags: ["链表", "代码"],
+        title: "实现栈操作",
+        content: "使用 Python 列表实现 push 和 pop 操作，并处理空栈。",
+        answer: "使用 append 入栈，非空时使用 pop 出栈。",
+        explanation: "Python 列表末尾可作为栈顶。",
+        difficulty: "medium",
+        tags: ["栈", "代码"],
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp
       }
@@ -234,8 +276,8 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
       userId: payload.userId,
       questionId: "question_demo_001",
       nodeId: payload.nodeId,
-      userAnswer: "新节点的 next",
-      correctAnswer: "新节点的 next",
+      userAnswer: "栈顶",
+      correctAnswer: "栈顶",
       isCorrect: true,
       score: 100,
       mistakeReason: "",
@@ -244,8 +286,8 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
       updatedAt: mockTimestamp
     },
     masteryUpdatePreview: {
-      id: payload.nodeId ?? "node_linked_list_001",
-      label: "链表",
+      id: payload.nodeId ?? "node_stack_001",
+      label: "栈",
       nodeType: "concept",
       difficulty: "easy",
       masteryStatus: "basic",
@@ -272,9 +314,11 @@ function mockWorkflow(payload: MultiAgentWorkflowRequest): ApiResponse<MultiAgen
   const agentTypes: AgentRunRequest["agentType"][] = [
     "profile_agent",
     "planner_agent",
+    "qa_agent",
     "resource_agent",
+    "practice_agent",
     "multimodal_agent",
-    "practice_agent"
+    "safety_agent"
   ];
   const steps = agentTypes.map((agentType) => ({
     taskId: `task_${agentType}_mock`,
@@ -296,8 +340,16 @@ function mockWorkflow(payload: MultiAgentWorkflowRequest): ApiResponse<MultiAgen
     status: "success",
     steps,
     finalOutput: {
-      resourceIds: ["resource_doc_001", "resource_mind_map_001", "resource_question_001"],
-      auditStatus: "passed"
+      answer: createAgentOutput({ userId: payload.userId, agentType: "qa_agent", input: {} }).answer,
+      questions: createAgentOutput({ userId: payload.userId, agentType: "practice_agent", input: {} }).questions,
+      generatedResources: createAgentOutput({
+        userId: payload.userId,
+        courseId: payload.courseId,
+        nodeId: payload.nodeId,
+        agentType: "multimodal_agent",
+        input: {}
+      }).generatedResources,
+      safetyAudit: createAgentOutput({ userId: payload.userId, agentType: "safety_agent", input: {} })
     }
   });
 }
@@ -316,19 +368,24 @@ export const agentApi = {
     return request<ChatMessage[]>({ method: "GET", url: `/chat/sessions/${sessionId}/messages` });
   },
   sendChat(payload: ChatRequest) {
-    return request<ChatResult>({ method: "POST", url: "/chat/send", data: payload });
+    return request<ChatResult>({ method: "POST", url: "/chat/send", data: payload, timeout: chatTimeout });
   },
   runAgent(payload: AgentRunRequest) {
     if (enableMock) {
       return Promise.resolve(mockAgentRun(payload));
     }
-    return request<AgentRunResult>({ method: "POST", url: "/agents/run", data: payload });
+    return request<AgentRunResult>({ method: "POST", url: "/agents/run", data: payload, timeout: agentTimeout });
   },
   runWorkflow(payload: MultiAgentWorkflowRequest) {
     if (enableMock) {
       return Promise.resolve(mockWorkflow(payload));
     }
-    return request<MultiAgentWorkflowResult>({ method: "POST", url: "/agents/workflows/run", data: payload });
+    return request<MultiAgentWorkflowResult>({
+      method: "POST",
+      url: "/agents/workflows/run",
+      data: payload,
+      timeout: workflowTimeout
+    });
   },
   getAgentTask(taskId: string) {
     return request<MultiAgentWorkflowResult>({ method: "GET", url: `/agents/tasks/${taskId}` });

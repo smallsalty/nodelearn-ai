@@ -34,7 +34,17 @@ def test_workflow_run_returns_api_response_multi_agent_workflow_result():
     assert set(data.keys()) == WORKFLOW_RESULT_FIELDS
     assert data["workflowType"] == "resource_generate"
     assert data["status"] == "success"
-    assert {step["agentType"] for step in data["steps"]} >= {"resource_agent", "multimodal_agent", "safety_agent"}
+    assert [step["agentType"] for step in data["steps"]] == [
+        "profile_agent",
+        "planner_agent",
+        "qa_agent",
+        "resource_agent",
+        "practice_agent",
+        "multimodal_agent",
+        "safety_agent",
+    ]
+    assert data["finalOutput"]["answer"]
+    assert len(data["finalOutput"]["questions"]) == 3
     assert data["finalOutput"]["generatedResources"]
     assert data["finalOutput"]["recommendations"]
 
@@ -67,6 +77,28 @@ def test_workflow_task_and_events_can_be_read_back():
     assert ("multimodal_agent", "done") in event_pairs
     assert ("safety_agent", "start") in event_pairs
     assert ("safety_agent", "done") in event_pairs
+    assert ("qa_agent", "start") in event_pairs
+    assert ("qa_agent", "done") in event_pairs
+    assert ("practice_agent", "start") in event_pairs
+    assert ("practice_agent", "done") in event_pairs
+
+
+def test_qa_workflow_api_runs_qa_agent():
+    client = TestClient(app)
+    data = client.post(
+        "/api/v1/agents/workflows/run",
+        json={
+            "userId": "user_api_workflow_qa_001",
+            "courseId": "course_ds_001",
+            "nodeId": "node_stack_001",
+            "workflowType": "qa",
+            "input": {"message": "请解释栈为什么是后进先出。"},
+        },
+    ).json()["data"]
+
+    assert data["status"] == "success"
+    assert [step["agentType"] for step in data["steps"]] == ["qa_agent"]
+    assert data["finalOutput"]["answer"] == "mock"
 
 
 def test_profile_build_workflow_api_does_not_require_natural_language_input():

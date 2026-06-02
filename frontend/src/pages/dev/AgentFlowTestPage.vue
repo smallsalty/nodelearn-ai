@@ -2,6 +2,8 @@
 import { computed, ref } from "vue";
 import { agentApi } from "@/api/modules/agent";
 import { practiceApi } from "@/api/modules/practice";
+import MermaidPreview from "@/components/MermaidPreview.vue";
+import VideoLessonPlayer from "@/components/VideoLessonPlayer.vue";
 import type { ApiResponse, AgentType, TaskStatus } from "@/types/contracts";
 import type {
   AgentRunRequest,
@@ -12,6 +14,7 @@ import type {
 } from "@/types/agent";
 import type { PracticeQuestion, PracticeRecord, PracticeSubmitRequest } from "@/types/practice";
 import type { StudentProfile } from "@/types/profile";
+import type { GeneratedResource } from "@/types/resource";
 
 type CallStatus = "idle" | "loading" | "success" | "failed";
 
@@ -29,7 +32,7 @@ interface TestLog {
 const testConfig = {
   userId: "user_demo_001",
   courseId: "course_ds_001",
-  nodeId: "node_linked_list_001"
+  nodeId: "node_stack_001"
 };
 
 const demoProfile: StudentProfile = {
@@ -40,14 +43,14 @@ const demoProfile: StudentProfile = {
   currentCourseId: "course_ds_001",
   learningGoal: "准备数据结构期末考试",
   knowledgeBaseLevel: "easy",
-  learningProgress: "数组已学完，链表学习中",
-  weakNodeIds: ["node_linked_list_001", "node_recursion_001"],
+  learningProgress: "数组和链表已学完，正在复习栈",
+  weakNodeIds: ["node_stack_001", "node_recursion_001"],
   cognitiveStyle: "diagram",
   practicePreference: "coding",
   resourcePreference: ["lecture_doc", "mind_map", "practice_question", "code_case"],
-  commonMistakes: ["链表指针断链", "递归终止条件错误", "数组下标越界"],
+  commonMistakes: ["栈顶边界判断遗漏", "递归终止条件错误", "数组下标越界"],
   availableStudyTime: "每天晚上30分钟",
-  profileSummary: "学生具备基础编程能力，但链表和递归较弱，偏好图解和代码练习。",
+  profileSummary: "学生具备基础编程能力，正在补强栈和递归，偏好图解和代码练习。",
   confidenceScore: 0.82,
   lastUpdatedBy: "manual",
   createdAt: "2026-05-28T10:00:00Z",
@@ -58,9 +61,11 @@ const taskStatuses: TaskStatus[] = ["pending", "running", "success", "failed", "
 const agentTypes: AgentType[] = [
   "profile_agent",
   "planner_agent",
+  "qa_agent",
   "resource_agent",
+  "practice_agent",
   "multimodal_agent",
-  "practice_agent"
+  "safety_agent"
 ];
 
 const callStatus = ref<CallStatus>("idle");
@@ -75,7 +80,7 @@ const testLogs = ref<TestLog[]>([]);
 const answers = ref<Record<string, string>>({});
 const submittedRecords = ref<Record<string, PracticeRecord>>({});
 const naturalLanguageMessage = ref(
-  "我是计算机专业大二学生，正在复习数据结构。链表指针操作比较薄弱，请结合 Hello 算法材料先解释链表，再生成一份图解讲义。"
+  "我是计算机专业大二学生，正在复习数据结构。请结合 Hello 算法材料解释栈为什么后进先出，并生成三道题、思维导图和讲解视频。"
 );
 
 const mockEnabled = computed(() => import.meta.env.VITE_ENABLE_MOCK === "true");
@@ -83,6 +88,18 @@ const practiceQuestions = computed<PracticeQuestion[]>(() => {
   const questions = currentAgentResult.value?.output?.questions;
   return Array.isArray(questions) ? questions : [];
 });
+const workflowQuestions = computed<PracticeQuestion[]>(() => {
+  const questions = currentWorkflowResult.value?.finalOutput?.questions;
+  return Array.isArray(questions) ? (questions as PracticeQuestion[]) : [];
+});
+const workflowResources = computed<GeneratedResource[]>(() => {
+  const resources = currentWorkflowResult.value?.finalOutput?.generatedResources;
+  return Array.isArray(resources) ? (resources as GeneratedResource[]) : [];
+});
+const workflowMindMaps = computed(() =>
+  workflowResources.value.filter((resource) => resource.resourceType === "mind_map")
+);
+const workflowVideos = computed(() => workflowResources.value.filter(isVideoResource));
 
 function asRecord(value: unknown): Record<string, any> {
   return value && typeof value === "object" ? (value as Record<string, any>) : {};
@@ -159,7 +176,7 @@ function buildAgentRequest(agentType: AgentType): AgentRunRequest {
       input: {
         targetGoal: "准备数据结构期末考试",
         timeBudget: "每天30分钟",
-        weakNodeIds: ["node_linked_list_001", "node_recursion_001"],
+        weakNodeIds: ["node_stack_001", "node_recursion_001"],
         profileAnalysis: {
           learningStage: "基础补强阶段",
           riskLevel: "medium",
@@ -169,12 +186,23 @@ function buildAgentRequest(agentType: AgentType): AgentRunRequest {
     };
   }
 
+  if (agentType === "qa_agent") {
+    return {
+      ...base,
+      input: {
+        message: naturalLanguageMessage.value,
+        useRag: true,
+        useProfile: true
+      }
+    };
+  }
+
   if (agentType === "resource_agent") {
     return {
       ...base,
       input: {
         resourceTypes: ["lecture_doc", "mind_map", "practice_question", "code_case"],
-        difficulty: "easy",
+        difficulty: "medium",
         learningGoal: "准备数据结构期末考试",
         customRequirement: "偏图解和代码案例，适合每天30分钟学习"
       }
@@ -185,9 +213,20 @@ function buildAgentRequest(agentType: AgentType): AgentRunRequest {
     return {
       ...base,
       input: {
-        resourceTypes: ["mind_map", "video_script", "animation_script"],
-        topic: "链表",
-        difficulty: "easy"
+        resourceTypes: ["mind_map"],
+        topic: "栈",
+        difficulty: "medium"
+      }
+    };
+  }
+
+  if (agentType === "safety_agent") {
+    return {
+      ...base,
+      input: {
+        targetType: "resource",
+        targetId: "resource_stack_demo_001",
+        content: "栈遵循后进先出原则，入栈和出栈都在栈顶进行。"
       }
     };
   }
@@ -197,7 +236,7 @@ function buildAgentRequest(agentType: AgentType): AgentRunRequest {
     input: {
       mode: "generate",
       questionTypes: ["single_choice", "short_answer", "coding"],
-      difficulty: "easy",
+      difficulty: "medium",
       count: 3
     }
   };
@@ -214,9 +253,12 @@ function buildWorkflowRequest(): MultiAgentWorkflowRequest {
       message: naturalLanguageMessage.value,
       targetGoal: "准备数据结构期末考试",
       timeBudget: "每天30分钟",
-      weakNodeIds: ["node_linked_list_001", "node_recursion_001"],
-      resourceTypes: ["lecture_doc", "mind_map", "practice_question", "code_case"],
-      multimodalResourceTypes: ["mind_map"]
+      weakNodeIds: ["node_stack_001", "node_recursion_001"],
+      resourceTypes: ["lecture_doc"],
+      questionTypes: ["single_choice", "short_answer", "coding"],
+      difficulty: "medium",
+      count: 3,
+      multimodalResourceTypes: ["mind_map", "video_script", "animation_script"]
     }
   };
 }
@@ -391,6 +433,10 @@ function outputValue(key: string) {
 function isMindmap(content: string) {
   return content.trim().startsWith("mindmap");
 }
+
+function isVideoResource(resource: GeneratedResource) {
+  return resource.resourceType === "video_script" || resource.resourceType === "animation_script";
+}
 </script>
 
 <template>
@@ -534,23 +580,29 @@ function isMindmap(content: string) {
               <pre class="json-block compact">{{ formatJson(outputValue("pushRecords")) }}</pre>
             </el-card>
 
+            <el-card v-if="currentAgentResult.agentType === 'qa_agent'" shadow="never">
+              <template #header>问答智能体结果</template>
+              <p>{{ outputValue("answer") }}</p>
+              <h4>usedAgentTypes</h4>
+              <pre class="json-block compact">{{ formatJson(outputValue("usedAgentTypes")) }}</pre>
+              <h4>retrievedDocuments</h4>
+              <pre class="json-block compact">{{ formatJson(outputValue("retrievedDocuments")) }}</pre>
+            </el-card>
+
             <el-card v-if="currentAgentResult.agentType === 'multimodal_agent'" shadow="never">
               <template #header>多模态资源卡片</template>
-              <el-alert
-                title="Mermaid 未作为依赖引入，mindmap 内容以预览代码块展示。"
-                type="info"
-                show-icon
-                :closable="false"
-              />
               <div
                 v-for="resource in outputValue('generatedResources') || []"
                 :key="resource.id"
                 class="resource-preview"
               >
                 <h4>{{ resource.title }} / {{ resource.resourceType }}</h4>
-                <pre :class="isMindmap(resource.content) ? 'mermaid-preview' : 'json-block compact'">
-{{ resource.content }}
-                </pre>
+                <MermaidPreview v-if="isMindmap(resource.content)" :content="resource.content" />
+                <template v-else-if="isVideoResource(resource)">
+                  <video v-if="resource.fileUrl" class="mp4-player" :src="resource.fileUrl" controls />
+                  <VideoLessonPlayer :content="resource.content" />
+                </template>
+                <pre v-else class="json-block compact">{{ resource.content }}</pre>
                 <el-tag>{{ resource.auditStatus }}</el-tag>
               </div>
               <h4>renderHints</h4>
@@ -623,6 +675,44 @@ function isMindmap(content: string) {
                 <pre class="json-block compact">{{ formatJson(step.output) }}</pre>
               </el-card>
             </div>
+
+            <el-card shadow="never">
+              <template #header>自然语言回答</template>
+              <p>{{ currentWorkflowResult.finalOutput.answer }}</p>
+            </el-card>
+
+            <el-card shadow="never">
+              <template #header>完整题目</template>
+              <div v-for="question in workflowQuestions" :key="question.id" class="question-card">
+                <h4>{{ question.title }}</h4>
+                <el-descriptions :column="1" border size="small">
+                  <el-descriptions-item label="questionType">{{ question.questionType }}</el-descriptions-item>
+                  <el-descriptions-item label="content">{{ question.content }}</el-descriptions-item>
+                  <el-descriptions-item label="options">{{ formatJson(question.options) }}</el-descriptions-item>
+                  <el-descriptions-item label="answer">{{ question.answer }}</el-descriptions-item>
+                  <el-descriptions-item label="explanation">{{ question.explanation }}</el-descriptions-item>
+                  <el-descriptions-item label="difficulty">{{ question.difficulty }}</el-descriptions-item>
+                  <el-descriptions-item label="tags">{{ formatJson(question.tags) }}</el-descriptions-item>
+                </el-descriptions>
+              </div>
+            </el-card>
+
+            <el-card shadow="never">
+              <template #header>思维导图</template>
+              <MermaidPreview v-for="resource in workflowMindMaps" :key="resource.id" :content="resource.content" />
+            </el-card>
+
+            <el-card shadow="never">
+              <template #header>视频资源</template>
+              <div v-for="resource in workflowVideos" :key="resource.id" class="resource-preview">
+                <h4>{{ resource.title }} / {{ resource.resourceType }}</h4>
+                <video v-if="resource.fileUrl" class="mp4-player" :src="resource.fileUrl" controls />
+                <VideoLessonPlayer :content="resource.content" />
+                <el-tag :type="resource.auditStatus === 'passed' ? 'success' : 'warning'">
+                  {{ resource.auditStatus }}
+                </el-tag>
+              </div>
+            </el-card>
           </section>
         </el-card>
 
@@ -758,6 +848,13 @@ function isMindmap(content: string) {
   gap: 10px;
   padding: 14px 0;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.mp4-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  background: #071426;
 }
 
 .resource-preview:last-child,

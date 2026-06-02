@@ -32,6 +32,26 @@ def test_agent_service_dispatches_profile_agent():
     assert result.output["profileAnalysis"]["learningStage"] == "基础补强阶段"
 
 
+def test_agent_service_dispatches_qa_agent():
+    service = AgentService()
+    result = run(
+        service.run_agent(
+            AgentRunRequest(
+                user_id="user_demo_001",
+                course_id="course_ds_001",
+                node_id="node_stack_001",
+                agent_type=AgentType.qa_agent,
+                input={"message": "请解释栈为什么是后进先出。"},
+            )
+        )
+    )
+
+    assert result.agent_type == "qa_agent"
+    assert result.status == "success"
+    assert result.output["answer"] == "mock"
+    assert result.output["usedAgentTypes"] == ["qa_agent", "resource_agent", "profile_agent"]
+
+
 def test_agent_service_returns_failed_for_unregistered_contract_agent():
     service = AgentService()
     result = run(

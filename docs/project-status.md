@@ -74,6 +74,16 @@
 - 2026-06-02 完成真实知识点讲解视频同步链路：显式请求 `video_script` 或 `animation_script` 时，执行 RAG、DeepSeek 脚本和分镜、豆包 V3 HTTP Chunked TTS、真实 MP3 校验、Remotion H.264/AAC MP4、`/api/v1/audit/check` 和 `generated_resource` 更新；失败时不发布假 `fileUrl`。
 - 2026-06-02 新增 `VideoLessonPlayer` 和资源页演示闭环，支持分镜标题、字幕、代码高亮、音频、上一步、下一步、自动播放、进度条、栈动画、通用文本动态舞台和 MP4 播放入口。
 - 2026-06-02 新增视频失败测试、契约测试和显式付费真实流程测试；运行 `python -m pytest backend/app/tests -q`，结果为 `77 passed, 1 skipped`；运行前端 `npm run build` 和 `video-renderer` 的 `npx tsc --noEmit`，结果均为通过。
+- 2026-06-02 按授权补齐契约 `qa_agent`，新增独立 `QaAgent` 并复用 `ChatService` 的 Hello Algo PostgreSQL 检索和 DeepSeek 回答；`workflowType="qa"` 已修正为只调用 `qa_agent`。
+- 2026-06-02 将完整资源工作流固定为 `profile_agent -> planner_agent -> Hello Algo retrieval -> qa_agent -> resource_agent -> practice_agent -> multimodal_agent -> safety_agent`，最终输出组合 `answer`、`questions`、`generatedResources`、`retrievedDocuments` 和 `safetyAudit`。
+- 2026-06-02 完成真实练习题生成：`practice_agent` 异步调用 DeepSeek JSON，自动使用 Hello Algo 材料并严格校验题型、数量、难度和字段；完整链生成单选、简答、代码题各 1 道。
+- 2026-06-02 修正真实资源检索优先级：指定知识点时优先读取对应 Hello Algo 阅读材料和代码案例，避免自然语言泛词命中课程级兜底内容。
+- 2026-06-02 修正真实视频链：本机豆包 `seed-tts-2.0` 使用已验证音色 `zh_female_vv_uranus_bigtts`；Remotion 改为通过 HTTP 静态地址读取 MP3；DeepSeek 偶发空内容在统一 LLM 边界重试 1 次。
+- 2026-06-02 扩展 `/dev/agent-flow-test`：覆盖 7 个单体智能体、真实 RAG、完整工作流、3 道完整题、Mermaid 导图、共享 MP4，以及 `VideoLessonPlayer` 分镜、字幕和音频控制；补充开发 CORS、长链路超时和旧 Chromium Mermaid polyfill。
+- 2026-06-02 启动 PostgreSQL 回查 Hello Algo 为 `20` 个章节、`105` 个节点、`85` 条关系和 `459` 个来源资源；运行 `python -m app.smoke.real_agent_flow`，确认 `/models` 含 `deepseek-v4-pro`、7 个智能体单体成功、真实 RAG 成功、完整链返回 3 道题、1 份导图、共享 MP4 双资源且持久化审核通过。
+- 2026-06-02 显式运行付费视频测试 `$env:RUN_REAL_VIDEO_TESTS='true'; python -m pytest app/tests/services/test_real_video_generation.py -q`，结果为 `1 passed`；验证音频下载、真实 MP4 和外部 `ffprobe` 音视频双流。
+- 2026-06-02 Browser 插件未提供，使用 Playwright MCP 回退验证开发页桌面与 `390px` 移动视图；真实 RAG、完整工作流、共享 MP4、分镜播放器和 Mermaid SVG 均通过，控制台零错误且移动端无页面横向溢出。
+- 2026-06-02 最终运行 `python -m pytest backend/app/tests -q`，结果为 `86 passed, 1 skipped`；运行前端 `npm run build`、`video-renderer` 的 `npx tsc --noEmit`、`python -m compileall -q app` 和 `git diff --check`，结果均为通过。
 
 ### 进行中
 
@@ -87,7 +97,7 @@
 - 学习路径规划的完整图搜索逻辑。
 - 资源推荐排序的真实行为数据融合。
 - 结合图谱和错题上下文的增强智能答疑。
-- 超出规则/mock 行为的练习生成、批改、错因分析、代码运行沙箱和反馈。
+- 超出当前真实题目生成范围的批改、错因分析、代码运行沙箱和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
 - 浮窗笔记界面和笔记/错题复习流程。
 - 其余前端 TODO 页面升级为可演示页面。
@@ -102,7 +112,7 @@ CONTRACT_MISSING: 缺少 xxx 定义
 ```
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
-- 宿主机直接运行真实视频链路前需要安装 `ffmpeg` 和 `ffprobe`，并在 `backend/.env` 填写豆包 `TTS_API_KEY` 与 `TTS_VOICE_NAME`。当前普通测试跳过付费真实视频测试。
+- 宿主机直接运行真实视频链路前需要安装 `ffmpeg` 和 `ffprobe`，并在 `backend/.env` 填写豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 
 ## 功能待办

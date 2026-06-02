@@ -71,6 +71,27 @@ def test_generate_text_raises_for_auth_failure(monkeypatch: pytest.MonkeyPatch) 
         asyncio.run(call())
 
 
+def test_generate_text_retries_one_empty_content_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    configure_real_mode(monkeypatch)
+    requests = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal requests
+        requests += 1
+        content = "" if requests == 1 else "hello after retry"
+        return httpx.Response(200, json={"choices": [{"message": {"content": content}}]})
+
+    async def call() -> str:
+        async with httpx.AsyncClient(
+            base_url=settings.llm_base_url,
+            transport=httpx.MockTransport(handler),
+        ) as client:
+            return await LLMService(client).generate_text("question")
+
+    assert asyncio.run(call()) == "hello after retry"
+    assert requests == 2
+
+
 def test_generate_json_raises_for_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None:
     configure_real_mode(monkeypatch)
 

@@ -366,8 +366,8 @@ class VideoRenderSkill:
         output_path = output_dir / "lesson.mp4"
         render_input = lesson.model_dump(by_alias=True)
         for scene in render_input["scenes"]:
-            audio_filename = Path(scene["audioUrl"]).name
-            scene["audioUrl"] = (output_dir / "audio" / audio_filename).resolve().as_uri()
+            if not scene["audioUrl"].startswith(("http://", "https://")):
+                raise RuntimeError("Remotion audioUrl must be an HTTP storage URL")
         render_input_path.write_text(json.dumps(render_input, ensure_ascii=False), encoding="utf-8")
         project_path = Path(settings.video_render_project_path).resolve()
         command = [
