@@ -1,3 +1,11 @@
-export interface BaseEntity {
-  id?: number;
-}
+export * from "./contracts";
+export * from "./auth";
+export * from "./course";
+export * from "./graph";
+export * from "./profile";
+export * from "./agent";
+export * from "./resource";
+export * from "./learningPath";
+export * from "./practice";
+export * from "./note";
+export * from "./report";

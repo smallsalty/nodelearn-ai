@@ -1,18 +1,37 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import MarkdownContent from "@/components/MarkdownContent.vue";
+import StateBlock from "@/components/StateBlock.vue";
 import VideoLessonPlayer from "@/components/VideoLessonPlayer.vue";
 import { courseApi } from "@/api/modules/course";
 import { resourceApi } from "@/api/modules/resource";
+import { recommendationsApi } from "@/api/modules/recommendations";
+import { getErrorMessage } from "@/api/client";
+import { appState } from "@/stores";
 import type { KnowledgeNode } from "@/types/course";
-import type { AnimationScriptContent, GeneratedResource } from "@/types/resource";
+import type { ResourceType } from "@/types/contracts";
+import type { AnimationScriptContent, GeneratedResource, ResourceGenerateResult, ResourceRecommendation } from "@/types/resource";
+import {
+  auditLabel,
+  DEFAULT_COURSE_ID,
+  DEFAULT_USER_ID,
+  difficultyLabel,
+  resourceTypeLabel,
+  statusLabel,
+  statusTagType
+} from "@/utils/format";
 
-const userId = "user_demo_001";
-const courseId = "course_ds_001";
+const userId = computed(() => appState.currentUser?.id ?? DEFAULT_USER_ID);
+const courseId = computed(() => appState.currentCourse?.id ?? DEFAULT_COURSE_ID);
 const nodes = ref<KnowledgeNode[]>([]);
 const resources = ref<GeneratedResource[]>([]);
+const recommendations = ref<ResourceRecommendation[]>([]);
 const selectedNodeId = ref("node_stack_001");
 const selectedResourceId = ref<string | null>(null);
 const selectedResource = ref<GeneratedResource | null>(null);
+const resourceTypes = ref<ResourceType[]>(["lecture_doc", "mind_map"]);
+const learningGoal = ref("通过讲解、导图和练习掌握当前知识点");
+const generationResult = ref<ResourceGenerateResult | null>(null);
 const loading = ref(false);
 const generating = ref(false);
 const errorMessage = ref("");
@@ -36,263 +55,198 @@ async function loadPage() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const [nodeResponse, resourceResponse] = await Promise.all([
-      courseApi.listNodes(courseId),
-      resourceApi.listUserResources(userId, { page: 1, pageSize: 30 })
+    const [nodeResponse, resourceResponse, recommendationResponse] = await Promise.all([
+      courseApi.getNodes(courseId.value),
+      resourceApi.getUserResources(userId.value, { page: 1, pageSize: 40 }),
+      recommendationsApi.getUserRecommendations(userId.value)
     ]);
     nodes.value = nodeResponse.data;
     resources.value = resourceResponse.data.list;
+    recommendations.value = recommendationResponse.data;
     if (!nodes.value.some((node) => node.id === selectedNodeId.value) && nodes.value[0]) {
       selectedNodeId.value = nodes.value[0].id;
     }
-  } catch {
-    errorMessage.value = "资源页面加载失败";
+    if (!selectedResource.value && resources.value[0]) {
+      await openResource(resources.value[0].id);
+    }
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error);
   } finally {
     loading.value = false;
   }
 }
 
-async function generateVideoLesson() {
+async function generateResources() {
   generating.value = true;
   errorMessage.value = "";
   try {
-    const response = await resourceApi.generateResource({
-      userId,
-      courseId,
+    const response = await resourceApi.generateResources({
+      userId: userId.value,
+      courseId: courseId.value,
       nodeId: selectedNodeId.value,
-      resourceTypes: ["video_script", "animation_script"],
-      learningGoal: "通过动态讲解掌握当前知识点"
+      resourceTypes: resourceTypes.value,
+      difficulty: "medium",
+      learningGoal: learningGoal.value
     });
+    generationResult.value = response.data;
     await loadPage();
-    if (response.data.resourceIds[0]) {
-      await openResource(response.data.resourceIds[0]);
-    }
-    if (response.data.status === "failed") {
-      errorMessage.value = response.message;
-    }
-  } catch {
-    errorMessage.value = "视频生成请求失败";
+    if (response.data.resourceIds[0]) await openResource(response.data.resourceIds[0]);
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error);
   } finally {
     generating.value = false;
   }
 }
 
+async function generateVideoLesson() {
+  resourceTypes.value = ["video_script", "animation_script"];
+  learningGoal.value = "通过动态讲解掌握当前知识点";
+  await generateResources();
+}
+
 async function openResource(resourceId: string) {
   selectedResourceId.value = resourceId;
+  appState.selectedResourceId = resourceId;
   errorMessage.value = "";
   try {
     const response = await resourceApi.getResource(resourceId);
     selectedResource.value = response.data;
-  } catch {
-    errorMessage.value = "资源详情读取失败";
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error);
   }
 }
 
 function isVideoResource(resource: GeneratedResource) {
   return resource.resourceType === "video_script" || resource.resourceType === "animation_script";
 }
+
+function isMarkdownResource(resource: GeneratedResource) {
+  return resource.resourceType === "lecture_doc" || resource.resourceType === "summary_note" || resource.resourceType === "mind_map";
+}
 </script>
 
 <template>
-  <main class="page-shell">
-    <section class="resource-page">
-      <header class="resource-header">
+  <section class="resource-page two-column-page wide-left">
+    <section class="panel-card">
+      <header class="panel-header">
         <div>
-          <p class="eyebrow">Multimodal Resource</p>
-          <h1 class="page-title">知识点动态讲解视频</h1>
-          <p>通过 RAG、讲解脚本、豆包旁白和 Remotion 导出生成可播放资源。</p>
+          <h2>资源中心</h2>
+          <p>生成资源必须经过后端资源接口和审计状态，不把未通过审计的内容显示为可直接使用。</p>
         </div>
-        <el-button :loading="loading" @click="loadPage">刷新资源</el-button>
+        <el-button :loading="loading" @click="loadPage">刷新</el-button>
       </header>
 
-      <el-alert
-        v-if="errorMessage"
-        :title="errorMessage"
-        type="error"
-        show-icon
-        :closable="false"
-      />
+      <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="mb-16" />
 
-      <section class="resource-layout">
-        <aside class="resource-sidebar">
-          <el-card shadow="never">
-            <template #header>生成知识点讲解视频</template>
+      <section class="generator-card">
+        <el-form label-position="top">
+          <el-form-item label="知识点">
             <el-select v-model="selectedNodeId" filterable placeholder="选择知识点">
-              <el-option v-for="node in nodes" :key="node.id" :label="node.name" :value="node.id" />
+              <el-option
+                v-for="node in nodes"
+                :key="node.id"
+                :label="`${node.name} · ${difficultyLabel(node.difficulty)}`"
+                :value="node.id"
+              />
             </el-select>
-            <el-button type="primary" :loading="generating" class="generate-button" @click="generateVideoLesson">
-              生成真实视频
-            </el-button>
-            <p class="helper-text">同步生成会等待 TTS、MP4 渲染和审计完成。</p>
-          </el-card>
-
-          <el-card shadow="never">
-            <template #header>GeneratedResource 列表</template>
-            <el-empty v-if="!resources.length" description="暂无资源" />
-            <button
-              v-for="resource in resources"
-              v-else
-              :key="resource.id"
-              class="resource-item"
-              :class="{ active: resource.id === selectedResourceId }"
-              @click="openResource(resource.id)"
-            >
-              <span>{{ resource.title }}</span>
-              <small>{{ resource.resourceType }}</small>
-              <el-tag :type="resource.status === 'success' ? 'success' : 'danger'" size="small">
-                {{ resource.status }}
-              </el-tag>
-            </button>
-          </el-card>
-        </aside>
-
-        <section class="resource-detail">
-          <el-empty v-if="!selectedResource" description="选择一个资源查看详情" />
-          <template v-else>
-            <el-card shadow="never">
-              <template #header>
-                <div class="detail-title">
-                  <span>{{ selectedResource.title }}</span>
-                  <div>
-                    <el-tag>{{ selectedResource.resourceType }}</el-tag>
-                    <el-tag :type="selectedResource.auditStatus === 'passed' ? 'success' : 'warning'">
-                      {{ selectedResource.auditStatus }}
-                    </el-tag>
-                  </div>
-                </div>
-              </template>
-
-              <template v-if="isVideoResource(selectedResource)">
-                <video
-                  v-if="selectedResource.fileUrl"
-                  class="mp4-player"
-                  :src="selectedResource.fileUrl"
-                  controls
-                />
-                <VideoLessonPlayer
-                  v-else-if="selectedResource.auditStatus === 'passed' && selectedVideoContent?.scenes.length"
-                  :content="selectedResource.content"
-                />
-                <el-alert
-                  v-else
-                  title="该视频尚未通过完整生成与审计流程"
-                  type="warning"
-                  show-icon
-                  :closable="false"
-                />
-              </template>
-              <pre v-else class="resource-content">{{ selectedResource.content }}</pre>
-            </el-card>
-          </template>
-        </section>
+          </el-form-item>
+          <el-form-item label="资源类型">
+            <el-select v-model="resourceTypes" multiple>
+              <el-option label="讲解文档" value="lecture_doc" />
+              <el-option label="思维导图" value="mind_map" />
+              <el-option label="练习题" value="practice_question" />
+              <el-option label="代码案例" value="code_case" />
+              <el-option label="视频脚本" value="video_script" />
+              <el-option label="动画脚本" value="animation_script" />
+              <el-option label="总结笔记" value="summary_note" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="学习目标">
+            <el-input v-model="learningGoal" />
+          </el-form-item>
+          <div class="button-row">
+            <el-button type="primary" :loading="generating" @click="generateResources">生成资源</el-button>
+            <el-button :loading="generating" @click="generateVideoLesson">生成动态讲解视频</el-button>
+          </div>
+        </el-form>
+        <el-alert
+          v-if="generationResult"
+          :title="`任务 ${generationResult.taskId}：${statusLabel(generationResult.status)}`"
+          type="success"
+          show-icon
+          :closable="false"
+        />
       </section>
+
+      <StateBlock :loading="loading" :error="errorMessage" :empty="!resources.length" empty-text="暂无资源" @retry="loadPage">
+        <section class="resource-list-grid">
+          <button
+            v-for="resource in resources"
+            :key="resource.id"
+            type="button"
+            class="resource-card"
+            :class="{ active: resource.id === selectedResourceId }"
+            @click="openResource(resource.id)"
+          >
+            <strong>{{ resource.title }}</strong>
+            <span>{{ resourceTypeLabel(resource.resourceType) }}</span>
+            <div class="tag-row">
+              <el-tag size="small" :type="statusTagType(resource.status)">{{ statusLabel(resource.status) }}</el-tag>
+              <el-tag size="small" :type="resource.auditStatus === 'passed' ? 'success' : 'warning'">
+                {{ auditLabel(resource.auditStatus) }}
+              </el-tag>
+            </div>
+          </button>
+        </section>
+      </StateBlock>
     </section>
-  </main>
+
+    <aside class="side-stack">
+      <el-card shadow="never">
+        <template #header>资源详情</template>
+        <el-empty v-if="!selectedResource" description="选择一个资源查看详情" />
+        <article v-else class="resource-detail">
+          <header class="detail-title">
+            <h3>{{ selectedResource.title }}</h3>
+            <div class="tag-row">
+              <el-tag>{{ resourceTypeLabel(selectedResource.resourceType) }}</el-tag>
+              <el-tag :type="selectedResource.auditStatus === 'passed' ? 'success' : 'warning'">
+                {{ auditLabel(selectedResource.auditStatus) }}
+              </el-tag>
+            </div>
+          </header>
+
+          <el-alert
+            v-if="selectedResource.auditStatus !== 'passed'"
+            title="该资源尚未通过审计，不应作为可直接使用内容发布。"
+            type="warning"
+            show-icon
+            :closable="false"
+            class="mb-16"
+          />
+
+          <template v-if="isVideoResource(selectedResource)">
+            <video v-if="selectedResource.fileUrl" class="mp4-player" :src="selectedResource.fileUrl" controls />
+            <VideoLessonPlayer
+              v-else-if="selectedVideoContent?.scenes.length"
+              :content="selectedResource.content"
+            />
+            <el-alert v-else title="视频资源 JSON 无法解析或尚未生成媒体文件" type="warning" show-icon :closable="false" />
+          </template>
+          <MarkdownContent v-else-if="isMarkdownResource(selectedResource)" :content="selectedResource.content" />
+          <pre v-else class="resource-content">{{ selectedResource.content }}</pre>
+        </article>
+      </el-card>
+
+      <el-card shadow="never">
+        <template #header>推荐资源</template>
+        <el-empty v-if="!recommendations.length" description="暂无推荐" />
+        <article v-for="item in recommendations" :key="item.id" class="mini-list-item">
+          <strong>{{ item.title }}</strong>
+          <span>{{ resourceTypeLabel(item.resourceType) }} · {{ Math.round(item.score * 100) }}%</span>
+          <p>{{ item.reason }}</p>
+        </article>
+      </el-card>
+    </aside>
+  </section>
 </template>
-
-<style scoped>
-.resource-page {
-  display: grid;
-  gap: 18px;
-  max-width: 1440px;
-  margin: 0 auto;
-}
-
-.resource-header,
-.detail-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-
-.resource-header {
-  padding: 22px;
-  border: 1px solid #dbe5ef;
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-.resource-header p {
-  margin: 4px 0 0;
-  color: #64748b;
-}
-
-.eyebrow {
-  color: #0f766e !important;
-  font-size: 12px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.resource-layout {
-  display: grid;
-  grid-template-columns: 330px minmax(0, 1fr);
-  gap: 18px;
-}
-
-.resource-sidebar {
-  display: grid;
-  align-content: start;
-  gap: 14px;
-}
-
-.generate-button {
-  width: 100%;
-  margin-top: 12px;
-}
-
-.helper-text {
-  margin: 12px 0 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.resource-item {
-  display: grid;
-  justify-items: start;
-  gap: 6px;
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 11px;
-  border: 1px solid #dbe5ef;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #1f2937;
-  text-align: left;
-  cursor: pointer;
-}
-
-.resource-item.active {
-  border-color: #0f766e;
-  background: #f0fdfa;
-}
-
-.resource-item small {
-  color: #64748b;
-}
-
-.detail-title > div {
-  display: flex;
-  gap: 8px;
-}
-
-.mp4-player {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 12px;
-  background: #071426;
-}
-
-.resource-content {
-  overflow: auto;
-  white-space: pre-wrap;
-}
-
-@media (max-width: 980px) {
-  .resource-layout {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

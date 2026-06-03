@@ -1,4 +1,5 @@
 import json
+import hashlib
 import shutil
 import subprocess
 from pathlib import Path
@@ -17,6 +18,8 @@ pytestmark = pytest.mark.skipif(
 def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Path):
     ffprobe = shutil.which(settings.ffprobe_binary)
     assert ffprobe, f"ffprobe is not available: {settings.ffprobe_binary}"
+    ffmpeg = shutil.which(settings.ffmpeg_binary)
+    assert ffmpeg, f"ffmpeg is not available: {settings.ffmpeg_binary}"
 
     timeout = settings.video_render_timeout_seconds + settings.tts_timeout_seconds * 4
     with httpx.Client(base_url=settings.audit_api_base_url, timeout=timeout) as client:
@@ -25,7 +28,7 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
             json={
                 "userId": "user_real_video_test_001",
                 "courseId": "course_ds_001",
-                "nodeId": "node_stack_001",
+                "nodeId": "node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4",
                 "resourceTypes": ["video_script", "animation_script"],
             },
         )
@@ -41,8 +44,13 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
         assert len({detail["fileUrl"] for detail in details}) == 1
 
         content = json.loads(details[0]["content"])
-        assert content["scenes"]
+        assert content["style"] == "clean_motion_graphics"
+        assert [scene["sceneType"] for scene in content["scenes"]] == [
+            "hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"
+        ]
         assert all(scene["audioUrl"] for scene in content["scenes"])
+        assert all(scene["visualPlan"]["elements"] for scene in content["scenes"])
+        assert all(all(element["animation"] for element in scene["visualPlan"]["elements"]) for scene in content["scenes"])
 
         for scene in content["scenes"]:
             audio_response = client.get(scene["audioUrl"])
@@ -72,3 +80,16 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
     )
     codec_types = {item["codec_type"] for item in json.loads(probe.stdout)["streams"]}
     assert {"audio", "video"} <= codec_types
+
+    scene_start = 0.0
+    for scene in content["scenes"]:
+        frame_hashes = []
+        for offset in (0.2, min(2.5, scene["durationSeconds"] - 0.2)):
+            frame = subprocess.run(
+                [ffmpeg, "-ss", str(scene_start + offset), "-i", str(mp4_path), "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "-"],
+                check=True,
+                capture_output=True,
+            )
+            frame_hashes.append(hashlib.sha256(frame.stdout).hexdigest())
+        assert len(set(frame_hashes)) == 2, f"{scene['sceneId']} rendered as a static card"
+        scene_start += scene["durationSeconds"]

@@ -44,6 +44,14 @@ export const resourceApi = {
       timeout: 10 * 60 * 1000
     });
   },
+  generateResources(payload: ResourceGenerateRequest) {
+    return request<ResourceGenerateResult>({
+      method: "POST",
+      url: "/resources/generate",
+      data: payload,
+      timeout: 10 * 60 * 1000
+    });
+  },
   getGenerationTask(taskId: string) {
     return request<ResourceGenerateResult>({ method: "GET", url: `/resources/generation-tasks/${taskId}` });
   },
@@ -53,7 +61,13 @@ export const resourceApi = {
   listUserResources(userId: string, params: PageRequest) {
     return request<PageResult<GeneratedResource>>({ method: "GET", url: `/users/${userId}/resources`, params });
   },
+  getUserResources(userId: string, params: PageRequest = { page: 1, pageSize: 30 }) {
+    return request<PageResult<GeneratedResource>>({ method: "GET", url: `/users/${userId}/resources`, params });
+  },
   listNodeResources(nodeId: string) {
+    return request<GeneratedResource[]>({ method: "GET", url: `/nodes/${nodeId}/generated-resources` });
+  },
+  getNodeResources(nodeId: string) {
     return request<GeneratedResource[]>({ method: "GET", url: `/nodes/${nodeId}/generated-resources` });
   },
   deleteResource(resourceId: string) {

@@ -9,6 +9,9 @@ export const noteApi = {
   listNotes(params: PageRequest) {
     return request<PageResult<Note>>({ method: "GET", url: "/notes", params });
   },
+  getNotes(params: PageRequest) {
+    return request<PageResult<Note>>({ method: "GET", url: "/notes", params });
+  },
   getNote(noteId: string) {
     return request<Note>({ method: "GET", url: `/notes/${noteId}` });
   },
@@ -24,10 +27,19 @@ export const noteApi = {
   relateNote(noteId: string, payload: { relationType: string; relationId: string }) {
     return request<Note>({ method: "POST", url: `/notes/${noteId}/relations`, data: payload });
   },
+  createNoteRelation(noteId: string, payload: { relationType: string; relationId: string }) {
+    return request<Note>({ method: "POST", url: `/notes/${noteId}/relations`, data: payload });
+  },
   listUserNotes(userId: string) {
     return request<Note[]>({ method: "GET", url: `/users/${userId}/notes` });
   },
+  getUserNotes(userId: string) {
+    return request<Note[]>({ method: "GET", url: `/users/${userId}/notes` });
+  },
   listNodeNotes(nodeId: string) {
+    return request<Note[]>({ method: "GET", url: `/nodes/${nodeId}/notes` });
+  },
+  getNodeNotes(nodeId: string) {
     return request<Note[]>({ method: "GET", url: `/nodes/${nodeId}/notes` });
   }
 };

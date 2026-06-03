@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { usersApi } from "@/api/modules/users";
+import { appState, clearAuthState, setCurrentUser } from "@/stores";
 
 const routes = [
   { path: "/", redirect: "/home" },
-  { path: "/login", name: "login", component: () => import("@/pages/LoginPage.vue") },
+  { path: "/login", name: "login", component: () => import("@/pages/LoginPage.vue"), meta: { public: true } },
   { path: "/home", name: "home", component: () => import("@/pages/HomePage.vue") },
   { path: "/chat", name: "chat", component: () => import("@/pages/ChatPage.vue") },
   { path: "/profile", name: "profile", component: () => import("@/pages/ProfilePage.vue") },
@@ -37,6 +39,33 @@ if (import.meta.env.DEV) {
 const router = createRouter({
   history: createWebHistory(),
   routes
+});
+
+router.beforeEach(async (to) => {
+  const token = localStorage.getItem("accessToken");
+
+  if (to.meta.public) {
+    if (to.path === "/login" && token) {
+      return "/home";
+    }
+    return true;
+  }
+
+  if (!token) {
+    return { path: "/login", query: { redirect: to.fullPath } };
+  }
+
+  if (!appState.currentUser) {
+    try {
+      const response = await usersApi.getCurrentUser();
+      setCurrentUser(response.data);
+    } catch {
+      clearAuthState();
+      return { path: "/login", query: { redirect: to.fullPath } };
+    }
+  }
+
+  return true;
 });
 
 export default router;

@@ -40,8 +40,14 @@ function mockPracticeRecord(payload: PracticeSubmitRequest): ApiResponse<Practic
 }
 
 export const practiceApi = {
+  generatePractices(payload: PracticeGenerateRequest) {
+    return request<PracticeQuestion[]>({ method: "POST", url: "/practices/generate", data: payload });
+  },
   generateQuestions(payload: PracticeGenerateRequest) {
     return request<PracticeQuestion[]>({ method: "POST", url: "/practices/generate", data: payload });
+  },
+  getQuestions(params: PageRequest) {
+    return request<PageResult<PracticeQuestion>>({ method: "GET", url: "/practices/questions", params });
   },
   listQuestions(params: PageRequest) {
     return request<PageResult<PracticeQuestion>>({ method: "GET", url: "/practices/questions", params });
@@ -55,10 +61,22 @@ export const practiceApi = {
     }
     return request<PracticeRecord>({ method: "POST", url: "/practices/submit", data: payload });
   },
+  submitPractice(payload: PracticeSubmitRequest) {
+    if (enableMock) {
+      return Promise.resolve(mockPracticeRecord(payload));
+    }
+    return request<PracticeRecord>({ method: "POST", url: "/practices/submit", data: payload });
+  },
   listPracticeRecords(userId: string) {
     return request<PracticeRecord[]>({ method: "GET", url: `/users/${userId}/practice-records` });
   },
+  getPracticeRecords(userId: string) {
+    return request<PracticeRecord[]>({ method: "GET", url: `/users/${userId}/practice-records` });
+  },
   listWrongQuestions(userId: string) {
+    return request<PracticeQuestion[]>({ method: "GET", url: `/users/${userId}/wrong-questions` });
+  },
+  getWrongQuestions(userId: string) {
     return request<PracticeQuestion[]>({ method: "GET", url: `/users/${userId}/wrong-questions` });
   },
   removeWrongQuestion(userId: string, questionId: string) {

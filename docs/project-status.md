@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-06-02
+最后更新：2026-06-03
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -84,6 +84,16 @@
 - 2026-06-02 显式运行付费视频测试 `$env:RUN_REAL_VIDEO_TESTS='true'; python -m pytest app/tests/services/test_real_video_generation.py -q`，结果为 `1 passed`；验证音频下载、真实 MP4 和外部 `ffprobe` 音视频双流。
 - 2026-06-02 Browser 插件未提供，使用 Playwright MCP 回退验证开发页桌面与 `390px` 移动视图；真实 RAG、完整工作流、共享 MP4、分镜播放器和 Mermaid SVG 均通过，控制台零错误且移动端无页面横向溢出。
 - 2026-06-02 最终运行 `python -m pytest backend/app/tests -q`，结果为 `86 passed, 1 skipped`；运行前端 `npm run build`、`video-renderer` 的 `npx tsc --noEmit`、`python -m compileall -q app` 和 `git diff --check`，结果均为通过。
+- 2026-06-02 将视频内容契约升级为通用 `clean_motion_graphics`：新增 `SceneType`、`VisualLayout`、`VisualAnimationType`、严格 `VisualElement` 联合类型和 `VisualPlan`，并停止兼容历史 `stack_animation`、`text_slide` JSON。
+- 2026-06-02 将 `StoryboardSkill` 和 `AnimationSpecSkill` 改为通用解释型分镜，固定覆盖问题开场、定义、类比、机制、对比、流程、例子和总结；显式视频请求在 mock 模式明确失败，不再返回假媒体。
+- 2026-06-02 新增 Remotion `UniversalExplainerVideoRenderer` 与 motion graphics 组件库，导出画面只展示关键词、短句、图标、箭头、流程和总结卡片，不再显示整段旁白。
+- 2026-06-02 更新 `VideoLessonPlayer`、移除前端开发模块假视频成功数据，并运行普通测试 `python -m pytest backend/app/tests -q`，结果为 `92 passed, 1 skipped`；前端构建和 Remotion TypeScript 检查通过。
+- 2026-06-02 显式运行付费哈希表视频测试 `$env:RUN_REAL_VIDEO_TESTS='true'; python -m pytest app/tests/services/test_real_video_generation.py -q -s`，节点为 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4`，结果为 `1 passed in 236.38s`；验证 8 类通用分镜、真实豆包 TTS、共享 MP4、审计通过和 `ffprobe` H.264/AAC 双流。
+- 2026-06-02 抽帧验收发现并修正 `comparison` 布局只接收 `card` 的问题；重新执行真实 Remotion/ffmpeg 导出，并逐场景比较前后帧，`hook`、`definition`、`analogy`、`mechanism`、`comparison`、`process`、`example` 和 `summary` 均存在画面变化。
+- 2026-06-02 通用视频升级最终回归：运行 `python -m compileall -q app; python -m pytest app/tests -q`，结果为 `92 passed, 1 skipped`；运行前端 `npm run build`、`video-renderer` 的 `npx tsc --noEmit` 和 `git diff --check`，结果均为通过。
+- 2026-06-03 完成 Vue 3 + Vite + Element Plus 完整演示版前端：登录、首页、对话、画像、学习路径、资源、知识图谱、练习、报告、知识库管理和浮窗均接入契约 API 模块；新增浅色学习平台设计系统、应用壳、移动底部导航、路由守卫、通用状态组件、Markdown 安全渲染和真实后端错误提示。
+- 2026-06-03 前端验证结果：运行 `npm run build` 通过；静态检查 `frontend/src/pages` 与 `frontend/src/components` 未发现直接 `fetch(` 或 `axios`；Browser 插件不可用，使用 Playwright + 系统 Edge 回退完成登录、9 个核心路由、390px 移动视口、浮窗按钮和 ECharts 知识图谱验收，控制台错误为 0。
+- 2026-06-03 后端联调结果：默认前端仍连接 `http://localhost:8000/api/v1` 且 `VITE_ENABLE_MOCK=false`；本机 Docker Desktop 未运行，真实数据库链路无法验证，临时使用 `ENABLE_MOCK=true` 的 HTTP 后端完成浏览器流程。`/system/health`、登录、用户、图谱、对话、资源、路径、练习、报告和笔记接口响应 `code=200`，但 `/courses` 与 `/courses/{courseId}/nodes` 在当前后端进程下会超时。
 
 ### 进行中
 
@@ -100,7 +110,6 @@
 - 超出当前真实题目生成范围的批改、错因分析、代码运行沙箱和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
 - 浮窗笔记界面和笔记/错题复习流程。
-- 其余前端 TODO 页面升级为可演示页面。
 - 生产迁移和真实持久化发布流程。
 
 ### 阻塞
@@ -112,8 +121,9 @@ CONTRACT_MISSING: 缺少 xxx 定义
 ```
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
-- 宿主机直接运行真实视频链路前需要安装 `ffmpeg` 和 `ffprobe`，并在 `backend/.env` 填写豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
+- 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
+- 本机 Docker Desktop 当前未运行，`ENABLE_MOCK=false` 的后端健康检查会因数据库连接不可用而失败；`ENABLE_MOCK=true` 下 `/courses` 与 `/courses/{courseId}/nodes` 仍会先尝试真实数据源并超时，前端已显示超时错误但不伪造成功。
 
 ## 功能待办
 
@@ -130,7 +140,7 @@ CONTRACT_MISSING: 缺少 xxx 定义
 - 将前端 TODO 页面升级为可演示视图，并调用现有 API 模块。
 - 使用模拟或空实现推进画像、对话、资源生成、学习路径、练习、报告和笔记流程，保持契约一致。
 - 增加前端 API 模块、路由路径、响应包装、枚举值和数据库字段的契约测试。
-- 配置豆包 TTS 与宿主机媒体依赖后，显式运行 `RUN_REAL_VIDEO_TESTS=true` 的付费真实视频流程测试。
+- 豆包凭证或媒体依赖变更后，显式运行 `RUN_REAL_VIDEO_TESTS=true` 的付费真实视频流程回归测试。
 
 ### 第三优先级
 

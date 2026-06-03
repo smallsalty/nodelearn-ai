@@ -6,6 +6,8 @@
 
 知识点讲解视频使用真实链路：RAG -> DeepSeek 脚本与分镜 -> 豆包 V3 HTTP Chunked TTS -> Remotion MP4 -> `/api/v1/audit/check` -> `generated_resource`。显式请求 `video_script` 或 `animation_script` 时不会生成假音频或占位 MP4。
 
+视频画面使用通用 `clean_motion_graphics` 解释模板，不再依赖栈、队列等算法专用动画。分镜按问题开场、定义、类比、机制、对比、流程、例子和总结组织，Remotion 渲染关键词、图标、箭头、概念卡片、流程图、网格高亮和总结卡片。整段旁白只用于真实 TTS，不会堆叠到导出画面中。
+
 ## 技术栈
 
 - 前端：Vue 3、TypeScript、Vite、Element Plus
@@ -109,6 +111,8 @@ Docker 后端镜像会安装 Node.js、Remotion 依赖、Chromium、`ffmpeg` 和
 ```
 
 该接口同步等待脚本、分镜、逐场景 TTS、MP4 渲染和审计完成。音频和 MP4 保存在 `FILE_STORAGE_PATH/generated_resources/{taskId}/`，由 FastAPI `/storage` 静态路径公开。默认从 `backend/` 启动时对应 `backend/storage/generated_resources/{taskId}/`；Docker 会映射到仓库根目录 `storage/generated_resources/{taskId}/`。两份 `GeneratedResource` 的 `content` 都保存结构化 JSON 字符串，审核通过后共享最终 MP4 `fileUrl`。
+
+历史 `stack_animation` 和 `text_slide` 视频 JSON 不再兼容，需要重新生成。
 
 显式执行真实 DeepSeek 烟测：
 

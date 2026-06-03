@@ -6,6 +6,7 @@ import type { AnimationScriptContent } from "./types";
 const FPS = 30;
 const defaultLesson: AnimationScriptContent = {
   title: "NodeLearn AI",
+  style: "clean_motion_graphics",
   durationSeconds: 1,
   aspectRatio: "16:9",
   scenes: [],

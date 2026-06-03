@@ -11,9 +11,14 @@ import type {
   KnowledgeRelation
 } from "@/types/course";
 
+const COURSE_REQUEST_TIMEOUT = 8000;
+
 export const courseApi = {
+  getCourses(params: PageRequest = { page: 1, pageSize: 20 }) {
+    return request<PageResult<Course>>({ method: "GET", url: "/courses", params, timeout: COURSE_REQUEST_TIMEOUT });
+  },
   listCourses(params: PageRequest) {
-    return request<PageResult<Course>>({ method: "GET", url: "/courses", params });
+    return request<PageResult<Course>>({ method: "GET", url: "/courses", params, timeout: COURSE_REQUEST_TIMEOUT });
   },
   createCourse(payload: CourseCreateRequest) {
     return request<Course>({ method: "POST", url: "/courses", data: payload });
@@ -28,13 +33,19 @@ export const courseApi = {
     return request<boolean>({ method: "DELETE", url: `/courses/${courseId}` });
   },
   listChapters(courseId: string) {
-    return request<Chapter[]>({ method: "GET", url: `/courses/${courseId}/chapters` });
+    return request<Chapter[]>({ method: "GET", url: `/courses/${courseId}/chapters`, timeout: COURSE_REQUEST_TIMEOUT });
+  },
+  getChapters(courseId: string) {
+    return request<Chapter[]>({ method: "GET", url: `/courses/${courseId}/chapters`, timeout: COURSE_REQUEST_TIMEOUT });
   },
   createChapter(courseId: string, payload: ChapterCreateRequest) {
     return request<Chapter>({ method: "POST", url: `/courses/${courseId}/chapters`, data: payload });
   },
   listNodes(courseId: string) {
-    return request<KnowledgeNode[]>({ method: "GET", url: `/courses/${courseId}/nodes` });
+    return request<KnowledgeNode[]>({ method: "GET", url: `/courses/${courseId}/nodes`, timeout: COURSE_REQUEST_TIMEOUT });
+  },
+  getNodes(courseId: string) {
+    return request<KnowledgeNode[]>({ method: "GET", url: `/courses/${courseId}/nodes`, timeout: COURSE_REQUEST_TIMEOUT });
   },
   createNode(courseId: string, payload: KnowledgeNodeCreateRequest) {
     return request<KnowledgeNode>({ method: "POST", url: `/courses/${courseId}/nodes`, data: payload });
@@ -49,7 +60,18 @@ export const courseApi = {
     return request<boolean>({ method: "DELETE", url: `/nodes/${nodeId}` });
   },
   listRelations(courseId: string) {
-    return request<KnowledgeRelation[]>({ method: "GET", url: `/courses/${courseId}/relations` });
+    return request<KnowledgeRelation[]>({
+      method: "GET",
+      url: `/courses/${courseId}/relations`,
+      timeout: COURSE_REQUEST_TIMEOUT
+    });
+  },
+  getRelations(courseId: string) {
+    return request<KnowledgeRelation[]>({
+      method: "GET",
+      url: `/courses/${courseId}/relations`,
+      timeout: COURSE_REQUEST_TIMEOUT
+    });
   },
   createRelation(courseId: string, payload: KnowledgeRelation) {
     return request<KnowledgeRelation>({ method: "POST", url: `/courses/${courseId}/relations`, data: payload });

@@ -16,8 +16,12 @@
 - `ResourceRecommendation`
 - `ResourcePushRecord`
 - `RecommendationRequest`
-- `VideoVisualType`
-- `StackOperationType`
+- `VideoStyle`
+- `SceneType`
+- `VisualLayout`
+- `VisualAnimationType`
+- `VisualElement`
+- `VisualPlan`
 - `VideoLessonScene`
 - `AnimationScriptContent`
 
@@ -64,10 +68,14 @@
 - `GeneratedResource.content` 保存 `AnimationScriptContent` JSON 字符串。
 - `GeneratedResource.fileUrl` 保存审核通过后的 MP4 地址。
 - 两种视频资源类型必须同时保存，并共享最终 MP4。
+- 新生成资源统一使用 `style=clean_motion_graphics` 和 `sceneType + visualPlan`，不再生成 `stack_animation` 或 `text_slide`。
+- 分镜固定覆盖问题开场、定义、类比、机制、对比、流程、例子和总结；画面只展示关键词、短句和标签。
+- Remotion 使用 `UniversalExplainerVideoRenderer` 根据布局和元素类型渲染动画，不在导出画面中显示整段旁白。
 - TTS 使用豆包 V3 HTTP Chunked，由后端聚合为真实 MP3。
 - MP4 使用 Remotion 导出；Remotion 通过后端静态服务 HTTP 地址读取音频，并在发布前通过 `ffprobe` 验证 MP4 同时包含音频流和视频流。
 - 豆包 `TTS_VOICE_NAME` 必须与 `TTS_RESOURCE_ID` 匹配；`seed-tts-2.0` 可使用已验证的 `zh_female_vv_uranus_bigtts`。
 - 音频、视频和依赖失败必须明确标记 `failed`。
+- 历史旧视频 JSON 不再兼容，需要重新生成。
 
 ## 真实材料和导图
 

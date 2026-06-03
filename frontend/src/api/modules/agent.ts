@@ -17,25 +17,6 @@ const mockTimestamp = "2026-05-28T10:00:00Z";
 const chatTimeout = 2 * 60 * 1000;
 const agentTimeout = 10 * 60 * 1000;
 const workflowTimeout = 20 * 60 * 1000;
-const mockVideoContent = JSON.stringify({
-  title: "栈图解讲解",
-  durationSeconds: 40,
-  aspectRatio: "16:9",
-  scenes: [
-    {
-      sceneId: "scene_001",
-      title: "栈是什么",
-      narration: "栈遵循后进先出原则。",
-      visualType: "stack_animation",
-      visualData: { items: [1, 2, 3], operations: [{ type: "push", value: 4 }, { type: "pop" }] },
-      codeSnippet: "stack.push(4);\nstack.pop();",
-      durationSeconds: 40,
-      audioUrl: ""
-    }
-  ],
-  output: { videoUrl: "", audioUrls: [] }
-});
-
 function mockResponse<T>(data: T): ApiResponse<T> {
   return {
     code: 200,
@@ -178,32 +159,6 @@ function createAgentOutput(payload: AgentRunRequest): Record<string, any> {
           createdAt: mockTimestamp,
           updatedAt: mockTimestamp
         },
-        {
-          id: "resource_video_script_001",
-          userId: payload.userId,
-          courseId: payload.courseId ?? "course_ds_001",
-          nodeId: payload.nodeId,
-          title: "栈视频脚本",
-          resourceType: "video_script",
-          content: mockVideoContent,
-          status: "success",
-          auditStatus: "passed",
-          createdAt: mockTimestamp,
-          updatedAt: mockTimestamp
-        },
-        {
-          id: "resource_animation_script_001",
-          userId: payload.userId,
-          courseId: payload.courseId ?? "course_ds_001",
-          nodeId: payload.nodeId,
-          title: "栈动画脚本",
-          resourceType: "animation_script",
-          content: mockVideoContent,
-          status: "success",
-          auditStatus: "passed",
-          createdAt: mockTimestamp,
-          updatedAt: mockTimestamp
-        }
       ],
       renderHints: {
         mindMap: "mermaid",

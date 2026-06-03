@@ -1,8 +1,22 @@
-import axios, { type AxiosRequestConfig } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import type { ApiResponse } from "@/types/contracts";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+
+export class ApiClientError extends Error {
+  status?: number;
+  code?: number;
+
+  constructor(message: string, options: { status?: number; code?: number } = {}) {
+    super(message);
+    this.name = "ApiClientError";
+    this.status = options.status;
+    this.code = options.code;
+  }
+}
+
 export const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1",
+  baseURL: API_BASE_URL,
   timeout: 30000
 });
 
@@ -15,10 +29,53 @@ http.interceptors.request.use((config) => {
 });
 
 http.interceptors.response.use(
-  (response) => response.data,
-  (error) => Promise.reject(error)
+  (response) => {
+    const result = response.data as ApiResponse<unknown>;
+    if (result && typeof result.code === "number" && result.code !== 200) {
+      return Promise.reject(new ApiClientError(result.message || "请求失败", { code: result.code }));
+    }
+    return response;
+  },
+  (error: AxiosError<ApiResponse<unknown>>) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+      return Promise.reject(new ApiClientError("登录状态已过期，请重新登录", { status: 401 }));
+    }
+
+    if (error.response?.status === 404) {
+      return Promise.reject(new ApiClientError("接口未实现或路径不匹配", { status: 404 }));
+    }
+
+    if (error.code === "ECONNABORTED") {
+      return Promise.reject(new ApiClientError("请求超时，请稍后重试或检查后端数据源状态"));
+    }
+
+    if (!error.response) {
+      return Promise.reject(
+        new ApiClientError("无法连接后端服务，请确认 http://localhost:8000 是否已启动")
+      );
+    }
+
+    return Promise.reject(
+      new ApiClientError(error.response.data?.message || error.message || "请求失败", {
+        status: error.response.status
+      })
+    );
+  }
 );
 
-export function request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
-  return http.request<ApiResponse<T>>(config) as unknown as Promise<ApiResponse<T>>;
+export async function request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  const response = await http.request<ApiResponse<T>>(config);
+  return response.data;
+}
+
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "请求失败，请稍后重试";
 }

@@ -330,7 +330,7 @@ class ResourceService:
     ) -> tuple[list[GeneratedResource], str | None]:
         node_name = node.name if node else "当前知识点"
         placeholder = AnimationScriptContent(title=f"{node_name}图解讲解", duration_seconds=0)
-        placeholder_content = json.dumps(placeholder.model_dump(by_alias=True), ensure_ascii=False)
+        placeholder_content = json.dumps(placeholder.model_dump(by_alias=True, mode="json"), ensure_ascii=False)
         resources = [
             GeneratedResource(
                 id=self.repository.next_resource_id(resource_type.value),
@@ -371,7 +371,7 @@ class ResourceService:
                 target_goal=target_goal,
                 documents=documents,
             )
-            content = json.dumps(lesson.model_dump(by_alias=True), ensure_ascii=False)
+            content = json.dumps(lesson.model_dump(by_alias=True, mode="json"), ensure_ascii=False)
             resources = [
                 resource.model_copy(
                     update={

@@ -67,6 +67,8 @@
 
 视频技能复用现有 `multimodal_agent`，不为视频技能新增 `AgentType`。最终资源输出必须通过已有 `POST /api/v1/audit/check`。
 
+`StoryboardSkill` 输出通用解释型 `clean_motion_graphics` 分镜，固定使用 `hook`、`definition`、`analogy`、`mechanism`、`comparison`、`process`、`example` 和 `summary` 场景节奏。`AnimationSpecSkill` 严格校验 `visualPlan`，不允许回退为算法专用动画或整段文字卡片。
+
 ## 禁止事项
 
 - 不新增 `AgentType` 值。
