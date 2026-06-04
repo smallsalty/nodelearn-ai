@@ -65,6 +65,7 @@ export type ResourceType =
 export type AgentType =
   | "profile_agent"
   | "planner_agent"
+  | "qa_agent"
   | "resource_agent"
   | "practice_agent"
   | "multimodal_agent"
@@ -100,3 +101,20 @@ export type BehaviorType =
   | "ask_question"
   | "create_note"
   | "review_wrong_question";
+
+export interface HealthCheckResult {
+  status: "ok" | "error";
+  database: "ok" | "error";
+  redis?: "ok" | "error";
+  vectorStore?: "ok" | "error";
+  graphDb?: "ok" | "error";
+  llmService?: "ok" | "error";
+}
+
+export interface SystemConfig {
+  appName: string;
+  appVersion: string;
+  enableMock: boolean;
+  enableStreamOutput: boolean;
+  enableSafetyAudit: boolean;
+}

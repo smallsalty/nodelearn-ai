@@ -1,5 +1,7 @@
 from typing import Any
+from uuid import uuid4
 
+from app.core.config import settings
 from app.repositories.learning_path_repository import default_learning_path_repository
 from app.repositories.profile_repository import default_profile_repository
 from app.schemas.agent import (
@@ -12,6 +14,7 @@ from app.schemas.agent import (
 )
 from app.schemas.common import AgentType, QuestionType, ResourceType, TaskStatus
 from app.schemas.learning_path import LearningPath
+from app.services.resource_service import ResourceService
 
 MOCK_TIME = "2026-05-19T10:00:00Z"
 DEFAULT_DEMO_NODE_ID = "node_linked_list_001"
@@ -63,9 +66,17 @@ class MultiAgentWorkflowRunner:
         self.agent_service = agent_service
         self.profile_repository = default_profile_repository
         self.learning_path_repository = default_learning_path_repository
+        self.resource_service = ResourceService(
+            profile_repository=self.profile_repository,
+            learning_path_repository=self.learning_path_repository,
+        )
 
     async def run(self, request: MultiAgentWorkflowRequest) -> MultiAgentWorkflowResult:
-        task_id = f"workflow_task_{request.workflow_type}_mock"
+        task_id = (
+            f"workflow_task_{request.workflow_type}_mock"
+            if settings.enable_mock
+            else f"workflow_task_{request.workflow_type}_{uuid4().hex[:12]}"
+        )
         events: list[AgentTaskEvent] = []
         steps: list[AgentRunResult]
         final_output: dict[str, Any]
@@ -108,9 +119,10 @@ class MultiAgentWorkflowRunner:
             task_id,
             events,
             AgentType.profile_agent,
-            input_payload={},
+            input_payload={"message": request.input.get("message")} if request.input.get("message") else {},
             context=AgentContext(profile=profile),
         )
+        profile = self.profile_repository.get_by_user_id(request.user_id)
         profile_analysis = profile_step.output.get("profileAnalysis", {})
         final_output = {
             "profile": profile_step.output.get("profile", {}),
@@ -148,7 +160,37 @@ class MultiAgentWorkflowRunner:
         node_id = request.node_id or learning_path_payload.get("currentNodeId") or DEFAULT_DEMO_NODE_ID
         learning_path = LearningPath(**learning_path_payload) if learning_path_payload else None
         current_node = self.learning_path_repository.get_node(node_id)
-        context = AgentContext(profile=profile, current_node=current_node, learning_path=learning_path)
+        node_id = current_node.id if current_node else node_id
+        retrieved_documents = []
+        if not settings.enable_mock:
+            retrieved_documents = self.resource_service.search_knowledge_base(
+                course_id=request.course_id,
+                query_text=request.input.get("message") or request.input.get("targetGoal") or (current_node.name if current_node else ""),
+                node_id=node_id,
+                top_k=3,
+            )
+            if not retrieved_documents:
+                raise RuntimeError("Hello Algo knowledge base returned no source documents")
+        context = AgentContext(
+            profile=profile,
+            current_node=current_node,
+            learning_path=learning_path,
+            retrieved_documents=retrieved_documents or None,
+        )
+
+        qa_step = await self._run_step(
+            request,
+            task_id,
+            events,
+            AgentType.qa_agent,
+            input_payload={
+                "message": request.input.get("message") or f"请结合 Hello 算法材料讲解{current_node.name if current_node else '当前知识点'}。",
+                "useRag": True,
+                "useProfile": True,
+            },
+            context=context,
+            node_id=node_id,
+        )
 
         resource_step = await self._run_step(
             request,
@@ -172,6 +214,24 @@ class MultiAgentWorkflowRunner:
             context=context,
             node_id=node_id,
         )
+        practice_step = await self._run_step(
+            request,
+            task_id,
+            events,
+            AgentType.practice_agent,
+            input_payload={
+                "questionTypes": request.input.get("questionTypes")
+                or [
+                    QuestionType.single_choice.value,
+                    QuestionType.short_answer.value,
+                    QuestionType.coding.value,
+                ],
+                "count": request.input.get("count", 3),
+                "difficulty": request.input.get("difficulty"),
+            },
+            context=context,
+            node_id=node_id,
+        )
         multimodal_step = await self._run_step(
             request,
             task_id,
@@ -180,7 +240,7 @@ class MultiAgentWorkflowRunner:
             input_payload={
                 "profileAnalysis": profile_analysis,
                 "resourceTypes": request.input.get("multimodalResourceTypes")
-                or [ResourceType.mind_map.value, ResourceType.animation_script.value],
+                or self._default_multimodal_resource_types(),
                 "targetGoal": request.input.get("targetGoal") or profile.learning_goal,
                 "customRequirement": request.input.get("customRequirement"),
             },
@@ -203,13 +263,24 @@ class MultiAgentWorkflowRunner:
         final_output = {
             "learningPath": learning_path_payload,
             "learningTasks": learning_tasks,
+            "answer": qa_step.output.get("answer", ""),
             "resourceAgentOutput": resource_step.output,
+            "questions": practice_step.output.get("questions", []),
             "multimodalAgentOutput": multimodal_step.output,
             "safetyAudit": safety_step.output,
             "generatedResources": generated_resources,
             "recommendations": resource_step.output.get("recommendations", []),
+            "retrievedDocuments": [document.model_dump(by_alias=True) for document in retrieved_documents],
         }
-        return [profile_step, planner_step, resource_step, multimodal_step, safety_step], final_output
+        return [
+            profile_step,
+            planner_step,
+            qa_step,
+            resource_step,
+            practice_step,
+            multimodal_step,
+            safety_step,
+        ], final_output
 
     async def _run_practice_review(
         self,
@@ -255,7 +326,7 @@ class MultiAgentWorkflowRunner:
             task_id,
             events,
             AgentType.profile_agent,
-            input_payload={},
+            input_payload={"message": request.input.get("message")} if request.input.get("message") else {},
             context=AgentContext(profile=updated_profile),
         )
         final_output = {
@@ -273,15 +344,19 @@ class MultiAgentWorkflowRunner:
         task_id: str,
         events: list[AgentTaskEvent],
     ) -> tuple[list[AgentRunResult], dict[str, Any]]:
-        profile = self.profile_repository.get_by_user_id(request.user_id)
         node_id = request.node_id or DEFAULT_DEMO_NODE_ID
+        profile = self.profile_repository.get_by_user_id(request.user_id)
         current_node = self.learning_path_repository.get_node(node_id)
         step = await self._run_step(
             request,
             task_id,
             events,
-            AgentType.multimodal_agent,
-            input_payload=request.input,
+            AgentType.qa_agent,
+            input_payload={
+                "message": request.input.get("message") or f"请讲解{current_node.name if current_node else '当前知识点'}。",
+                "useRag": request.input.get("useRag", True),
+                "useProfile": request.input.get("useProfile", True),
+            },
             context=AgentContext(profile=profile, current_node=current_node),
             node_id=node_id,
         )
@@ -318,9 +393,10 @@ class MultiAgentWorkflowRunner:
             task_id,
             events,
             AgentType.profile_agent,
-            input_payload={},
+            input_payload={"message": request.input.get("message")} if request.input.get("message") else {},
             context=AgentContext(profile=profile),
         )
+        profile = self.profile_repository.get_by_user_id(request.user_id)
         return profile, profile_step, profile_step.output.get("profileAnalysis", {})
 
     async def _planner_step(
@@ -403,3 +479,9 @@ class MultiAgentWorkflowRunner:
     def _resource_content_summary(self, generated_resources: list[dict[str, Any]]) -> str:
         contents = [str(resource.get("content", ""))[:300] for resource in generated_resources if resource.get("content")]
         return "\n\n".join(contents) if contents else "workflow resource content"
+
+    @staticmethod
+    def _default_multimodal_resource_types() -> list[str]:
+        if settings.enable_mock:
+            return [ResourceType.mind_map.value]
+        return [ResourceType.mind_map.value, ResourceType.animation_script.value]

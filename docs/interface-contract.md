@@ -285,6 +285,7 @@ type ResourceType =
 type AgentType =
   | "profile_agent"
   | "planner_agent"
+  | "qa_agent"
   | "resource_agent"
   | "practice_agent"
   | "multimodal_agent"
@@ -1242,6 +1243,163 @@ interface GeneratedResource {
   createdAt: string;
   updatedAt: string;
 }
+```
+
+### 11.1.1 知识点讲解视频结构化内容
+
+当 `resourceType` 为 `video_script` 或 `animation_script` 时，`GeneratedResource.content` 保存以下结构的 JSON 字符串。两类资源共享同一个最终 MP4 地址；`GeneratedResource.fileUrl` 与 `AnimationScriptContent.output.videoUrl` 均指向该文件。
+
+```ts
+type VideoStyle = "clean_motion_graphics";
+
+type SceneType =
+  | "hook"
+  | "definition"
+  | "analogy"
+  | "mechanism"
+  | "comparison"
+  | "process"
+  | "example"
+  | "summary";
+
+type VisualLayout =
+  | "center_focus"
+  | "left_right"
+  | "pipeline"
+  | "comparison"
+  | "timeline"
+  | "grid_focus"
+  | "summary_cards";
+
+type VisualAnimationType =
+  | "fade_in"
+  | "pop_in"
+  | "slide_in_left"
+  | "slide_in_right"
+  | "float"
+  | "draw"
+  | "highlight"
+  | "zoom_in"
+  | "stagger_in";
+
+interface TextVisualElement {
+  type: "text" | "keyword";
+  content: string;
+  animation: VisualAnimationType;
+}
+
+interface CardVisualElement {
+  type: "card";
+  content: string;
+  animation: VisualAnimationType;
+}
+
+interface IconVisualElement {
+  type: "icon";
+  name: string;
+  animation: VisualAnimationType;
+}
+
+interface ArrowVisualElement {
+  type: "arrow";
+  label: string;
+  animation: VisualAnimationType;
+}
+
+interface CircleVisualElement {
+  type: "circle";
+  label: string;
+  animation: VisualAnimationType;
+}
+
+interface GridVisualElement {
+  type: "grid";
+  label: string;
+  items?: string[];
+  highlightIndex: number;
+  animation: VisualAnimationType;
+}
+
+interface TimelineVisualElement {
+  type: "timeline";
+  items: string[];
+  animation: VisualAnimationType;
+}
+
+interface ImageVisualElement {
+  type: "image";
+  imageUrl: string;
+  alt: string;
+  animation: VisualAnimationType;
+}
+
+interface FormulaVisualElement {
+  type: "formula";
+  content: string;
+  animation: VisualAnimationType;
+}
+
+interface CodeVisualElement {
+  type: "code";
+  content: string;
+  animation: VisualAnimationType;
+}
+
+type VisualElement =
+  | TextVisualElement
+  | CardVisualElement
+  | IconVisualElement
+  | ArrowVisualElement
+  | CircleVisualElement
+  | GridVisualElement
+  | TimelineVisualElement
+  | ImageVisualElement
+  | FormulaVisualElement
+  | CodeVisualElement;
+
+interface VisualPlan {
+  layout: VisualLayout;
+  elements: VisualElement[];
+}
+
+interface VideoLessonScene {
+  sceneId: string;
+  sceneType: SceneType;
+  title: string;
+  narration: string;
+  durationSeconds: number;
+  visualPlan: VisualPlan;
+  audioUrl: string;
+}
+
+interface VideoLessonOutput {
+  videoUrl: string;
+  audioUrls: string[];
+}
+
+interface AnimationScriptContent {
+  title: string;
+  style: VideoStyle;
+  durationSeconds: number;
+  aspectRatio: "16:9";
+  scenes: VideoLessonScene[];
+  output: VideoLessonOutput;
+}
+```
+
+约束：
+
+```text
+1. hook 场景时长不得超过 15 秒。
+2. definition 场景必须包含 1-3 个 keyword 元素。
+3. summary 场景必须包含 3 个 card 元素。
+4. 每个 scene.visualPlan.elements 必须非空，且每个元素必须指定 animation。
+5. 每屏可见文字总量不得超过 80 个中文字；不得将整段 narration 直接复制进画面元素。
+6. image.imageUrl 只允许使用 HTTPS URL。
+7. 每个 scene.audioUrl 必须指向真实 TTS 音频文件，不允许使用占位音频。
+8. output.videoUrl 必须指向真实 MP4 文件，不允许使用占位视频。
+9. 视频输出前必须调用 POST /api/v1/audit/check；只有 auditStatus=passed 时才能设置 status=success。
+10. 历史 stack_animation 和 text_slide JSON 不再兼容，旧资源需要重新生成。
 ```
 
 数据库表：
@@ -2275,10 +2433,32 @@ NEO4J_PASSWORD=
 
 FILE_STORAGE_TYPE=local
 FILE_STORAGE_PATH=./storage
+FILE_STORAGE_URL_PREFIX=/storage
+FILE_STORAGE_PUBLIC_BASE_URL=http://localhost:8000/storage
 MINIO_ENDPOINT=
 MINIO_ACCESS_KEY=
 MINIO_SECRET_KEY=
 MINIO_BUCKET=
+
+TTS_PROVIDER=doubao_v3_http_chunked
+TTS_BASE_URL=https://openspeech.bytedance.com/api/v3/tts/unidirectional
+TTS_API_KEY=
+TTS_RESOURCE_ID=seed-tts-2.0
+TTS_VOICE_NAME=
+TTS_AUDIO_FORMAT=mp3
+TTS_SAMPLE_RATE=24000
+TTS_TIMEOUT_SECONDS=120
+
+VIDEO_RENDER_PROVIDER=remotion
+VIDEO_RENDER_PROJECT_PATH=../video-renderer
+VIDEO_RENDER_BROWSER_EXECUTABLE=
+VIDEO_RENDER_TIMEOUT_SECONDS=600
+FFMPEG_BINARY=ffmpeg
+FFPROBE_BINARY=ffprobe
+
+AUDIT_API_BASE_URL=http://127.0.0.1:8000/api/v1
+AUDIT_TIMEOUT_SECONDS=30
+RUN_REAL_VIDEO_TESTS=false
 
 ENABLE_SAFETY_AUDIT=true
 ENABLE_STREAM_OUTPUT=true

@@ -16,6 +16,14 @@
 - `ResourceRecommendation`
 - `ResourcePushRecord`
 - `RecommendationRequest`
+- `VideoStyle`
+- `SceneType`
+- `VisualLayout`
+- `VisualAnimationType`
+- `VisualElement`
+- `VisualPlan`
+- `VideoLessonScene`
+- `AnimationScriptContent`
 
 ## 路由
 
@@ -51,6 +59,30 @@
 - 结构定义文件：`backend/app/schemas/resource.py`
 - 服务文件：`backend/app/services/resource_service.py`
 - 智能体文件：`backend/app/agents/resource_agent.py`
+- 视频技能文件：`backend/app/agents/multimodal_skills.py`
+- 视频渲染器：`video-renderer/`
+
+## 知识点讲解视频
+
+- 当 `resourceTypes` 包含 `video_script` 或 `animation_script` 时，统一执行真实视频生成流程。
+- `GeneratedResource.content` 保存 `AnimationScriptContent` JSON 字符串。
+- `GeneratedResource.fileUrl` 保存审核通过后的 MP4 地址。
+- 两种视频资源类型必须同时保存，并共享最终 MP4。
+- 新生成资源统一使用 `style=clean_motion_graphics` 和 `sceneType + visualPlan`，不再生成 `stack_animation` 或 `text_slide`。
+- 分镜固定覆盖问题开场、定义、类比、机制、对比、流程、例子和总结；画面只展示关键词、短句和标签。
+- Remotion 使用 `UniversalExplainerVideoRenderer` 根据布局和元素类型渲染动画，不在导出画面中显示整段旁白。
+- TTS 使用豆包 V3 HTTP Chunked，由后端聚合为真实 MP3。
+- MP4 使用 Remotion 导出；Remotion 通过后端静态服务 HTTP 地址读取音频，并在发布前通过 `ffprobe` 验证 MP4 同时包含音频流和视频流。
+- 豆包 `TTS_VOICE_NAME` 必须与 `TTS_RESOURCE_ID` 匹配；`seed-tts-2.0` 可使用已验证的 `zh_female_vv_uranus_bigtts`。
+- 音频、视频和依赖失败必须明确标记 `failed`。
+- 历史旧视频 JSON 不再兼容，需要重新生成。
+
+## 真实材料和导图
+
+- 真实资源生成未传入材料时，自动检索 Hello Algo PostgreSQL 来源资源。
+- 指定节点时，优先取该节点的阅读材料，再补充同节点代码案例；无节点材料时才使用全文和课程级兜底。
+- `mind_map` 内容统一使用 Mermaid `mindmap` 源码；规范化会移除 Markdown 围栏和可选图标指令，并转义会与 Mermaid 形状语法冲突的非根节点标点。
+- 开发验收页同时展示真实 MP4 和 `VideoLessonPlayer` 分镜、字幕、音频控制。
 
 ## 禁止事项
 

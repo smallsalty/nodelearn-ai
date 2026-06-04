@@ -1,10 +1,13 @@
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.main import app
 
 RESOURCE_GENERATE_RESULT_FIELDS = {"taskId", "resourceIds", "status"}
@@ -49,7 +52,9 @@ def test_generate_mind_map_resource_can_be_read_back():
     assert detail["status"] == "success"
 
 
-def test_node_generated_resources_include_multimodal_resource():
+def test_node_generated_resources_include_multimodal_resource(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(settings, "tts_api_key", "")
+
     client = TestClient(app)
     generated = client.post(
         "/api/v1/resources/generate",
@@ -64,9 +69,12 @@ def test_node_generated_resources_include_multimodal_resource():
 
     resource = next(item for item in node_resources if item["id"] == generated["resourceIds"][0])
 
+    assert generated["status"] == "failed"
     assert resource["resourceType"] == "video_script"
-    assert "# 视频标题" in resource["content"]
-    assert "## 分镜脚本" in resource["content"]
+    assert json.loads(resource["content"])["scenes"] == []
+    assert resource["fileUrl"] is None
+    assert resource["status"] == "failed"
+    assert resource["auditStatus"] == "unchecked"
 
 
 def test_audit_check_marks_abnormal_multimodal_content_need_review():

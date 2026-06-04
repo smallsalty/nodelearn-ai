@@ -20,19 +20,19 @@ function mockResponse<T>(data: T): ApiResponse<T> {
 }
 
 function mockPracticeRecord(payload: PracticeSubmitRequest): ApiResponse<PracticeRecord> {
-  const correctAnswer = "新节点的 next";
+  const correctAnswer = "栈顶";
   const isCorrect = payload.userAnswer.trim() === correctAnswer;
 
   return mockResponse({
     id: `practice_record_${Date.now()}`,
     userId: payload.userId,
     questionId: payload.questionId,
-    nodeId: "node_linked_list_001",
+    nodeId: "node_stack_001",
     userAnswer: payload.userAnswer,
     correctAnswer,
     isCorrect,
     score: isCorrect ? 100 : 60,
-    mistakeReason: isCorrect ? "" : "需要先连接新节点和后继节点，避免链表断开。",
+    mistakeReason: isCorrect ? "" : "需要区分栈顶和栈底，出栈遵循后进先出。",
     durationSeconds: payload.durationSeconds,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -40,8 +40,14 @@ function mockPracticeRecord(payload: PracticeSubmitRequest): ApiResponse<Practic
 }
 
 export const practiceApi = {
+  generatePractices(payload: PracticeGenerateRequest) {
+    return request<PracticeQuestion[]>({ method: "POST", url: "/practices/generate", data: payload });
+  },
   generateQuestions(payload: PracticeGenerateRequest) {
     return request<PracticeQuestion[]>({ method: "POST", url: "/practices/generate", data: payload });
+  },
+  getQuestions(params: PageRequest) {
+    return request<PageResult<PracticeQuestion>>({ method: "GET", url: "/practices/questions", params });
   },
   listQuestions(params: PageRequest) {
     return request<PageResult<PracticeQuestion>>({ method: "GET", url: "/practices/questions", params });
@@ -55,10 +61,22 @@ export const practiceApi = {
     }
     return request<PracticeRecord>({ method: "POST", url: "/practices/submit", data: payload });
   },
+  submitPractice(payload: PracticeSubmitRequest) {
+    if (enableMock) {
+      return Promise.resolve(mockPracticeRecord(payload));
+    }
+    return request<PracticeRecord>({ method: "POST", url: "/practices/submit", data: payload });
+  },
   listPracticeRecords(userId: string) {
     return request<PracticeRecord[]>({ method: "GET", url: `/users/${userId}/practice-records` });
   },
+  getPracticeRecords(userId: string) {
+    return request<PracticeRecord[]>({ method: "GET", url: `/users/${userId}/practice-records` });
+  },
   listWrongQuestions(userId: string) {
+    return request<PracticeQuestion[]>({ method: "GET", url: `/users/${userId}/wrong-questions` });
+  },
+  getWrongQuestions(userId: string) {
     return request<PracticeQuestion[]>({ method: "GET", url: `/users/${userId}/wrong-questions` });
   },
   removeWrongQuestion(userId: string, questionId: string) {

@@ -1,7 +1,9 @@
 from typing import Any
+from uuid import uuid4
 
 from pydantic import BaseModel
 
+from app.core.config import settings
 from app.schemas.agent import AgentRunRequest, AgentRunResult
 from app.schemas.common import AgentType, TaskStatus
 from app.services.llm_service import LLMService
@@ -28,7 +30,11 @@ class BaseAgent:
     ) -> AgentRunResult:
         agent_type = self.resolve_agent_type()
         return AgentRunResult(
-            task_id=f"agent_task_{agent_type.value}_mock",
+            task_id=(
+                f"agent_task_{agent_type.value}_mock"
+                if settings.enable_mock
+                else f"agent_task_{agent_type.value}_{uuid4().hex[:12]}"
+            ),
             agent_type=agent_type,
             status=status,
             output=output,

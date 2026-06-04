@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-05-29
+最后更新：2026-06-04
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -61,28 +61,58 @@
 - 2026-05-29 前端测试面板实现后运行 `npm run build`，结果为通过；当前前端未定义独立 `type-check`、`lint`、`test` 脚本。
 - 2026-05-29 完成真实 PostgreSQL Hello Algo 数据接入计划的代码准备：`backend/.env.example` 改为真实运行模板，Hello Algo 导入使用 `course_ds_001`，学习路径/图谱/资源/练习链路在 `ENABLE_MOCK=false` 时优先读取数据库，不再静默回退 mock。
 - 2026-05-29 完成 DeepSeek OpenAI-compatible Chat Completions 接入：`LLMService` 通过 `LLM_PROVIDER`、`LLM_BASE_URL`、`LLM_API_KEY` 和 `LLM_MODEL_NAME` 统一调用真实模型，`/chat/send`、资源生成和主观题评分经该边界接入；本次按用户要求未运行测试。
+- 2026-06-01 补齐异步 `LLMService.generate_text()`、`generate_json()` 和 `model_name`，真实模式调用 DeepSeek `/chat/completions`，JSON 抽取启用 `response_format={"type":"json_object"}`；普通测试通过 `backend/app/tests/conftest.py` 强制 mock。
+- 2026-06-01 统一 `ProfileService`、`ProfileAgent` 与工作流使用的共享 `ProfileRepository`，恢复 `ProfileAgent.run()`，并让 `/api/v1/profiles/extract` 使用 DeepSeek JSON 模式抽取后同步更新内存画像。
+- 2026-06-01 完成 Hello Algo 稳定节点解析，支持 demo 节点 ID、节点名称和导入后真实节点 ID；本地文本 RAG 只检索 `user_id=system` 的 Hello Algo 来源资源，关键词无匹配时回退当前节点，再回退课程来源材料。
+- 2026-06-01 将 `/api/v1/chat/send` 改为服务层真实 RAG 问答；`resource_generate` 工作流按 `profile_agent -> planner_agent -> Hello Algo DB retrieval -> resource_agent -> multimodal_agent -> safety_agent` 串联，并将生成资源持久化到 PostgreSQL。
+- 2026-06-01 更新 `/api/v1/system/health` 数据库探测为真实 `SELECT 1`；Docker Compose 后端容器使用 `postgres` 主机名连接 PostgreSQL 16 服务。
+- 2026-06-01 更新开发测试面板，新增自然语言输入、真实 RAG 问答按钮、自然语言完整工作流按钮以及检索材料展示。
+- 2026-06-01 启动 PostgreSQL 并幂等导入 Hello Algo，回查为 `20` 个章节、`105` 个节点、`85` 条关系和 `459` 个 `system` 来源资源。
+- 2026-06-01 运行 `python -m pytest backend/app/tests -q`，结果为 `70 passed`；运行 `npm run build`，结果为通过。
+- 2026-06-01 显式运行付费烟测 `python -m app.smoke.real_agent_flow`，确认 `/models` 包含 `deepseek-v4-pro`，真实 RAG 返回 3 条材料，逐智能体和 5 步完整工作流均成功，生成资源已持久化且 `modelName=deepseek-v4-pro`、`auditStatus=passed`。
+- 2026-06-02 补齐知识点讲解视频契约，登记 `AnimationScriptContent`、`VideoLessonScene`、`stack_animation`、`text_slide` 和豆包 TTS、Remotion、文件存储、内部审计环境变量。
+- 2026-06-02 完成真实知识点讲解视频同步链路：显式请求 `video_script` 或 `animation_script` 时，执行 RAG、DeepSeek 脚本和分镜、豆包 V3 HTTP Chunked TTS、真实 MP3 校验、Remotion H.264/AAC MP4、`/api/v1/audit/check` 和 `generated_resource` 更新；失败时不发布假 `fileUrl`。
+- 2026-06-02 新增 `VideoLessonPlayer` 和资源页演示闭环，支持分镜标题、字幕、代码高亮、音频、上一步、下一步、自动播放、进度条、栈动画、通用文本动态舞台和 MP4 播放入口。
+- 2026-06-02 新增视频失败测试、契约测试和显式付费真实流程测试；运行 `python -m pytest backend/app/tests -q`，结果为 `77 passed, 1 skipped`；运行前端 `npm run build` 和 `video-renderer` 的 `npx tsc --noEmit`，结果均为通过。
+- 2026-06-02 按授权补齐契约 `qa_agent`，新增独立 `QaAgent` 并复用 `ChatService` 的 Hello Algo PostgreSQL 检索和 DeepSeek 回答；`workflowType="qa"` 已修正为只调用 `qa_agent`。
+- 2026-06-02 将完整资源工作流固定为 `profile_agent -> planner_agent -> Hello Algo retrieval -> qa_agent -> resource_agent -> practice_agent -> multimodal_agent -> safety_agent`，最终输出组合 `answer`、`questions`、`generatedResources`、`retrievedDocuments` 和 `safetyAudit`。
+- 2026-06-02 完成真实练习题生成：`practice_agent` 异步调用 DeepSeek JSON，自动使用 Hello Algo 材料并严格校验题型、数量、难度和字段；完整链生成单选、简答、代码题各 1 道。
+- 2026-06-02 修正真实资源检索优先级：指定知识点时优先读取对应 Hello Algo 阅读材料和代码案例，避免自然语言泛词命中课程级兜底内容。
+- 2026-06-02 修正真实视频链：本机豆包 `seed-tts-2.0` 使用已验证音色 `zh_female_vv_uranus_bigtts`；Remotion 改为通过 HTTP 静态地址读取 MP3；DeepSeek 偶发空内容在统一 LLM 边界重试 1 次。
+- 2026-06-02 扩展 `/dev/agent-flow-test`：覆盖 7 个单体智能体、真实 RAG、完整工作流、3 道完整题、Mermaid 导图、共享 MP4，以及 `VideoLessonPlayer` 分镜、字幕和音频控制；补充开发 CORS、长链路超时和旧 Chromium Mermaid polyfill。
+- 2026-06-02 启动 PostgreSQL 回查 Hello Algo 为 `20` 个章节、`105` 个节点、`85` 条关系和 `459` 个来源资源；运行 `python -m app.smoke.real_agent_flow`，确认 `/models` 含 `deepseek-v4-pro`、7 个智能体单体成功、真实 RAG 成功、完整链返回 3 道题、1 份导图、共享 MP4 双资源且持久化审核通过。
+- 2026-06-02 显式运行付费视频测试 `$env:RUN_REAL_VIDEO_TESTS='true'; python -m pytest app/tests/services/test_real_video_generation.py -q`，结果为 `1 passed`；验证音频下载、真实 MP4 和外部 `ffprobe` 音视频双流。
+- 2026-06-02 Browser 插件未提供，使用 Playwright MCP 回退验证开发页桌面与 `390px` 移动视图；真实 RAG、完整工作流、共享 MP4、分镜播放器和 Mermaid SVG 均通过，控制台零错误且移动端无页面横向溢出。
+- 2026-06-02 最终运行 `python -m pytest backend/app/tests -q`，结果为 `86 passed, 1 skipped`；运行前端 `npm run build`、`video-renderer` 的 `npx tsc --noEmit`、`python -m compileall -q app` 和 `git diff --check`，结果均为通过。
+- 2026-06-02 将视频内容契约升级为通用 `clean_motion_graphics`：新增 `SceneType`、`VisualLayout`、`VisualAnimationType`、严格 `VisualElement` 联合类型和 `VisualPlan`，并停止兼容历史 `stack_animation`、`text_slide` JSON。
+- 2026-06-02 将 `StoryboardSkill` 和 `AnimationSpecSkill` 改为通用解释型分镜，固定覆盖问题开场、定义、类比、机制、对比、流程、例子和总结；显式视频请求在 mock 模式明确失败，不再返回假媒体。
+- 2026-06-02 新增 Remotion `UniversalExplainerVideoRenderer` 与 motion graphics 组件库，导出画面只展示关键词、短句、图标、箭头、流程和总结卡片，不再显示整段旁白。
+- 2026-06-02 更新 `VideoLessonPlayer`、移除前端开发模块假视频成功数据，并运行普通测试 `python -m pytest backend/app/tests -q`，结果为 `92 passed, 1 skipped`；前端构建和 Remotion TypeScript 检查通过。
+- 2026-06-02 显式运行付费哈希表视频测试 `$env:RUN_REAL_VIDEO_TESTS='true'; python -m pytest app/tests/services/test_real_video_generation.py -q -s`，节点为 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4`，结果为 `1 passed in 236.38s`；验证 8 类通用分镜、真实豆包 TTS、共享 MP4、审计通过和 `ffprobe` H.264/AAC 双流。
+- 2026-06-02 抽帧验收发现并修正 `comparison` 布局只接收 `card` 的问题；重新执行真实 Remotion/ffmpeg 导出，并逐场景比较前后帧，`hook`、`definition`、`analogy`、`mechanism`、`comparison`、`process`、`example` 和 `summary` 均存在画面变化。
+- 2026-06-02 通用视频升级最终回归：运行 `python -m compileall -q app; python -m pytest app/tests -q`，结果为 `92 passed, 1 skipped`；运行前端 `npm run build`、`video-renderer` 的 `npx tsc --noEmit` 和 `git diff --check`，结果均为通过。
+- 2026-06-03 完成 Vue 3 + Vite + Element Plus 完整演示版前端：登录、首页、对话、画像、学习路径、资源、知识图谱、练习、报告、知识库管理和浮窗均接入契约 API 模块；新增浅色学习平台设计系统、应用壳、移动底部导航、路由守卫、通用状态组件、Markdown 安全渲染和真实后端错误提示。
+- 2026-06-03 前端验证结果：运行 `npm run build` 通过；静态检查 `frontend/src/pages` 与 `frontend/src/components` 未发现直接 `fetch(` 或 `axios`；Browser 插件不可用，使用 Playwright + 系统 Edge 回退完成登录、9 个核心路由、390px 移动视口、浮窗按钮和 ECharts 知识图谱验收，控制台错误为 0。
+- 2026-06-03 后端联调结果：默认前端仍连接 `http://localhost:8000/api/v1` 且 `VITE_ENABLE_MOCK=false`；本机 Docker Desktop 未运行，真实数据库链路无法验证，临时使用 `ENABLE_MOCK=true` 的 HTTP 后端完成浏览器流程。`/system/health`、登录、用户、图谱、对话、资源、路径、练习、报告和笔记接口响应 `code=200`，但 `/courses` 与 `/courses/{courseId}/nodes` 在当前后端进程下会超时。
+- 2026-06-04 补强通用知识点 motion graphics 视频生成器：`VideoRenderSkill` 在 Remotion 依赖检查和渲染前显式校验 `AnimationScriptContent`、非空 8 场景、HTTP(S) scene 音频和 `output.audioUrls` 一致性；`UniversalExplainerVideoRenderer` 新增 `grid_focus` 主视觉布局，motion graphics 组件增加帧驱动重点强调。
+- 2026-06-04 补充视频契约、服务和真实流程测试断言，覆盖旧 `text_slide` 拒绝、缺少元素动画、definition keyword 边界、完整 8 场景、渲染前预检、真实输出 `videoUrl/fileUrl/audioUrls` 一致性和逐场景非静态抽帧；运行 `python -m pytest app/tests/contract/test_video_contract.py app/tests/services/test_video_generation.py -q`，结果为 `20 passed`；运行 `video-renderer` 的 `npx tsc --noEmit` 和前端 `npm run build`，结果均通过；付费真实视频测试按当前环境配置跳过。
+- 2026-06-04 显式运行真实多模态视频智能体生成“哈希表”讲解视频：启动 Docker PostgreSQL，导入 Hello Algo 数据后调用 `POST /api/v1/resources/generate`，节点为 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4`，任务 `resource_task_927160d4c1f7` 返回 `success`；两份资源 `resource_video_script_f3ae7e16b738` 和 `resource_animation_script_ce23c8852622` 均为 `status=success`、`auditStatus=passed`，共享 `http://localhost:8000/storage/generated_resources/resource_task_927160d4c1f7/lesson.mp4`；`ffprobe` 验证 H.264/AAC 音视频双流，逐场景抽帧确认 8 个场景均非静态画面。
 
 ### 进行中
 
-- 数据结构课程知识库和节点导入工作。
-- 课程、图谱和资源服务从纯模拟占位逐步转向真实数据库读取。
-- `data_sources/hello-algo` 与后端导入代码相关的 Hello Algo 来源导入支持。
+- 继续扩展真实演示链路之外的业务模块。
 - 项目状态和 Codex 同步文档维护。
 
 ### 未开始
 
-- 真实对话式画像抽取和动态画像更新。
-- 真实多智能体编排业务流程。
-- 真实 RAG、向量库、图数据库、Redis 和缓存调用。
-- 超出规则模板和 mock LLM 的个性化资源与多模态内容生成逻辑。
+- 向量库、图数据库、Redis 和缓存真实调用。
 - 超出最小规则的真实 safety/audit 校验。
 - 学习路径规划的完整图搜索逻辑。
 - 资源推荐排序的真实行为数据融合。
-- 结合画像、图谱、RAG 和错题上下文的智能答疑。
-- 超出规则/mock 行为的练习生成、批改、错因分析、代码运行沙箱和反馈。
+- 结合图谱和错题上下文的增强智能答疑。
+- 超出当前真实题目生成范围的批改、错因分析、代码运行沙箱和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
 - 浮窗笔记界面和笔记/错题复习流程。
-- 前端页面从 TODO 占位升级为可演示页面。
 - 生产迁移和真实持久化发布流程。
 
 ### 阻塞
@@ -94,7 +124,9 @@ CONTRACT_MISSING: 缺少 xxx 定义
 ```
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
+- 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
+- 本机 Docker Desktop 已在 2026-06-04 手动启动并验证 PostgreSQL、Hello Algo 导入、`ENABLE_MOCK=false` 后端健康检查和真实视频生成链路；若后续桌面重启或 Docker 停止，需要重新启动 `docker compose -f docker/docker-compose.yml up -d postgres`。
 
 ## 功能待办
 
@@ -111,6 +143,7 @@ CONTRACT_MISSING: 缺少 xxx 定义
 - 将前端 TODO 页面升级为可演示视图，并调用现有 API 模块。
 - 使用模拟或空实现推进画像、对话、资源生成、学习路径、练习、报告和笔记流程，保持契约一致。
 - 增加前端 API 模块、路由路径、响应包装、枚举值和数据库字段的契约测试。
+- 豆包凭证或媒体依赖变更后，显式运行 `RUN_REAL_VIDEO_TESTS=true` 的付费真实视频流程回归测试。
 
 ### 第三优先级
 

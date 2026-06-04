@@ -1,3 +1,6 @@
+from uuid import uuid4
+
+from app.core.config import settings
 from app.schemas.common import TaskStatus
 from app.schemas.resource import (
     GeneratedResource,
@@ -22,19 +25,27 @@ class ResourceRepository:
 
     def next_task_id(self) -> str:
         self._task_counter += 1
-        return f"resource_task_mock_{self._task_counter:03d}"
+        return f"resource_task_mock_{self._task_counter:03d}" if settings.enable_mock else f"resource_task_{uuid4().hex[:12]}"
 
     def next_resource_id(self, resource_type: str) -> str:
         self._resource_counter += 1
-        return f"resource_{resource_type}_mock_{self._resource_counter:03d}"
+        return (
+            f"resource_{resource_type}_mock_{self._resource_counter:03d}"
+            if settings.enable_mock
+            else f"resource_{resource_type}_{uuid4().hex[:12]}"
+        )
 
     def next_recommendation_id(self) -> str:
         self._recommendation_counter += 1
-        return f"recommendation_mock_{self._recommendation_counter:03d}"
+        return (
+            f"recommendation_mock_{self._recommendation_counter:03d}"
+            if settings.enable_mock
+            else f"recommendation_{uuid4().hex[:12]}"
+        )
 
     def next_push_record_id(self) -> str:
         self._push_counter += 1
-        return f"push_mock_{self._push_counter:03d}"
+        return f"push_mock_{self._push_counter:03d}" if settings.enable_mock else f"push_{uuid4().hex[:12]}"
 
     def save_generation_result(self, result: ResourceGenerateResult) -> ResourceGenerateResult:
         self._generation_results[result.task_id] = result.model_copy(deep=True)

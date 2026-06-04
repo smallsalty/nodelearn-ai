@@ -56,7 +56,7 @@ def test_resource_generate_workflow_runs_resource_multimodal_and_safety_steps():
                 user_id="user_workflow_resource_001",
                 input_payload={
                     "resourceTypes": ["lecture_doc", "mind_map", "practice_question", "code_case"],
-                    "multimodalResourceTypes": ["mind_map", "animation_script"],
+                    "multimodalResourceTypes": ["mind_map"],
                 },
             )
         )
@@ -65,6 +65,17 @@ def test_resource_generate_workflow_runs_resource_multimodal_and_safety_steps():
     agent_types = step_agent_types(result)
 
     assert result.status == "success"
+    assert agent_types == [
+        "profile_agent",
+        "planner_agent",
+        "qa_agent",
+        "resource_agent",
+        "practice_agent",
+        "multimodal_agent",
+        "safety_agent",
+    ]
+    assert result.final_output["answer"]
+    assert len(result.final_output["questions"]) == 3
     assert "resource_agent" in agent_types
     assert "multimodal_agent" in agent_types
     assert "safety_agent" in agent_types
@@ -93,6 +104,7 @@ def test_workflow_steps_use_contract_agent_type_values():
     allowed_agent_types = {
         "profile_agent",
         "planner_agent",
+        "qa_agent",
         "resource_agent",
         "practice_agent",
         "multimodal_agent",
@@ -104,3 +116,16 @@ def test_workflow_steps_use_contract_agent_type_values():
     assert set(data.keys()) == WORKFLOW_RESULT_FIELDS
     assert all(step["agentType"] in allowed_agent_types for step in data["steps"])
     assert all(set(step.keys()) <= {"taskId", "agentType", "status", "output", "errorMessage"} for step in data["steps"])
+
+
+def test_qa_workflow_runs_only_qa_agent():
+    result = run(
+        MultiAgentWorkflowRunner().run(
+            make_request("qa", input_payload={"message": "请解释栈为什么是后进先出。"})
+        )
+    )
+
+    assert result.status == "success"
+    assert step_agent_types(result) == ["qa_agent"]
+    assert result.final_output["answer"] == "mock"
+    assert result.final_output["usedAgentTypes"] == ["qa_agent", "resource_agent", "profile_agent"]

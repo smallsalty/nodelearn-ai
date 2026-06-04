@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import json
+import logging
 from typing import Any
 
-from sqlalchemy import func, or_, select
+import re
+
+from sqlalchemy import case, func, or_, select
 
 from app.core.config import settings
 from app.db.session import session_context
@@ -30,8 +34,14 @@ from app.schemas.resource import (
     RetrievedDocument,
     UploadedFile,
 )
+from app.schemas.video import AnimationScriptContent
+from app.agents.multimodal_skills import VideoAuditError, VideoGenerationService
 from app.services.audit_service import AuditService
 from app.services.llm_service import LLMService
+
+SOURCE_USER_ID = "system"
+VIDEO_RESOURCE_TYPES = {ResourceType.video_script, ResourceType.animation_script}
+logger = logging.getLogger(__name__)
 
 
 def now_utc() -> datetime:
@@ -98,6 +108,7 @@ class ResourceGenerationPlan:
     recommendations: list[ResourceRecommendation]
     push_records: list[ResourcePushRecord]
     resource_plan: list[dict[str, Any]]
+    error_message: str | None = None
 
 
 class ResourceService:
@@ -110,12 +121,14 @@ class ResourceService:
         learning_path_repository: LearningPathRepository | None = None,
         llm_service: LLMService | None = None,
         audit_service: AuditService | None = None,
+        video_generation_service: VideoGenerationService | None = None,
     ) -> None:
         self.repository = repository or default_resource_repository
         self.profile_repository = profile_repository or default_profile_repository
         self.learning_path_repository = learning_path_repository or default_learning_path_repository
         self.llm_service = llm_service or LLMService()
         self.audit_service = audit_service or AuditService()
+        self.video_generation_service = video_generation_service or VideoGenerationService(self.llm_service)
 
     def get_file(self, file_id: str) -> UploadedFile | None:
         with session_context() as session:
@@ -192,18 +205,56 @@ class ResourceService:
         profile_analysis = profile_analysis or {}
         node = self._resolve_node(payload.node_id, profile, learning_path, learning_tasks)
         target_goal = self._target_goal(payload, profile, profile_analysis)
+        if not settings.enable_mock and not retrieved_documents:
+            retrieved_documents = self.search_knowledge_base(
+                course_id=payload.course_id,
+                query_text=payload.custom_requirement or target_goal or (node.name if node else "数据结构"),
+                node_id=node.id if node else payload.node_id,
+                top_k=3,
+            )
+            if not retrieved_documents:
+                raise RuntimeError("Hello Algo knowledge base returned no source documents for resource generation")
         resource_types = self._select_resource_types(payload.resource_types, profile, profile_analysis, node, target_goal)
+        video_requested = any(resource_type in VIDEO_RESOURCE_TYPES for resource_type in payload.resource_types)
+        resource_types = [resource_type for resource_type in resource_types if resource_type not in VIDEO_RESOURCE_TYPES]
 
         task_id = self.repository.next_task_id()
         resources: list[GeneratedResource] = []
         recommendations: list[ResourceRecommendation] = []
         push_records: list[ResourcePushRecord] = []
         resource_plan: list[dict[str, Any]] = []
+        error_message: str | None = None
+
+        if video_requested:
+            video_resources, video_error = await self._generate_video_resources(
+                task_id=task_id,
+                payload=payload,
+                profile=profile,
+                node=node,
+                target_goal=target_goal,
+                retrieved_documents=retrieved_documents,
+            )
+            resources.extend(video_resources)
+            error_message = video_error
+            for resource in video_resources:
+                resource_plan.append(self._resource_plan_item(len(resource_plan) + 1, resource))
+                if resource.status == TaskStatus.success and resource.audit_status == AuditStatus.passed:
+                    recommendation = self._build_recommendation(resource, profile, node)
+                    push_record = self._build_push_record(resource, recommendation.reason)
+                    recommendations.append(self.repository.save_recommendation(recommendation))
+                    push_records.append(self.repository.save_push_record(push_record))
 
         for order_index, resource_type in enumerate(resource_types, start=1):
             resource_id = self.repository.next_resource_id(resource_type.value)
             title = self._resource_title(node, resource_type)
-            prompt = self._resource_prompt(profile, node, resource_type, target_goal, payload.custom_requirement)
+            prompt = self._resource_prompt(
+                profile,
+                node,
+                resource_type,
+                target_goal,
+                payload.custom_requirement,
+                retrieved_documents,
+            )
             template_content = self._render_template(
                 resource_type,
                 node,
@@ -212,7 +263,8 @@ class ResourceService:
                 retrieved_documents,
             )
             content = await self.llm_service.generate_text(prompt, mock_text=template_content)
-            if payload.custom_requirement:
+            content = self._normalize_generated_content(resource_type, content)
+            if payload.custom_requirement and resource_type != ResourceType.mind_map:
                 content = f"{content}\n\n{payload.custom_requirement}"
 
             audit_result = await self.audit_service.check_content(
@@ -242,16 +294,7 @@ class ResourceService:
             if not settings.enable_mock:
                 self._persist_generated_resource(resource)
             resources.append(self.repository.save_resource(resource))
-            resource_plan.append(
-                {
-                    "orderIndex": order_index,
-                    "nodeId": resource.node_id,
-                    "resourceType": resource_type.value,
-                    "title": title,
-                    "auditStatus": audit_status.value,
-                    "status": status.value,
-                }
-            )
+            resource_plan.append(self._resource_plan_item(len(resource_plan) + 1, resource))
 
             if audit_status == AuditStatus.passed:
                 recommendation = self._build_recommendation(resource, profile, node)
@@ -259,7 +302,7 @@ class ResourceService:
                 recommendations.append(self.repository.save_recommendation(recommendation))
                 push_records.append(self.repository.save_push_record(push_record))
 
-        result_status = TaskStatus.success if recommendations else TaskStatus.failed
+        result_status = TaskStatus.success if resources and all(resource.status == TaskStatus.success for resource in resources) else TaskStatus.failed
         result = self.repository.save_generation_result(
             ResourceGenerateResult(
                 task_id=task_id,
@@ -273,7 +316,122 @@ class ResourceService:
             recommendations=recommendations,
             push_records=push_records,
             resource_plan=resource_plan,
+            error_message=error_message,
         )
+
+    async def _generate_video_resources(
+        self,
+        task_id: str,
+        payload: ResourceGenerateRequest,
+        profile: StudentProfile,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        retrieved_documents: list[RetrievedDocument] | None,
+    ) -> tuple[list[GeneratedResource], str | None]:
+        node_name = node.name if node else "当前知识点"
+        placeholder = AnimationScriptContent(title=f"{node_name}图解讲解", duration_seconds=0)
+        placeholder_content = json.dumps(placeholder.model_dump(by_alias=True, mode="json"), ensure_ascii=False)
+        resources = [
+            GeneratedResource(
+                id=self.repository.next_resource_id(resource_type.value),
+                user_id=payload.user_id,
+                course_id=payload.course_id,
+                node_id=node.id if node else payload.node_id,
+                title=self._resource_title(node, resource_type),
+                resource_type=resource_type,
+                content=placeholder_content,
+                file_url=None,
+                prompt=f"生成{node_name}知识点讲解视频",
+                model_name=self.llm_service.model_name,
+                status=TaskStatus.running,
+                audit_status=AuditStatus.unchecked,
+                created_at=DEMO_TIME,
+                updated_at=DEMO_TIME,
+            )
+            for resource_type in (ResourceType.video_script, ResourceType.animation_script)
+        ]
+        for resource in resources:
+            self._save_generated_resource(resource)
+
+        try:
+            documents = retrieved_documents or []
+            if not documents and not settings.enable_mock:
+                documents = self.search_knowledge_base(
+                    course_id=payload.course_id,
+                    query_text=node_name,
+                    node_id=node.id if node else payload.node_id,
+                    top_k=3,
+                )
+            lesson = await self.video_generation_service.generate(
+                task_id=task_id,
+                target_id=resources[0].id,
+                user_id=payload.user_id,
+                course_id=payload.course_id,
+                node=node,
+                target_goal=target_goal,
+                documents=documents,
+            )
+            content = json.dumps(lesson.model_dump(by_alias=True, mode="json"), ensure_ascii=False)
+            resources = [
+                resource.model_copy(
+                    update={
+                        "content": content,
+                        "file_url": lesson.output.video_url,
+                        "status": TaskStatus.success,
+                        "audit_status": AuditStatus.passed,
+                        "updated_at": as_iso(None),
+                    }
+                )
+                for resource in resources
+            ]
+            for resource in resources:
+                self._save_generated_resource(resource)
+            return resources, None
+        except Exception as exc:
+            audit_status = exc.audit_status if isinstance(exc, VideoAuditError) else AuditStatus.unchecked
+            message = str(exc) or exc.__class__.__name__
+            logger.exception(
+                json.dumps(
+                    {
+                        "event": "video_generation_failed",
+                        "taskId": task_id,
+                        "userId": payload.user_id,
+                        "courseId": payload.course_id,
+                        "nodeId": node.id if node else payload.node_id,
+                        "errorMessage": message,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            resources = [
+                resource.model_copy(
+                    update={
+                        "file_url": None,
+                        "status": TaskStatus.failed,
+                        "audit_status": audit_status,
+                        "updated_at": as_iso(None),
+                    }
+                )
+                for resource in resources
+            ]
+            for resource in resources:
+                self._save_generated_resource(resource)
+            return resources, message
+
+    def _save_generated_resource(self, resource: GeneratedResource) -> GeneratedResource:
+        if not settings.enable_mock:
+            self._persist_generated_resource(resource)
+        return self.repository.save_resource(resource)
+
+    def _resource_plan_item(self, order_index: int, resource: GeneratedResource) -> dict[str, Any]:
+        return {
+            "orderIndex": order_index,
+            "nodeId": resource.node_id,
+            "resourceType": ResourceType(resource.resource_type).value,
+            "title": resource.title,
+            "auditStatus": AuditStatus(resource.audit_status).value,
+            "status": TaskStatus(resource.status).value,
+        }
 
     async def recommend_resources(self, payload: RecommendationRequest) -> list[ResourceRecommendation]:
         existing = self.repository.list_recommendations(
@@ -310,14 +468,29 @@ class ResourceService:
 
     def search_knowledge_base(self, course_id: str, query_text: str, node_id: str | None = None, top_k: int | None = None) -> list[RetrievedDocument]:
         limit = top_k or 5
+        resolved_node_id = self.learning_path_repository.resolve_node_id(node_id, course_id) if node_id else None
         with session_context() as session:
-            query = select(GeneratedResourceModel).where(GeneratedResourceModel.course_id == course_id)
-            if node_id:
-                query = query.where(GeneratedResourceModel.node_id == node_id)
-            if query_text:
-                pattern = f"%{query_text}%"
-                query = query.where(or_(GeneratedResourceModel.title.like(pattern), GeneratedResourceModel.content.like(pattern)))
-            models = session.scalars(query.order_by(GeneratedResourceModel.created_at.desc()).limit(limit)).all()
+            base_query = select(GeneratedResourceModel).where(
+                GeneratedResourceModel.course_id == course_id,
+                GeneratedResourceModel.user_id == SOURCE_USER_ID,
+            )
+            terms = self._search_terms(query_text)
+            models = []
+            if resolved_node_id:
+                resource_type_order = case((GeneratedResourceModel.resource_type == ResourceType.reading_material.value, 0), else_=1)
+                models = session.scalars(
+                    base_query.where(GeneratedResourceModel.node_id == resolved_node_id)
+                    .order_by(resource_type_order, GeneratedResourceModel.created_at.desc())
+                    .limit(limit)
+                ).all()
+            if not models and terms:
+                filters = []
+                for term in terms:
+                    pattern = f"%{term}%"
+                    filters.extend([GeneratedResourceModel.title.like(pattern), GeneratedResourceModel.content.like(pattern)])
+                models = session.scalars(base_query.where(or_(*filters)).order_by(GeneratedResourceModel.created_at.desc()).limit(limit)).all()
+            if not models:
+                models = session.scalars(base_query.order_by(GeneratedResourceModel.created_at.desc()).limit(limit)).all()
             return [
                 RetrievedDocument(
                     id=model.id,
@@ -329,6 +502,10 @@ class ResourceService:
                 )
                 for model in models
             ]
+
+    def _search_terms(self, query_text: str) -> list[str]:
+        terms = [item for item in re.split(r"[\s，。；、,;：:！？!?]+", query_text.strip()) if len(item) >= 2]
+        return list(dict.fromkeys(terms))[:5]
 
     def _resolve_node(
         self,
@@ -391,7 +568,7 @@ class ResourceService:
 
         mastery_score = node.mastery_score if node else None
         if mastery_score is not None and mastery_score < 60:
-            selected.extend([ResourceType.lecture_doc, ResourceType.mind_map, ResourceType.practice_question])
+            selected.extend([ResourceType.lecture_doc, ResourceType.mind_map, ResourceType.practice_question, ResourceType.code_case])
         if mastery_score is not None and mastery_score > 80:
             selected.extend([ResourceType.reading_material, ResourceType.project_task, ResourceType.code_case])
 
@@ -448,13 +625,49 @@ class ResourceService:
         resource_type: ResourceType,
         target_goal: str,
         custom_requirement: str | None,
+        retrieved_documents: list[RetrievedDocument] | None,
     ) -> str:
         node_name = node.name if node else "当前知识点"
         requirement = custom_requirement or "无"
+        source_section = self._retrieved_document_section(retrieved_documents)
+        format_requirement = ""
+        if resource_type == ResourceType.mind_map:
+            format_requirement = "只输出以 mindmap 开头的 Mermaid 思维导图源码，不要使用 Markdown 代码围栏。"
         return (
             f"为用户 {profile.user_id} 生成 {resource_type.value}。"
             f"知识点：{node_name}。学习目标：{target_goal}。额外要求：{requirement}。"
+            f"{format_requirement}"
+            f"{source_section}"
         )
+
+    @staticmethod
+    def _normalize_generated_content(resource_type: ResourceType, content: str) -> str:
+        normalized = content.strip()
+        if resource_type != ResourceType.mind_map:
+            return normalized
+
+        if normalized.startswith("```"):
+            lines = normalized.splitlines()
+            if lines and lines[0].strip() in {"```", "```mermaid"}:
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            normalized = "\n".join(lines).strip()
+
+        if not normalized.startswith("mindmap"):
+            raise RuntimeError("LLM mind_map output must start with Mermaid mindmap syntax")
+        punctuation_map = str.maketrans({"(": "（", ")": "）", "[": "【", "]": "】", "{": "｛", "}": "｝"})
+        lines = []
+        for index, line in enumerate(normalized.splitlines()):
+            stripped = line.strip()
+            if stripped.startswith("::icon("):
+                continue
+            if index == 0 or not stripped or stripped.startswith("root("):
+                lines.append(line)
+                continue
+            indentation = line[: len(line) - len(line.lstrip())]
+            lines.append(f"{indentation}{stripped.translate(punctuation_map)}")
+        return "\n".join(lines)
 
     def _render_template(
         self,

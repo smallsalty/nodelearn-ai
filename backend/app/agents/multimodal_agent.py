@@ -1,4 +1,5 @@
 from app.agents.base_agent import BaseAgent
+from app.core.config import settings
 from app.schemas.agent import AgentRunRequest
 from app.schemas.common import AgentType, CognitiveStyle, PracticePreference, ResourceType
 from app.schemas.resource import ResourceGenerateRequest
@@ -62,7 +63,9 @@ class MultimodalAgent(BaseAgent):
         profile_analysis = request.input.get("profileAnalysis", {})
         resource_hints = profile_analysis.get("resourceHints", {})
         if profile.cognitive_style == CognitiveStyle.diagram or resource_hints.get("preferDiagram"):
-            selected.extend([ResourceType.mind_map, ResourceType.animation_script])
+            selected.append(ResourceType.mind_map)
+            if not settings.enable_mock:
+                selected.append(ResourceType.animation_script)
         if profile.cognitive_style == CognitiveStyle.code or profile.practice_preference == PracticePreference.coding:
             selected.append(ResourceType.code_case)
         for resource_type in profile.resource_preference:

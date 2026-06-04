@@ -17,8 +17,12 @@ services:
         required: true
       - path: ../backend/.env
         required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://nodelearn:nodelearn@postgres:5432/nodelearn
     ports:
       - "8000:8000"
+    volumes:
+      - ../storage:/app/storage
     depends_on:
       - postgres
       - redis

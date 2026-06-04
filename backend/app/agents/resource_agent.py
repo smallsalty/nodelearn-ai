@@ -20,6 +20,7 @@ class ResourceAgent(BaseAgent):
         profile_analysis = request.input.get("profileAnalysis", {})
         resource_types = request.input.get("resourceTypes", [])
         target_goal = request.input.get("targetGoal") or request.input.get("learningGoal")
+        retrieved_documents = request.context.retrieved_documents if request.context else None
 
         plan = await self.resource_service.generate_resources(
             ResourceGenerateRequest(
@@ -34,6 +35,7 @@ class ResourceAgent(BaseAgent):
             profile_analysis=profile_analysis,
             learning_path=learning_path,
             learning_tasks=learning_tasks,
+            retrieved_documents=retrieved_documents,
         )
         output = {
             "resourcePlan": plan.resource_plan,

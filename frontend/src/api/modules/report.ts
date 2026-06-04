@@ -18,6 +18,9 @@ export const reportApi = {
   listLearningRecords(userId: string) {
     return request<LearningRecord[]>({ method: "GET", url: `/users/${userId}/learning-records` });
   },
+  getUserLearningRecords(userId: string) {
+    return request<LearningRecord[]>({ method: "GET", url: `/users/${userId}/learning-records` });
+  },
   getEvaluation(userId: string, courseId: string) {
     return request<LearningEvaluation>({ method: "GET", url: `/users/${userId}/courses/${courseId}/evaluation` });
   },
@@ -33,10 +36,16 @@ export const reportApi = {
   listUserReports(userId: string) {
     return request<StudyReport[]>({ method: "GET", url: `/users/${userId}/reports` });
   },
+  getUserReports(userId: string) {
+    return request<StudyReport[]>({ method: "GET", url: `/users/${userId}/reports` });
+  },
   getReport(reportId: string) {
     return request<StudyReport>({ method: "GET", url: `/reports/${reportId}` });
   },
   exportReportPdf(reportId: string) {
+    return request<{ pdfUrl: string }>({ method: "GET", url: `/reports/${reportId}/export-pdf` });
+  },
+  exportPdf(reportId: string) {
     return request<{ pdfUrl: string }>({ method: "GET", url: `/reports/${reportId}/export-pdf` });
   },
   deleteReport(reportId: string) {

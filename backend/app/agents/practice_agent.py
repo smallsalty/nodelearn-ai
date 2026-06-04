@@ -31,7 +31,7 @@ class PracticeAgent(BaseAgent):
                 },
             )
 
-        questions = self.practice_service.generate_questions(
+        questions = await self.practice_service.generate_questions(
             PracticeGenerateRequest(
                 user_id=request.user_id,
                 course_id=request.course_id or "course_ds_001",
@@ -39,7 +39,8 @@ class PracticeAgent(BaseAgent):
                 question_types=self._question_types(request),
                 difficulty=self._difficulty(request),
                 count=request.input.get("count", 1),
-            )
+            ),
+            retrieved_documents=request.context.retrieved_documents if request.context else None,
         )
         return self.build_result(
             request,

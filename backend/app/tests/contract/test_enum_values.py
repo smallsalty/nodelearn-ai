@@ -22,6 +22,7 @@ def test_core_enum_values_match_contract_subset():
     assert DifficultyLevel.challenge.value == "challenge"
     assert ResourceType.summary_note.value == "summary_note"
     assert AgentType.knowledge_graph_agent.value == "knowledge_graph_agent"
+    assert AgentType.qa_agent.value == "qa_agent"
     assert TaskStatus.cancelled.value == "cancelled"
     assert AuditStatus.need_review.value == "need_review"
     assert CognitiveStyle.diagram.value == "diagram"

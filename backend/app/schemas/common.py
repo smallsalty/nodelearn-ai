@@ -105,6 +105,7 @@ class ResourceType(str, Enum):
 class AgentType(str, Enum):
     profile_agent = "profile_agent"
     planner_agent = "planner_agent"
+    qa_agent = "qa_agent"
     resource_agent = "resource_agent"
     practice_agent = "practice_agent"
     multimodal_agent = "multimodal_agent"

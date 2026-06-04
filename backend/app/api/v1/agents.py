@@ -14,14 +14,14 @@ from app.schemas.agent import (
 )
 from app.schemas.common import AgentType, TaskStatus
 from app.services.agent_service import AgentService
-from app.services.llm_service import LLMService
+from app.services.chat_service import ChatService
 
 router = APIRouter()
 
 MOCK_TIME = "2026-05-19T10:00:00Z"
 agent_service = AgentService()
 workflow_runner = MultiAgentWorkflowRunner(agent_service)
-llm_service = LLMService()
+chat_service = ChatService()
 
 
 def mock_session(session_id: str = "session_demo_001") -> ChatSession:
@@ -56,29 +56,10 @@ def list_chat_messages(session_id: str = Path(alias="sessionId")):
 
 @router.post("/chat/send")
 async def send_chat(payload: ChatRequest):
-    if settings.enable_mock:
-        result = ChatResult(session_id=payload.session_id or "session_demo_001", message_id="message_demo_001", answer="mock", used_agent_types=[AgentType.resource_agent])
-        return success_response(result)
-
     try:
-        answer = await llm_service.generate_text(
-            "\n".join(
-                [
-                    "你是 NodeLearn AI 的学习助手，请基于学生问题给出清晰、简洁、可执行的学习建议。",
-                    f"userId: {payload.user_id}",
-                    f"courseId: {payload.course_id or ''}",
-                    f"nodeId: {payload.node_id or ''}",
-                    f"useRag: {payload.use_rag}",
-                    f"useProfile: {payload.use_profile}",
-                    "",
-                    payload.message,
-                ]
-            )
-        )
+        result = await chat_service.send(payload)
     except Exception as exc:
         return error_response(f"chat completion failed: {exc}")
-
-    result = ChatResult(session_id=payload.session_id or "session_deepseek_001", message_id="message_deepseek_001", answer=answer, used_agent_types=[AgentType.resource_agent])
     return success_response(result)
 
 
@@ -95,7 +76,10 @@ async def run_agent(payload: AgentRunRequest):
 
 @router.post("/agents/workflows/run")
 async def run_workflow(payload: MultiAgentWorkflowRequest):
-    result = await workflow_runner.run(payload)
+    try:
+        result = await workflow_runner.run(payload)
+    except Exception as exc:
+        return error_response(f"workflow failed: {exc}")
     return success_response(result)
 
 

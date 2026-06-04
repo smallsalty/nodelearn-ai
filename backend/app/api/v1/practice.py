@@ -9,8 +9,8 @@ practice_service = PracticeService()
 
 
 @router.post("/practices/generate")
-def generate_practices(payload: PracticeGenerateRequest):
-    return success_response(practice_service.generate_questions(payload))
+async def generate_practices(payload: PracticeGenerateRequest):
+    return success_response(await practice_service.generate_questions(payload))
 
 
 @router.get("/practices/questions")

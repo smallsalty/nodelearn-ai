@@ -4,6 +4,8 @@ import re
 from typing import Any
 
 from app.agents.base_agent import BaseAgent
+from app.repositories.profile_repository import ProfileRepository, default_profile_repository
+from app.schemas.agent import AgentRunRequest
 from app.schemas.common import CognitiveStyle, DifficultyLevel, PracticePreference, ResourceType
 from app.services.llm_service import LLMService
 
@@ -48,15 +50,43 @@ TIME_PATTERN = r"(每天|每周|周末|晚上|白天)[^。；;，,]{1,20}"
 class ProfileAgent(BaseAgent):
     agent_type = "profile_agent"
 
-    def __init__(self, llm_service: LLMService | None = None) -> None:
+    def __init__(
+        self,
+        repository: ProfileRepository | None = None,
+        llm_service: LLMService | None = None,
+    ) -> None:
+        self.repository = repository or default_profile_repository
         self.llm_service = llm_service or LLMService()
 
-    def extract_fields(self, message: str, history_messages: list[Any] | None = None) -> dict[str, Any]:
+    async def extract_fields(self, message: str, history_messages: list[Any] | None = None) -> dict[str, Any]:
         prompt = self.build_deepseek_prompt(message, history_messages)
-        model_fields = self.llm_service.generate_json(prompt)
+        model_fields = await self.llm_service.generate_json(prompt, mock_data=self._extract_with_rules(message))
         if model_fields:
             return self.filter_contract_fields(model_fields)
         return self.filter_contract_fields(self._extract_with_rules(message))
+
+    async def run(self, request: AgentRunRequest):
+        profile = request.context.profile if request.context and request.context.profile else self.repository.get_by_user_id(request.user_id)
+        message = request.input.get("message")
+        if isinstance(message, str) and message.strip():
+            extracted_fields = await self.extract_fields(message)
+            if extracted_fields:
+                profile = self.repository.update_profile(
+                    request.user_id,
+                    {**extracted_fields, "lastUpdatedBy": "dialogue"},
+                )
+
+        profile_analysis = self._analyze_profile(profile)
+        output = {
+            "profile": self.to_contract_output(profile),
+            "profileAnalysis": profile_analysis,
+            "nextAgentInput": {
+                "forPlannerAgent": profile_analysis["planningHints"],
+                "forResourceAgent": profile_analysis["resourceHints"],
+                "forPracticeAgent": profile_analysis["practiceHints"],
+            },
+        }
+        return self.build_result(request, output)
 
     def build_deepseek_prompt(self, message: str, history_messages: list[Any] | None = None) -> str:
         history_count = len(history_messages or [])
@@ -190,3 +220,30 @@ class ProfileAgent(BaseAgent):
 
     def _compact_text(self, text: str, limit: int) -> str:
         return text.strip()[:limit]
+
+    def _analyze_profile(self, profile) -> dict[str, Any]:
+        preferred_resource_types = [str(item) for item in profile.resource_preference]
+        daily_minutes_match = re.search(r"(\d+)\s*分钟", profile.available_study_time or "")
+        suggested_minutes = int(daily_minutes_match.group(1)) if daily_minutes_match else 30
+        weak_summary = "、".join(profile.common_mistakes or profile.weak_node_ids) or "暂无明确薄弱点"
+        return {
+            "learningStage": "基础补强阶段" if profile.weak_node_ids else "正常学习阶段",
+            "riskLevel": "medium" if profile.weak_node_ids else "low",
+            "weakNodeSummary": weak_summary,
+            "preferredResourceTypes": preferred_resource_types,
+            "recommendedQuestionTypes": ["single_choice", "short_answer", "coding"],
+            "planningHints": {
+                "targetGoal": profile.learning_goal or "完成当前课程学习",
+                "timeBudget": profile.available_study_time,
+                "suggestedDailyTaskMinutes": suggested_minutes,
+                "weakNodeIds": profile.weak_node_ids,
+            },
+            "resourceHints": {
+                "preferDiagram": profile.cognitive_style == CognitiveStyle.diagram,
+                "preferredResourceTypes": preferred_resource_types,
+            },
+            "practiceHints": {
+                "recommendedQuestionTypes": ["single_choice", "short_answer", "coding"],
+                "commonMistakes": profile.common_mistakes,
+            },
+        }
