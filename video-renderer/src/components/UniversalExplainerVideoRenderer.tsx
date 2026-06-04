@@ -24,6 +24,22 @@ const SceneVisual: React.FC<{ scene: VideoLessonScene }> = ({ scene }) => {
     const splitAt = Math.ceil(elements.length / 2);
     return <ComparisonPanel left={elements.slice(0, splitAt).map(renderElement)} right={elements.slice(splitAt).map(renderElement)} />;
   }
+  if (scene.visualPlan.layout === "grid_focus") {
+    const gridElements = elements.filter((element) => element.type === "grid");
+    const supportElements = elements.filter((element) => element.type !== "grid");
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: gridElements.length ? "minmax(460px, 1.2fr) minmax(320px, 0.8fr)" : "1fr", alignItems: "center", gap: 56, width: "100%" }}>
+        <div style={{ display: "grid", placeItems: "center", transform: "scale(1.18)" }}>
+          {(gridElements.length ? gridElements : elements).map(renderElement)}
+        </div>
+        {gridElements.length ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
+            {supportElements.map(renderElement)}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   if (scene.visualPlan.layout === "summary_cards") {
     return <SummaryCards elements={elements.filter((element): element is Extract<VisualElement, { type: "card" }> => element.type === "card")} />;
   }

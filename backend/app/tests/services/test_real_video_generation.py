@@ -15,6 +15,18 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def visual_element_text(element: dict) -> str:
+    values = []
+    for key in ("content", "name", "label", "alt"):
+        value = element.get(key)
+        if value:
+            values.append(str(value))
+    items = element.get("items")
+    if isinstance(items, list):
+        values.extend(str(item) for item in items)
+    return "".join(values)
+
+
 def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Path):
     ffprobe = shutil.which(settings.ffprobe_binary)
     assert ffprobe, f"ffprobe is not available: {settings.ffprobe_binary}"
@@ -45,12 +57,23 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
 
         content = json.loads(details[0]["content"])
         assert content["style"] == "clean_motion_graphics"
+        assert content["aspectRatio"] == "16:9"
+        assert content["output"]["videoUrl"] == details[0]["fileUrl"]
         assert [scene["sceneType"] for scene in content["scenes"]] == [
             "hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"
         ]
-        assert all(scene["audioUrl"] for scene in content["scenes"])
+        scene_audio_urls = [scene["audioUrl"] for scene in content["scenes"]]
+        assert all(scene_audio_urls)
+        assert content["output"]["audioUrls"] == scene_audio_urls
         assert all(scene["visualPlan"]["elements"] for scene in content["scenes"])
         assert all(all(element["animation"] for element in scene["visualPlan"]["elements"]) for scene in content["scenes"])
+        definition = next(scene for scene in content["scenes"] if scene["sceneType"] == "definition")
+        assert 1 <= sum(element["type"] == "keyword" for element in definition["visualPlan"]["elements"]) <= 3
+        summary = next(scene for scene in content["scenes"] if scene["sceneType"] == "summary")
+        assert sum(element["type"] == "card" for element in summary["visualPlan"]["elements"]) == 3
+        for scene in content["scenes"]:
+            visible_text = "".join(visual_element_text(element) for element in scene["visualPlan"]["elements"])
+            assert len(visible_text) <= 80
 
         for scene in content["scenes"]:
             audio_response = client.get(scene["audioUrl"])

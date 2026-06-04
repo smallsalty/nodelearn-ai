@@ -73,16 +73,21 @@ class LLMService:
         temperature: float,
         response_format: dict[str, str] | None = None,
     ) -> str:
-        for attempt in range(2):
-            response = await self._create_completion(
-                prompt,
-                temperature=temperature,
-                response_format=response_format,
-            )
+        for attempt in range(3):
+            try:
+                response = await self._create_completion(
+                    prompt,
+                    temperature=temperature,
+                    response_format=response_format,
+                )
+            except httpx.TimeoutException as exc:
+                if attempt == 2:
+                    raise RuntimeError("DeepSeek request timed out") from exc
+                continue
             try:
                 return self._extract_content(response)
             except RuntimeError as exc:
-                if str(exc) != "DeepSeek response message content is empty" or attempt == 1:
+                if str(exc) != "DeepSeek response message content is empty" or attempt == 2:
                     raise
         raise RuntimeError("DeepSeek response message content is empty")
 
@@ -107,7 +112,7 @@ class LLMService:
         if self._client is not None:
             return await self._post_completion(self._client, payload)
 
-        async with httpx.AsyncClient(base_url=settings.llm_base_url, timeout=60.0) as client:
+        async with httpx.AsyncClient(base_url=settings.llm_base_url, timeout=httpx.Timeout(180.0, connect=30.0)) as client:
             return await self._post_completion(client, payload)
 
     async def _post_completion(

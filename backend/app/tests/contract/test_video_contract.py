@@ -27,6 +27,76 @@ def scene_payload(**updates):
     return payload
 
 
+def universal_scene_payload(scene_type: str, index: int) -> dict:
+    scene = {
+        "scene_id": f"scene_{index:03d}",
+        "scene_type": scene_type,
+        "title": f"场景 {index}",
+        "narration": f"这是第 {index} 个讲解场景，用于解释哈希表。",
+        "duration_seconds": 12 if scene_type == "hook" else 16,
+        "audio_url": "",
+        "visual_plan": {"layout": "center_focus", "elements": [{"type": "text", "content": f"要点 {index}", "animation": "fade_in"}]},
+    }
+    if scene_type == "definition":
+        scene["visual_plan"] = {
+            "layout": "center_focus",
+            "elements": [
+                {"type": "keyword", "content": "键", "animation": "pop_in"},
+                {"type": "keyword", "content": "哈希函数", "animation": "pop_in"},
+                {"type": "keyword", "content": "位置", "animation": "pop_in"},
+            ],
+        }
+    elif scene_type == "analogy":
+        scene["visual_plan"] = {
+            "layout": "left_right",
+            "elements": [
+                {"type": "card", "content": "输入姓名", "animation": "slide_in_left"},
+                {"type": "arrow", "label": "定位", "animation": "draw"},
+                {"type": "card", "content": "找到柜门", "animation": "slide_in_right"},
+            ],
+        }
+    elif scene_type == "mechanism":
+        scene["visual_plan"] = {
+            "layout": "pipeline",
+            "elements": [
+                {"type": "card", "content": "key", "animation": "stagger_in"},
+                {"type": "arrow", "label": "hash", "animation": "draw"},
+                {"type": "circle", "label": "index", "animation": "zoom_in"},
+            ],
+        }
+    elif scene_type == "comparison":
+        scene["visual_plan"] = {
+            "layout": "comparison",
+            "elements": [
+                {"type": "card", "content": "数组 O(n)", "animation": "slide_in_left"},
+                {"type": "card", "content": "哈希表 O(1)", "animation": "slide_in_right"},
+            ],
+        }
+    elif scene_type == "process":
+        scene["visual_plan"] = {
+            "layout": "timeline",
+            "elements": [{"type": "timeline", "items": ["输入", "计算", "定位"], "animation": "stagger_in"}],
+        }
+    elif scene_type == "example":
+        scene["visual_plan"] = {
+            "layout": "grid_focus",
+            "elements": [
+                {"type": "grid", "label": "桶数组", "items": ["0", "1", "2", "3"], "highlightIndex": 2, "animation": "highlight"},
+                {"type": "text", "content": "key -> 2", "animation": "fade_in"},
+            ],
+        }
+    elif scene_type == "summary":
+        scene["visual_plan"] = {
+            "layout": "summary_cards",
+            "elements": [
+                {"type": "card", "content": "键值映射", "animation": "stagger_in"},
+                {"type": "card", "content": "哈希定位", "animation": "stagger_in"},
+                {"type": "card", "content": "快速访问", "animation": "stagger_in"},
+            ],
+        }
+    return scene
+
+
 def test_video_lesson_scene_uses_motion_graphics_contract_fields():
     scene = VideoLessonScene(**scene_payload()).model_dump(by_alias=True)
 
@@ -49,6 +119,44 @@ def test_animation_script_rejects_legacy_stack_animation_shape():
         )
 
 
+def test_animation_script_rejects_legacy_text_slide_shape():
+    with pytest.raises(ValidationError):
+        VideoLessonScene(
+            sceneId="scene_001",
+            title="哈希表是什么",
+            narration="哈希表通过键值映射快速定位。",
+            visualType="text_slide",
+            visualData={"bullets": ["键值映射", "快速查找"]},
+            durationSeconds=10,
+            audioUrl="",
+        )
+
+
+def test_scene_rejects_element_without_animation():
+    with pytest.raises(ValidationError):
+        VideoLessonScene(**scene_payload(visual_plan={"layout": "center_focus", "elements": [{"type": "text", "content": "短句"}]}))
+
+
+def test_definition_scene_requires_one_to_three_keywords():
+    with pytest.raises(ValidationError, match="1-3 keyword"):
+        VideoLessonScene(**scene_payload(visual_plan={"layout": "center_focus", "elements": [{"type": "text", "content": "没有关键词", "animation": "fade_in"}]}))
+
+    with pytest.raises(ValidationError, match="1-3 keyword"):
+        VideoLessonScene(
+            **scene_payload(
+                visual_plan={
+                    "layout": "center_focus",
+                    "elements": [
+                        {"type": "keyword", "content": "一", "animation": "pop_in"},
+                        {"type": "keyword", "content": "二", "animation": "pop_in"},
+                        {"type": "keyword", "content": "三", "animation": "pop_in"},
+                        {"type": "keyword", "content": "四", "animation": "pop_in"},
+                    ],
+                }
+            )
+        )
+
+
 def test_scene_rejects_visual_text_over_80_characters():
     with pytest.raises(ValidationError, match="must not exceed 80"):
         VideoLessonScene(**scene_payload(scene_type="example", visual_plan={"layout": "center_focus", "elements": [{"type": "text", "content": "知识点" * 30, "animation": "fade_in"}]}))
@@ -68,6 +176,17 @@ def test_animation_script_requires_universal_scene_sequence():
     scene = VideoLessonScene(**scene_payload())
     with pytest.raises(ValidationError, match="sceneType sequence"):
         AnimationScriptContent(title="哈希表", duration_seconds=12, scenes=[scene])
+
+
+def test_animation_script_accepts_complete_universal_scene_sequence():
+    scene_types = ["hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"]
+    scenes = [VideoLessonScene(**universal_scene_payload(scene_type, index)) for index, scene_type in enumerate(scene_types, start=1)]
+    lesson = AnimationScriptContent(title="哈希表", duration_seconds=sum(scene.duration_seconds for scene in scenes), scenes=scenes)
+    dumped = lesson.model_dump(by_alias=True)
+
+    assert dumped["style"] == "clean_motion_graphics"
+    assert dumped["aspectRatio"] == "16:9"
+    assert [scene["sceneType"] for scene in dumped["scenes"]] == scene_types
 
 
 def test_video_environment_variables_are_registered_in_contract_and_example():

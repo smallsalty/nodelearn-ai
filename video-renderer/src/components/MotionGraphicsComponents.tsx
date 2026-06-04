@@ -36,55 +36,79 @@ const entranceStyle = (animation: VisualAnimationType, index = 0): React.CSSProp
   return { opacity: fade, transform: transforms[animation], transformOrigin: "center" };
 };
 
+const emphasisStyle = (index = 0) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const focus = spring({ frame: frame - index * 7 - 12, fps, config: { damping: 24, stiffness: 72, mass: 0.8 } });
+  const pulse = interpolate(Math.sin((frame + index * 9) / 18), [-1, 1], [0, 1]);
+  return {
+    scale: 1 + focus * 0.018 + pulse * 0.006,
+    glow: 0.18 + focus * 0.22 + pulse * 0.14,
+    lift: -focus * 5,
+  };
+};
+
 export const MotionText: React.FC<{ content: string; animation: VisualAnimationType; index?: number; keyword?: boolean }> = ({
   content,
   animation,
   index = 0,
   keyword = false,
-}) => (
-  <div
-    style={{
-      ...entranceStyle(animation, index),
-      padding: keyword ? "16px 28px" : "10px 18px",
-      border: keyword ? `1px solid ${palette.cyan}` : "none",
-      borderRadius: 999,
-      background: keyword ? "rgba(51, 214, 197, 0.12)" : "transparent",
-      color: keyword ? palette.cyan : palette.text,
-      fontSize: keyword ? 42 : 38,
-      fontWeight: keyword ? 700 : 600,
-      letterSpacing: keyword ? 2 : 0,
-      textAlign: "center",
-    }}
-  >
-    {content}
-  </div>
-);
+}) => {
+  const baseStyle = entranceStyle(animation, index);
+  const emphasis = emphasisStyle(index);
+  return (
+    <div
+      style={{
+        ...baseStyle,
+        transform: `${baseStyle.transform ?? ""} translateY(${emphasis.lift}px) scale(${emphasis.scale})`,
+        padding: keyword ? "16px 28px" : "10px 18px",
+        border: keyword ? `1px solid ${palette.cyan}` : "none",
+        borderRadius: 999,
+        background: keyword ? "rgba(51, 214, 197, 0.12)" : "transparent",
+        boxShadow: keyword ? `0 0 ${40 * emphasis.glow}px rgba(51, 214, 197, ${emphasis.glow})` : "none",
+        color: keyword ? palette.cyan : palette.text,
+        fontSize: keyword ? 42 : 38,
+        fontWeight: keyword ? 700 : 600,
+        letterSpacing: keyword ? 2 : 0,
+        textAlign: "center",
+        textShadow: keyword ? `0 0 ${22 * emphasis.glow}px rgba(51, 214, 197, ${emphasis.glow})` : "none",
+      }}
+    >
+      {content}
+    </div>
+  );
+};
 
 export const ConceptCard: React.FC<{ content: string; animation: VisualAnimationType; index?: number }> = ({
   content,
   animation,
   index = 0,
-}) => (
-  <div
-    style={{
-      ...entranceStyle(animation, index),
-      minWidth: 190,
-      maxWidth: 360,
-      padding: "28px 30px",
-      border: `1px solid ${palette.border}`,
-      borderRadius: 24,
-      background: palette.surface,
-      boxShadow: "0 20px 60px rgba(0, 0, 0, 0.24)",
-      color: palette.text,
-      fontSize: 30,
-      fontWeight: 650,
-      lineHeight: 1.35,
-      textAlign: "center",
-    }}
-  >
-    {content}
-  </div>
-);
+}) => {
+  const baseStyle = entranceStyle(animation, index);
+  const emphasis = emphasisStyle(index);
+  return (
+    <div
+      style={{
+        ...baseStyle,
+        transform: `${baseStyle.transform ?? ""} translateY(${emphasis.lift}px) scale(${emphasis.scale})`,
+        minWidth: 190,
+        maxWidth: 360,
+        padding: "28px 30px",
+        border: `1px solid ${palette.border}`,
+        borderRadius: 24,
+        background: palette.surface,
+        boxShadow: `0 20px 60px rgba(0, 0, 0, 0.24), 0 0 ${34 * emphasis.glow}px rgba(94, 161, 255, ${emphasis.glow * 0.36})`,
+        color: palette.text,
+        fontSize: 30,
+        fontWeight: 650,
+        lineHeight: 1.35,
+        textAlign: "center",
+      }}
+    >
+      {content}
+    </div>
+  );
+};
 
 const iconPaths: Record<string, React.ReactNode> = {
   search: <><circle cx="20" cy="20" r="10" /><path d="m28 28 10 10" /></>,
@@ -97,25 +121,30 @@ export const IconBubble: React.FC<{ name: string; animation: VisualAnimationType
   name,
   animation,
   index = 0,
-}) => (
-  <div
-    style={{
-      ...entranceStyle(animation, index),
-      display: "grid",
-      placeItems: "center",
-      width: 142,
-      height: 142,
-      border: `2px solid ${palette.cyan}`,
-      borderRadius: "50%",
-      background: "rgba(51, 214, 197, 0.1)",
-      boxShadow: "0 0 70px rgba(51, 214, 197, 0.2)",
-    }}
-  >
-    <svg width="76" height="76" viewBox="0 0 48 48" fill="none" stroke={palette.cyan} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      {iconPaths[name] ?? iconPaths.route}
-    </svg>
-  </div>
-);
+}) => {
+  const baseStyle = entranceStyle(animation, index);
+  const emphasis = emphasisStyle(index);
+  return (
+    <div
+      style={{
+        ...baseStyle,
+        transform: `${baseStyle.transform ?? ""} translateY(${emphasis.lift}px) scale(${emphasis.scale})`,
+        display: "grid",
+        placeItems: "center",
+        width: 142,
+        height: 142,
+        border: `2px solid ${palette.cyan}`,
+        borderRadius: "50%",
+        background: "rgba(51, 214, 197, 0.1)",
+        boxShadow: `0 0 ${70 + 45 * emphasis.glow}px rgba(51, 214, 197, ${0.2 + emphasis.glow * 0.25})`,
+      }}
+    >
+      <svg width="76" height="76" viewBox="0 0 48 48" fill="none" stroke={palette.cyan} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        {iconPaths[name] ?? iconPaths.route}
+      </svg>
+    </div>
+  );
+};
 
 export const ArrowFlow: React.FC<{ label: string; animation: VisualAnimationType; index?: number }> = ({
   label,
@@ -182,13 +211,18 @@ export const ComparisonPanel: React.FC<{ left: React.ReactNode; right: React.Rea
   </div>
 );
 
-export const SummaryCards: React.FC<{ elements: Extract<VisualElement, { type: "card" }>[] }> = ({ elements }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 28, width: "100%" }}>
-    {elements.slice(0, 3).map((element, index) => (
-      <ConceptCard key={`${element.content}-${index}`} content={element.content} animation="stagger_in" index={index} />
-    ))}
-  </div>
-);
+export const SummaryCards: React.FC<{ elements: Extract<VisualElement, { type: "card" }>[] }> = ({ elements }) => {
+  const frame = useCurrentFrame();
+  const entrance = interpolate(frame, [0, 36], [28, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const scale = interpolate(frame, [0, 42], [0.96, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 28, width: "100%", transform: `translateY(${entrance}px) scale(${scale})`, transformOrigin: "center" }}>
+      {elements.slice(0, 3).map((element, index) => (
+        <ConceptCard key={`${element.content}-${index}`} content={element.content} animation="stagger_in" index={index} />
+      ))}
+    </div>
+  );
+};
 
 export const ImageElement: React.FC<{ imageUrl: string; alt: string; animation: VisualAnimationType; index?: number }> = ({
   imageUrl,

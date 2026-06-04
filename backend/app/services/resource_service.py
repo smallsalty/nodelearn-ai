@@ -389,8 +389,8 @@ class ResourceService:
             return resources, None
         except Exception as exc:
             audit_status = exc.audit_status if isinstance(exc, VideoAuditError) else AuditStatus.unchecked
-            message = str(exc)
-            logger.error(
+            message = str(exc) or exc.__class__.__name__
+            logger.exception(
                 json.dumps(
                     {
                         "event": "video_generation_failed",

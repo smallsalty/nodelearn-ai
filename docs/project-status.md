@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-06-03
+最后更新：2026-06-04
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -94,6 +94,9 @@
 - 2026-06-03 完成 Vue 3 + Vite + Element Plus 完整演示版前端：登录、首页、对话、画像、学习路径、资源、知识图谱、练习、报告、知识库管理和浮窗均接入契约 API 模块；新增浅色学习平台设计系统、应用壳、移动底部导航、路由守卫、通用状态组件、Markdown 安全渲染和真实后端错误提示。
 - 2026-06-03 前端验证结果：运行 `npm run build` 通过；静态检查 `frontend/src/pages` 与 `frontend/src/components` 未发现直接 `fetch(` 或 `axios`；Browser 插件不可用，使用 Playwright + 系统 Edge 回退完成登录、9 个核心路由、390px 移动视口、浮窗按钮和 ECharts 知识图谱验收，控制台错误为 0。
 - 2026-06-03 后端联调结果：默认前端仍连接 `http://localhost:8000/api/v1` 且 `VITE_ENABLE_MOCK=false`；本机 Docker Desktop 未运行，真实数据库链路无法验证，临时使用 `ENABLE_MOCK=true` 的 HTTP 后端完成浏览器流程。`/system/health`、登录、用户、图谱、对话、资源、路径、练习、报告和笔记接口响应 `code=200`，但 `/courses` 与 `/courses/{courseId}/nodes` 在当前后端进程下会超时。
+- 2026-06-04 补强通用知识点 motion graphics 视频生成器：`VideoRenderSkill` 在 Remotion 依赖检查和渲染前显式校验 `AnimationScriptContent`、非空 8 场景、HTTP(S) scene 音频和 `output.audioUrls` 一致性；`UniversalExplainerVideoRenderer` 新增 `grid_focus` 主视觉布局，motion graphics 组件增加帧驱动重点强调。
+- 2026-06-04 补充视频契约、服务和真实流程测试断言，覆盖旧 `text_slide` 拒绝、缺少元素动画、definition keyword 边界、完整 8 场景、渲染前预检、真实输出 `videoUrl/fileUrl/audioUrls` 一致性和逐场景非静态抽帧；运行 `python -m pytest app/tests/contract/test_video_contract.py app/tests/services/test_video_generation.py -q`，结果为 `20 passed`；运行 `video-renderer` 的 `npx tsc --noEmit` 和前端 `npm run build`，结果均通过；付费真实视频测试按当前环境配置跳过。
+- 2026-06-04 显式运行真实多模态视频智能体生成“哈希表”讲解视频：启动 Docker PostgreSQL，导入 Hello Algo 数据后调用 `POST /api/v1/resources/generate`，节点为 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4`，任务 `resource_task_927160d4c1f7` 返回 `success`；两份资源 `resource_video_script_f3ae7e16b738` 和 `resource_animation_script_ce23c8852622` 均为 `status=success`、`auditStatus=passed`，共享 `http://localhost:8000/storage/generated_resources/resource_task_927160d4c1f7/lesson.mp4`；`ffprobe` 验证 H.264/AAC 音视频双流，逐场景抽帧确认 8 个场景均非静态画面。
 
 ### 进行中
 
@@ -123,7 +126,7 @@ CONTRACT_MISSING: 缺少 xxx 定义
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
 - 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
-- 本机 Docker Desktop 当前未运行，`ENABLE_MOCK=false` 的后端健康检查会因数据库连接不可用而失败；`ENABLE_MOCK=true` 下 `/courses` 与 `/courses/{courseId}/nodes` 仍会先尝试真实数据源并超时，前端已显示超时错误但不伪造成功。
+- 本机 Docker Desktop 已在 2026-06-04 手动启动并验证 PostgreSQL、Hello Algo 导入、`ENABLE_MOCK=false` 后端健康检查和真实视频生成链路；若后续桌面重启或 Docker 停止，需要重新启动 `docker compose -f docker/docker-compose.yml up -d postgres`。
 
 ## 功能待办
 

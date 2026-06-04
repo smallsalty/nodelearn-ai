@@ -8,6 +8,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import httpx
@@ -250,13 +251,19 @@ class AnimationSpecSkill:
             "style": "clean_motion_graphics",
             "durationSeconds": sum(float(item.get("durationSeconds") or 0) for item in raw_scenes if isinstance(item, dict)),
             "aspectRatio": "16:9",
-            "scenes": [self._normalize_scene(item) for item in raw_scenes if isinstance(item, dict)],
+            "scenes": [
+                self._normalize_scene(item, index)
+                for index, item in enumerate(raw_scenes, start=1)
+                if isinstance(item, dict)
+            ],
             "output": {"videoUrl": "", "audioUrls": []},
         }
         return AnimationScriptContent.model_validate(payload)
 
-    def _normalize_scene(self, scene: dict[str, Any]) -> dict[str, Any]:
+    def _normalize_scene(self, scene: dict[str, Any], index: int) -> dict[str, Any]:
         normalized = {**scene, "audioUrl": ""}
+        scene_id = normalized.get("sceneId") or normalized.get("scene_id")
+        normalized["sceneId"] = scene_id if isinstance(scene_id, str) and scene_id.strip() else f"scene_{index:03d}"
         visual_plan = scene.get("visualPlan")
         if not isinstance(visual_plan, dict):
             return normalized
@@ -275,6 +282,11 @@ class AnimationSpecSkill:
 
     def _normalize_element(self, element: dict[str, Any], scene_title: str) -> dict[str, Any]:
         normalized = dict(element)
+        if normalized.get("type") in {"text", "keyword", "card", "formula", "code"} and "content" not in normalized:
+            for alias in ("title", "text", "label"):
+                if normalized.get(alias):
+                    normalized["content"] = str(normalized[alias])
+                    break
         if normalized.get("type") == "icon" and isinstance(normalized.get("imageUrl"), str):
             normalized = {
                 "type": "image",
@@ -286,6 +298,13 @@ class AnimationSpecSkill:
             normalized["label"] = str(normalized.get("label") or "")
         if normalized.get("type") == "image":
             normalized["alt"] = str(normalized.get("alt") or scene_title)
+            host = urlparse(str(normalized.get("imageUrl") or "")).hostname or ""
+            if host in {"example.com", "www.example.com"}:
+                normalized = {
+                    "type": "icon",
+                    "name": "route",
+                    "animation": normalized.get("animation"),
+                }
         if normalized.get("type") in {"grid", "timeline"} and isinstance(normalized.get("items"), list):
             normalized["items"] = [str(item) for item in normalized["items"]]
         return normalized
@@ -434,14 +453,11 @@ class TtsSkill:
 
 class VideoRenderSkill:
     async def render(self, lesson: AnimationScriptContent, output_dir: Path) -> RenderedVideo:
+        render_input = self._validate_lesson_for_render(lesson)
         node = self._validate_configuration()
         output_dir.mkdir(parents=True, exist_ok=True)
         render_input_path = output_dir / "render-input.json"
         output_path = output_dir / "lesson.mp4"
-        render_input = lesson.model_dump(by_alias=True, mode="json")
-        for scene in render_input["scenes"]:
-            if not scene["audioUrl"].startswith(("http://", "https://")):
-                raise RuntimeError("Remotion audioUrl must be an HTTP storage URL")
         render_input_path.write_text(json.dumps(render_input, ensure_ascii=False), encoding="utf-8")
         project_path = Path(settings.video_render_project_path).resolve()
         command = [
@@ -477,6 +493,17 @@ class VideoRenderSkill:
         await self._validate_video_streams(output_path)
         relative_path = output_path.relative_to(Path(settings.file_storage_path).resolve())
         return RenderedVideo(path=output_path, url=_storage_url(relative_path))
+
+    def _validate_lesson_for_render(self, lesson: AnimationScriptContent) -> dict[str, Any]:
+        validated = AnimationScriptContent.model_validate(lesson.model_dump(by_alias=True, mode="json"))
+        if not validated.scenes:
+            raise RuntimeError("AnimationScriptContent must contain scenes before render")
+        scene_audio_urls = [scene.audio_url for scene in validated.scenes]
+        if any(not audio_url.startswith(("http://", "https://")) for audio_url in scene_audio_urls):
+            raise RuntimeError("each scene audioUrl must be an HTTP(S) storage URL before render")
+        if validated.output.audio_urls != scene_audio_urls:
+            raise RuntimeError("output.audioUrls must match scene audioUrl list before render")
+        return validated.model_dump(by_alias=True, mode="json")
 
     def _validate_configuration(self) -> str:
         if settings.video_render_provider != "remotion":
