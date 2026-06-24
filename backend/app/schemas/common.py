@@ -98,6 +98,12 @@ class ResourceType(str, Enum):
     code_case = "code_case"
     video_script = "video_script"
     animation_script = "animation_script"
+    knowledge_video = "knowledge_video"
+    digital_human_video = "digital_human_video"
+    digital_human_dialogue = "digital_human_dialogue"
+    audio_explanation = "audio_explanation"
+    subtitle = "subtitle"
+    storyboard = "storyboard"
     project_task = "project_task"
     summary_note = "summary_note"
 
@@ -109,6 +115,11 @@ class AgentType(str, Enum):
     resource_agent = "resource_agent"
     practice_agent = "practice_agent"
     multimodal_agent = "multimodal_agent"
+    digital_human_agent = "digital_human_agent"
+    video_generation_agent = "video_generation_agent"
+    script_agent = "script_agent"
+    storyboard_agent = "storyboard_agent"
+    narration_agent = "narration_agent"
     recommendation_agent = "recommendation_agent"
     safety_agent = "safety_agent"
     knowledge_graph_agent = "knowledge_graph_agent"
@@ -155,6 +166,37 @@ class AuditStatus(str, Enum):
     need_review = "need_review"
 
 
+class VideoAspect(str, Enum):
+    landscape = "16:9"
+    portrait = "9:16"
+    square = "1:1"
+
+
+class VideoQualityPreset(str, Enum):
+    standard = "standard"
+    high = "high"
+    ultra = "ultra"
+
+
+class VideoGenerationStage(str, Enum):
+    queued = "queued"
+    script = "script"
+    storyboard = "storyboard"
+    quality_audit = "quality_audit"
+    tts = "tts"
+    render = "render"
+    audit = "audit"
+    persist = "persist"
+    done = "done"
+    error = "error"
+
+
+class VideoMaterialSource(str, Enum):
+    none = "none"
+    local_assets = "local_assets"
+    generated_motion_assets = "generated_motion_assets"
+
+
 class BehaviorType(str, Enum):
     view_resource = "view_resource"
     finish_resource = "finish_resource"
@@ -194,6 +236,9 @@ class HealthCheckResult(ContractModel):
     vector_store: Literal["ok", "error"] | None = None
     graph_db: Literal["ok", "error"] | None = None
     llm_service: Literal["ok", "error"] | None = None
+    iflytek_spark: Literal["mock", "ok", "error"] | None = None
+    iflytek_tts: Literal["mock", "ok", "error"] | None = None
+    iflytek_digital_human: Literal["mock", "ok", "error"] | None = None
 
 
 class SystemConfig(ContractModel):

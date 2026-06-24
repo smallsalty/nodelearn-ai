@@ -41,7 +41,7 @@
 - 服务文件：`backend/app/services/report_service.py`
 - 智能体文件：`backend/app/agents/report_agent.py`、`backend/app/agents/safety_agent.py`
 
-## 禁止事项
+## 约束事项
 
-- 不新增 `AuditStatus`、`BehaviorType` 或 audit `targetType` 值。
+- 如需求需要新增 `AuditStatus`、`BehaviorType` 或 audit `targetType` 值，必须先同步 `docs/interface-contract.md`，再更新 schema、类型、服务、页面和测试。
 - 生成报告/资源可用前不得绕过 safety 或 audit。

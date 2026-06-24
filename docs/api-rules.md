@@ -36,9 +36,9 @@ interface ApiResponse<T> {
 - 所有 HTTP 调用都经过 `frontend/src/api/client.ts`。
 - `frontend/src/api/modules/*` 只放接口封装函数。
 
-## 不得发明契约外内容
+## 新增契约内容
 
-- 不新增 `docs/interface-contract.md` 未列出的接口路径。
-- 不新增枚举值。
-- 不新增请求或响应字段。
-- 缺少定义时输出 `CONTRACT_MISSING: 缺少 xxx 定义`。
+- 功能需要新增接口路径、枚举值、请求字段、响应字段、环境变量或数据库字段时，允许直接新增。
+- 新增内容必须先同步写入 `docs/interface-contract.md`，再同步后端 schema/router/service、前端 types/api/page 和测试。
+- 模拟数据也必须使用已写入 `docs/interface-contract.md` 的字段。
+- 所有新增 HTTP 接口继续使用 `/api/v1` 前缀和 `ApiResponse<T>` 包装。

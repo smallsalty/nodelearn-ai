@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { Close, Notebook, Position } from "@element-plus/icons-vue";
 import { chatApi } from "@/api/modules/chat";
 import { noteApi } from "@/api/modules/note";
 import { practiceApi } from "@/api/modules/practice";
@@ -117,22 +118,23 @@ function movePanel() {
 
 <template>
   <button class="floating-trigger" type="button" @click="toggleFloatingMenu">
-    AI 助手
+    <el-icon><Notebook /></el-icon>
+    学习侧栏
   </button>
 
   <section v-if="appState.floatingMenuState.visible" class="floating-panel" :style="panelStyle">
     <header class="floating-header">
       <strong>学习浮窗</strong>
       <div>
-        <el-button size="small" text @click="movePanel">定位</el-button>
-        <el-button size="small" text @click="closeFloatingMenu">关闭</el-button>
+        <el-button size="small" text :icon="Position" @click="movePanel">定位</el-button>
+        <el-button size="small" text :icon="Close" @click="closeFloatingMenu">关闭</el-button>
       </div>
     </header>
 
     <nav class="floating-tabs" aria-label="浮窗标签">
       <button
         v-for="tab in [
-          { key: 'qa', label: '问答' },
+          { key: 'qa', label: '提问' },
           { key: 'note', label: '笔记' },
           { key: 'wrong_book', label: '错题' },
           { key: 'resource', label: '资源' }
@@ -150,15 +152,15 @@ function movePanel() {
     <el-skeleton v-if="loading" :rows="3" animated />
 
     <section v-else-if="appState.floatingMenuState.activeTab === 'qa'" class="floating-body">
-      <el-input v-model="question" type="textarea" :rows="3" placeholder="问一个当前知识点问题" />
-      <el-button type="primary" @click="ask">发送问题</el-button>
+      <el-input v-model="question" type="textarea" :rows="3" placeholder="问一个当前知识点问题" aria-label="浮窗问题" />
+      <el-button type="primary" :loading="loading" :disabled="!question.trim()" @click="ask">发送问题</el-button>
       <p v-if="answer" class="floating-answer">{{ answer }}</p>
     </section>
 
     <section v-else-if="appState.floatingMenuState.activeTab === 'note'" class="floating-body">
-      <el-input v-model="noteTitle" placeholder="笔记标题" />
-      <el-input v-model="noteContent" type="textarea" :rows="3" placeholder="记录当前疑问或结论" />
-      <el-button type="primary" @click="saveNote">保存笔记</el-button>
+      <el-input v-model="noteTitle" placeholder="笔记标题" aria-label="笔记标题" />
+      <el-input v-model="noteContent" type="textarea" :rows="3" placeholder="记录当前疑问或结论" aria-label="笔记内容" />
+      <el-button type="primary" :loading="loading" :disabled="!noteTitle.trim() || !noteContent.trim()" @click="saveNote">保存笔记</el-button>
       <article v-for="note in notes" :key="note.id" class="mini-list-item">
         <strong>{{ note.title }}</strong>
         <span>{{ note.content }}</span>

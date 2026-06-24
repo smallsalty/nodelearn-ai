@@ -131,7 +131,7 @@ async function updateTask(task: LearningTask, status: TaskStatus) {
         </div>
       </header>
       <el-empty v-if="!tasks.length" description="暂无任务" />
-      <el-timeline v-else>
+      <el-timeline v-else class="path-step-flow">
         <el-timeline-item v-for="task in tasks" :key="task.id" :timestamp="formatDate(task.createdAt)">
           <article class="task-card">
             <header>
@@ -140,8 +140,8 @@ async function updateTask(task: LearningTask, status: TaskStatus) {
             </header>
             <p>{{ task.taskType }} · {{ task.nodeId }}</p>
             <div class="button-row">
-              <el-button size="small" plain @click="updateTask(task, 'running')">开始</el-button>
-              <el-button size="small" type="success" plain @click="updateTask(task, 'success')">完成</el-button>
+              <el-button size="small" plain :disabled="task.status === 'running'" @click="updateTask(task, 'running')">开始</el-button>
+              <el-button size="small" type="success" plain :disabled="task.status === 'success'" @click="updateTask(task, 'success')">完成</el-button>
             </div>
           </article>
         </el-timeline-item>

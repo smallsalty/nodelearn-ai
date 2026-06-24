@@ -16,7 +16,7 @@ class ChatSession(ContractModel):
     course_id: str | None = None
     node_id: str | None = None
     title: str
-    session_type: Literal["profile", "qa", "resource", "practice"]
+    session_type: Literal["profile", "qa", "resource", "practice", "digital_human"]
     created_at: str
     updated_at: str
 
@@ -29,6 +29,10 @@ class ChatMessage(ContractModel):
     content: str
     content_type: Literal["text", "markdown", "json"]
     agent_type: AgentType | None = None
+    audio_url: str | None = None
+    video_url: str | None = None
+    provider_task_id: str | None = None
+    used_documents: list[RetrievedDocument] | None = None
     created_at: str
 
 

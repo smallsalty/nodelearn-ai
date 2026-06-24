@@ -19,7 +19,15 @@ from app.repositories.learning_path_repository import (
 )
 from app.repositories.profile_repository import ProfileRepository, default_profile_repository
 from app.repositories.resource_repository import DEMO_TIME, ResourceRepository, default_resource_repository
-from app.schemas.common import AuditStatus, CognitiveStyle, DifficultyLevel, PracticePreference, ResourceType, TaskStatus
+from app.schemas.common import (
+    AuditStatus,
+    CognitiveStyle,
+    DifficultyLevel,
+    PracticePreference,
+    ResourceType,
+    TaskStatus,
+    VideoGenerationStage,
+)
 from app.schemas.course import KnowledgeNode
 from app.schemas.learning_path import LearningPath, LearningTask
 from app.schemas.profile import StudentProfile
@@ -29,6 +37,7 @@ from app.schemas.resource import (
     RecommendationRequest,
     ResourceGenerateRequest,
     ResourceGenerateResult,
+    ResourceStreamEvent,
     ResourcePushRecord,
     ResourceRecommendation,
     RetrievedDocument,
@@ -143,6 +152,70 @@ class ResourceService:
     def get_generation_result(self, task_id: str) -> ResourceGenerateResult:
         return self.repository.ensure_generation_result(task_id)
 
+    def get_generation_stream_event(self, task_id: str) -> ResourceStreamEvent:
+        events = self.repository.list_generation_events(task_id)
+        if events:
+            return events[-1]
+        result = self.repository.ensure_generation_result(task_id)
+        event_type = "done" if result.status == TaskStatus.success else "error" if result.status == TaskStatus.failed else "progress"
+        return ResourceStreamEvent(
+            task_id=task_id,
+            event_type=event_type,
+            progress=result.progress or 0,
+            stage=result.current_stage,
+            error_message=result.error_message,
+        )
+
+    def is_video_generation_request(self, payload: ResourceGenerateRequest) -> bool:
+        return any(resource_type in VIDEO_RESOURCE_TYPES for resource_type in payload.resource_types)
+
+    def create_generation_task(self, payload: ResourceGenerateRequest) -> ResourceGenerateResult:
+        task_id = self.repository.next_task_id()
+        result = self.repository.save_generation_result(
+            ResourceGenerateResult(
+                task_id=task_id,
+                resource_ids=[],
+                status=TaskStatus.running if self.is_video_generation_request(payload) else TaskStatus.pending,
+                progress=0,
+                current_stage=VideoGenerationStage.queued,
+            )
+        )
+        self.repository.add_generation_event(
+            task_id,
+            event_type="start",
+            progress=0,
+            stage=VideoGenerationStage.queued,
+            content_chunk="queued",
+        )
+        return result
+
+    async def run_generation_task(self, task_id: str, payload: ResourceGenerateRequest) -> ResourceGenerationPlan | None:
+        try:
+            return await self.generate_resources(payload, task_id=task_id)
+        except Exception as exc:
+            message = str(exc) or exc.__class__.__name__
+            self._update_generation_stage(
+                task_id,
+                VideoGenerationStage.error,
+                100,
+                status=TaskStatus.failed,
+                error_message=message,
+                event_type="error",
+            )
+            logger.exception(
+                json.dumps(
+                    {
+                        "event": "resource_generation_task_failed",
+                        "taskId": task_id,
+                        "userId": payload.user_id,
+                        "courseId": payload.course_id,
+                        "errorMessage": message,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            return None
+
     def get_resource(self, resource_id: str) -> GeneratedResource | None:
         resource = self.repository.get_resource(resource_id)
         if resource is not None:
@@ -195,6 +268,7 @@ class ResourceService:
     async def generate_resources(
         self,
         payload: ResourceGenerateRequest,
+        task_id: str | None = None,
         profile: StudentProfile | None = None,
         profile_analysis: dict[str, Any] | None = None,
         learning_path: LearningPath | None = None,
@@ -218,12 +292,19 @@ class ResourceService:
         video_requested = any(resource_type in VIDEO_RESOURCE_TYPES for resource_type in payload.resource_types)
         resource_types = [resource_type for resource_type in resource_types if resource_type not in VIDEO_RESOURCE_TYPES]
 
-        task_id = self.repository.next_task_id()
+        task_id = task_id or self.repository.next_task_id()
         resources: list[GeneratedResource] = []
         recommendations: list[ResourceRecommendation] = []
         push_records: list[ResourcePushRecord] = []
         resource_plan: list[dict[str, Any]] = []
         error_message: str | None = None
+        self._update_generation_stage(
+            task_id,
+            VideoGenerationStage.queued,
+            0,
+            status=TaskStatus.running if video_requested else TaskStatus.pending,
+            event_type="start",
+        )
 
         if video_requested:
             video_resources, video_error = await self._generate_video_resources(
@@ -308,7 +389,17 @@ class ResourceService:
                 task_id=task_id,
                 resource_ids=[resource.id for resource in resources],
                 status=result_status,
+                progress=100,
+                current_stage=VideoGenerationStage.done if result_status == TaskStatus.success else VideoGenerationStage.error,
+                error_message=error_message,
             )
+        )
+        self.repository.add_generation_event(
+            task_id,
+            event_type="done" if result_status == TaskStatus.success else "error",
+            progress=100,
+            stage=VideoGenerationStage.done if result_status == TaskStatus.success else VideoGenerationStage.error,
+            error_message=error_message,
         )
         return ResourceGenerationPlan(
             result=result,
@@ -318,6 +409,34 @@ class ResourceService:
             resource_plan=resource_plan,
             error_message=error_message,
         )
+
+    def _update_generation_stage(
+        self,
+        task_id: str,
+        stage: VideoGenerationStage,
+        progress: float,
+        *,
+        status: TaskStatus | str | None = None,
+        resource_ids: list[str] | None = None,
+        error_message: str | None = None,
+        event_type: str = "progress",
+    ) -> ResourceGenerateResult:
+        result = self.repository.update_generation_result(
+            task_id,
+            resource_ids=resource_ids,
+            status=status,
+            progress=progress,
+            current_stage=stage,
+            error_message=error_message,
+        )
+        self.repository.add_generation_event(
+            task_id,
+            event_type=event_type,
+            progress=progress,
+            stage=stage,
+            error_message=error_message,
+        )
+        return result
 
     async def _generate_video_resources(
         self,
@@ -352,6 +471,14 @@ class ResourceService:
         ]
         for resource in resources:
             self._save_generated_resource(resource)
+        resource_ids = [resource.id for resource in resources]
+        self._update_generation_stage(
+            task_id,
+            VideoGenerationStage.script,
+            8,
+            status=TaskStatus.running,
+            resource_ids=resource_ids,
+        )
 
         try:
             documents = retrieved_documents or []
@@ -362,6 +489,22 @@ class ResourceService:
                     node_id=node.id if node else payload.node_id,
                     top_k=3,
                 )
+
+            def progress_callback(
+                stage: VideoGenerationStage,
+                progress: float,
+                error_message: str | None = None,
+            ) -> None:
+                self._update_generation_stage(
+                    task_id,
+                    stage,
+                    progress,
+                    status=TaskStatus.running if stage != VideoGenerationStage.error else TaskStatus.failed,
+                    resource_ids=resource_ids,
+                    error_message=error_message,
+                    event_type="error" if stage == VideoGenerationStage.error else "progress",
+                )
+
             lesson = await self.video_generation_service.generate(
                 task_id=task_id,
                 target_id=resources[0].id,
@@ -370,6 +513,9 @@ class ResourceService:
                 node=node,
                 target_goal=target_goal,
                 documents=documents,
+                video_options=payload.video_options,
+                learner_profile_summary=self._learner_profile_summary(profile, target_goal),
+                progress_callback=progress_callback,
             )
             content = json.dumps(lesson.model_dump(by_alias=True, mode="json"), ensure_ascii=False)
             resources = [
@@ -386,6 +532,13 @@ class ResourceService:
             ]
             for resource in resources:
                 self._save_generated_resource(resource)
+            self._update_generation_stage(
+                task_id,
+                VideoGenerationStage.persist,
+                95,
+                status=TaskStatus.running,
+                resource_ids=resource_ids,
+            )
             return resources, None
         except Exception as exc:
             audit_status = exc.audit_status if isinstance(exc, VideoAuditError) else AuditStatus.unchecked
@@ -416,6 +569,15 @@ class ResourceService:
             ]
             for resource in resources:
                 self._save_generated_resource(resource)
+            self._update_generation_stage(
+                task_id,
+                VideoGenerationStage.error,
+                100,
+                status=TaskStatus.failed,
+                resource_ids=resource_ids,
+                error_message=message,
+                event_type="error",
+            )
             return resources, message
 
     def _save_generated_resource(self, resource: GeneratedResource) -> GeneratedResource:
@@ -432,6 +594,15 @@ class ResourceService:
             "auditStatus": AuditStatus(resource.audit_status).value,
             "status": TaskStatus(resource.status).value,
         }
+
+    def _learner_profile_summary(self, profile: StudentProfile, target_goal: str) -> str:
+        return (
+            f"level={profile.knowledge_base_level}; "
+            f"cognitiveStyle={profile.cognitive_style}; "
+            f"practicePreference={profile.practice_preference}; "
+            f"weakNodes={','.join(profile.weak_node_ids[:5])}; "
+            f"goal={target_goal}"
+        )
 
     async def recommend_resources(self, payload: RecommendationRequest) -> list[ResourceRecommendation]:
         existing = self.repository.list_recommendations(
@@ -613,6 +784,12 @@ class ResourceService:
             ResourceType.code_case: "代码实操案例",
             ResourceType.video_script: "视频脚本",
             ResourceType.animation_script: "动画脚本",
+            ResourceType.knowledge_video: "知识点教学视频",
+            ResourceType.digital_human_video: "数字人讲解视频",
+            ResourceType.digital_human_dialogue: "数字人对话记录",
+            ResourceType.audio_explanation: "音频讲解",
+            ResourceType.subtitle: "字幕文本",
+            ResourceType.storyboard: "分镜脚本",
             ResourceType.project_task: "项目任务",
             ResourceType.summary_note: "复习摘要",
         }
@@ -783,6 +960,33 @@ class ResourceService:
                 "## 常见误区提示\n"
                 f"{common_mistakes}。"
                 f"{weak_hint}"
+            ),
+            ResourceType.knowledge_video: (
+                f"# {node_name}知识点教学视频\n"
+                f"学习目标：{target_goal}\n"
+                "生成链路：读取知识点 -> 生成脚本 -> 生成分镜 -> 语音合成 -> 视频渲染 -> 安全校验 -> 保存资源。\n"
+                f"参考材料：{document_section or '暂无额外材料'}"
+            ),
+            ResourceType.digital_human_video: (
+                f"# {node_name}数字人讲解\n"
+                "数字人口播脚本应短句化，面向学习场景，并保留 providerTaskId、videoUrl 和审计状态。\n"
+                f"学习目标：{target_goal}"
+            ),
+            ResourceType.digital_human_dialogue: (
+                f"# {node_name}数字人对话记录\n"
+                "记录用户问题、数字人回答、引用材料、音频和视频片段地址。"
+            ),
+            ResourceType.audio_explanation: (
+                f"# {node_name}音频讲解\n"
+                "输出适合 TTS 的短句讲解脚本，并保留 audioUrl。"
+            ),
+            ResourceType.subtitle: (
+                f"{node_name}字幕\n"
+                "1\n00:00:00,000 --> 00:00:05,000\n请先理解当前知识点的定义和使用场景。"
+            ),
+            ResourceType.storyboard: (
+                f"# {node_name}分镜脚本\n"
+                "- title：引入问题\n- concept_card：定义\n- diagram：结构关系\n- example：例子\n- summary：总结"
             ),
             ResourceType.project_task: (
                 f"# {node_name}项目任务\n"

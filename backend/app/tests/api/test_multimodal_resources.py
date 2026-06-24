@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.core.config import settings
 from app.main import app
 
-RESOURCE_GENERATE_RESULT_FIELDS = {"taskId", "resourceIds", "status"}
+RESOURCE_GENERATE_RESULT_FIELDS = {"taskId", "resourceIds", "status", "progress", "currentStage", "errorMessage"}
 GENERATED_RESOURCE_FIELDS = {
     "id",
     "userId",
@@ -65,6 +65,7 @@ def test_node_generated_resources_include_multimodal_resource(monkeypatch: pytes
             "resourceTypes": ["video_script"],
         },
     ).json()["data"]
+    generated = client.get(f"/api/v1/resources/generation-tasks/{generated['taskId']}").json()["data"]
     node_resources = client.get("/api/v1/nodes/node_linked_list_001/generated-resources").json()["data"]
 
     resource = next(item for item in node_resources if item["id"] == generated["resourceIds"][0])

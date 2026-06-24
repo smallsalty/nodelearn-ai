@@ -32,7 +32,7 @@
 - 服务文件：`backend/app/services/profile_service.py`
 - 智能体文件：`backend/app/agents/profile_agent.py`
 
-## 禁止事项
+## 约束事项
 
-- 不新增 `"dialogue" | "behavior" | "practice" | "manual"` 之外的 `lastUpdatedBy` 值。
-- 不新增契约外画像字段。
+- 如需求需要新增 `lastUpdatedBy` 值或画像字段，必须先同步 `docs/interface-contract.md`，再更新 schema、类型、服务、页面和测试。
+- 不使用契约外画像字段。

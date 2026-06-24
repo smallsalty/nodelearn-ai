@@ -12,6 +12,7 @@ from app.schemas.report import (
     StudyReport,
     StudyReportGenerateRequest,
 )
+from app.services.providers.iflytek.client import PROVIDER_CALL_LOGS
 
 router = APIRouter()
 
@@ -111,5 +112,18 @@ def list_audit_logs(page: int = 1, page_size: int = Query(10, alias="pageSize"),
 
 @router.get("/model-call-logs")
 def list_model_call_logs(page: int = 1, page_size: int = Query(10, alias="pageSize"), keyword: str | None = None, sort_by: str | None = Query(None, alias="sortBy"), sort_order: str | None = Query(None, alias="sortOrder")):
-    log = ModelCallLog(id="model_log_demo_001", provider="mock", model_name="mock", success=True, created_at=MOCK_TIME)
-    return success_response(page_result([log], 1, page, page_size))
+    logs = [
+        ModelCallLog(
+            id=entry.id,
+            provider=entry.provider,
+            model_name=entry.model_name,
+            latency_ms=entry.latency_ms,
+            success=entry.success,
+            error_message=entry.error_message,
+            created_at=MOCK_TIME,
+        )
+        for entry in PROVIDER_CALL_LOGS
+    ]
+    if not logs:
+        logs = [ModelCallLog(id="model_log_demo_001", provider="mock", model_name="mock", success=True, created_at=MOCK_TIME)]
+    return success_response(page_result(logs, len(logs), page, page_size))

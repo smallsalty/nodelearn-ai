@@ -13,6 +13,18 @@
 - `ResourceGenerateRequest`
 - `ResourceGenerateResult`
 - `ResourceStreamEvent`
+- `MultimodalVideoGenerateRequest`
+- `MultimodalTaskResult`
+- `MultimodalTaskEvent`
+- `DigitalHumanExplainRequest`
+- `DigitalHumanChatRequest`
+- `DigitalHumanChatResult`
+- `DigitalHumanCallbackRequest`
+- `VideoAspect`
+- `VideoQualityPreset`
+- `VideoGenerationStage`
+- `VideoMaterialSource`
+- `VideoGenerateOptions`
 - `ResourceRecommendation`
 - `ResourcePushRecord`
 - `RecommendationRequest`
@@ -22,6 +34,7 @@
 - `VisualAnimationType`
 - `VisualElement`
 - `VisualPlan`
+- `AnimationStep`
 - `VideoLessonScene`
 - `AnimationScriptContent`
 
@@ -41,16 +54,35 @@
 - `GET /api/v1/nodes/{nodeId}/generated-resources`
 - `DELETE /api/v1/resources/{resourceId}`
 - `GET /api/v1/resources/generate/stream?taskId={taskId}`
+- `POST /api/v1/multimodal/videos/generate`
+- `GET /api/v1/multimodal/videos/tasks/{taskId}`
+- `GET /api/v1/multimodal/videos/tasks/{taskId}/events`
+- `GET /api/v1/multimodal/videos/stream?taskId={taskId}`
+- `POST /api/v1/multimodal/digital-human/explain`
+- `POST /api/v1/multimodal/digital-human/chat`
+- `GET /api/v1/multimodal/digital-human/sessions/{sessionId}/messages`
+- `POST /api/v1/multimodal/digital-human/callback`
 - `POST /api/v1/recommendations/resources`
 - `GET /api/v1/users/{userId}/recommendations`
 - `POST /api/v1/recommendations/{recommendationId}/viewed`
 - `GET /api/v1/users/{userId}/push-records`
 
+## Video generation quality upgrade
+
+- `videoOptions` is limited to the existing resource generation route. It does not introduce a standalone video product API or a separate video resource model.
+- `knowledge_video` and `digital_human_video` use the multimodal task API and may be bridged from `POST /api/v1/resources/generate` for compatibility.
+- Default video options are `aspectRatio="16:9"`, `qualityPreset="high"`, and `materialSource="generated_motion_assets"`.
+- Video generation progress is exposed through `ResourceGenerateResult.progress/currentStage/errorMessage` and `ResourceStreamEvent.stage`.
+- Required generation stages are `script -> storyboard -> quality_audit -> tts -> render -> audit -> persist -> done`; failures use `error`.
+- `AnimationScriptContent.scenes[]` must include `teachingPurpose`, `concreteObjects`, `animationSteps`, `stateChanges`, `screenText`, `misconceptionFix`, `componentHints`, and `auditChecklist`.
+- The first version uses Remotion frame-driven data-structure teaching components and local teaching presets as primary visuals. External stock media is not a default source.
+
 ## 前端
 
 - 页面：`ResourcePage.vue`、`KnowledgeBaseAdminPage.vue`
-- API：`frontend/src/api/modules/resource.ts`
-- 类型：`frontend/src/types/resource.ts`
+- API：`frontend/src/api/modules/resource.ts`、`frontend/src/api/modules/multimodal.ts`
+- 类型：`frontend/src/types/resource.ts`、`frontend/src/types/multimodal.ts`
+- 组件：`MultimodalTaskProgress.vue`、`DigitalHumanChatPanel.vue`
 - 状态变量：`selectedResourceId`
 
 ## 后端
@@ -58,6 +90,8 @@
 - 路由文件：`backend/app/api/v1/resources.py`
 - 结构定义文件：`backend/app/schemas/resource.py`
 - 服务文件：`backend/app/services/resource_service.py`
+- 多模态服务：`backend/app/services/multimodal_service.py`
+- 讯飞 provider：`backend/app/services/providers/iflytek/*`
 - 智能体文件：`backend/app/agents/resource_agent.py`
 - 视频技能文件：`backend/app/agents/multimodal_skills.py`
 - 视频渲染器：`video-renderer/`
@@ -84,7 +118,10 @@
 - `mind_map` 内容统一使用 Mermaid `mindmap` 源码；规范化会移除 Markdown 围栏和可选图标指令，并转义会与 Mermaid 形状语法冲突的非根节点标点。
 - 开发验收页同时展示真实 MP4 和 `VideoLessonPlayer` 分镜、字幕、音频控制。
 
-## 禁止事项
+## 多模态资源增强
 
-- 不新增 `ResourceType`、`TaskStatus` 或 `AuditStatus` 值。
-- 生成资源必须保留 `userId`、`courseId`、`nodeId` 和 `auditStatus`。
+- 新增资源类型：`knowledge_video`、`digital_human_video`、`digital_human_dialogue`、`audio_explanation`、`subtitle`、`storyboard`。
+- 稳定知识点视频链路：`load_context -> generate_teaching_plan -> generate_script -> generate_storyboard -> validate_script -> synthesize_audio -> render_video -> audit_resource -> persist_resource -> emit_progress`。
+- 数字人讲解复用脚本/分镜链路，再通过讯飞数字人 provider 创建讲解任务；无真实讯飞配置时使用 mock provider，返回结构与真实 provider adapter 保持一致。
+- 数字人对话复用 RAG、学生画像和最小 audit 流程，保存 session/message，并可返回 mock audio/video URL。
+- 生成资源必须保留 `userId`、`courseId`、`nodeId`、`agentType`、`taskId`、`status`、`auditStatus`、`createdAt`、`updatedAt`。

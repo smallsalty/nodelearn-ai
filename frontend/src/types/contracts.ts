@@ -59,6 +59,12 @@ export type ResourceType =
   | "code_case"
   | "video_script"
   | "animation_script"
+  | "knowledge_video"
+  | "digital_human_video"
+  | "digital_human_dialogue"
+  | "audio_explanation"
+  | "subtitle"
+  | "storyboard"
   | "project_task"
   | "summary_note";
 
@@ -69,6 +75,11 @@ export type AgentType =
   | "resource_agent"
   | "practice_agent"
   | "multimodal_agent"
+  | "digital_human_agent"
+  | "video_generation_agent"
+  | "script_agent"
+  | "storyboard_agent"
+  | "narration_agent"
   | "recommendation_agent"
   | "safety_agent"
   | "knowledge_graph_agent"
@@ -94,6 +105,21 @@ export type CognitiveStyle = "text" | "diagram" | "example" | "code" | "mixed";
 export type PracticePreference = "choice" | "coding" | "case" | "mixed";
 export type AuditStatus = "unchecked" | "passed" | "rejected" | "need_review";
 
+export type VideoAspect = "16:9" | "9:16" | "1:1";
+export type VideoQualityPreset = "standard" | "high" | "ultra";
+export type VideoGenerationStage =
+  | "queued"
+  | "script"
+  | "storyboard"
+  | "quality_audit"
+  | "tts"
+  | "render"
+  | "audit"
+  | "persist"
+  | "done"
+  | "error";
+export type VideoMaterialSource = "none" | "local_assets" | "generated_motion_assets";
+
 export type BehaviorType =
   | "view_resource"
   | "finish_resource"
@@ -109,6 +135,9 @@ export interface HealthCheckResult {
   vectorStore?: "ok" | "error";
   graphDb?: "ok" | "error";
   llmService?: "ok" | "error";
+  iflytekSpark?: "mock" | "ok" | "error";
+  iflytekTts?: "mock" | "ok" | "error";
+  iflytekDigitalHuman?: "mock" | "ok" | "error";
 }
 
 export interface SystemConfig {

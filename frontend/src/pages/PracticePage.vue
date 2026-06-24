@@ -144,7 +144,7 @@ function selectQuestion(question: PracticeQuestion) {
           />
 
           <div class="button-row">
-            <el-button type="primary" :loading="submitting" @click="submitAnswer">提交答案</el-button>
+            <el-button type="primary" :loading="submitting" :disabled="!userAnswer.trim()" @click="submitAnswer">提交答案</el-button>
             <el-button plain @click="userAnswer = selectedQuestion.answer">查看参考答案</el-button>
           </div>
 

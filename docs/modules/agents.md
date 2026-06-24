@@ -9,6 +9,7 @@
 - `ChatRequest`
 - `ChatResult`
 - `ChatStreamEvent`
+- 数字人对话扩展字段：`audioUrl`、`videoUrl`、`providerTaskId`、`usedDocuments`
 - `AgentContext`
 - `AgentRunRequest`
 - `AgentRunResult`
@@ -24,6 +25,8 @@
 - `GET /api/v1/chat/sessions/{sessionId}/messages`
 - `POST /api/v1/chat/send`
 - `GET /api/v1/chat/stream?sessionId={sessionId}`
+- `POST /api/v1/multimodal/digital-human/chat`
+- `GET /api/v1/multimodal/digital-human/sessions/{sessionId}/messages`
 - `POST /api/v1/agents/run`
 - `POST /api/v1/agents/workflows/run`
 - `GET /api/v1/agents/tasks/{taskId}`
@@ -61,15 +64,20 @@
 - `VideoScriptSkill`
 - `StoryboardSkill`
 - `AnimationSpecSkill`
+- `QualityAuditSkill`
 - `TtsSkill`
 - `VideoRenderSkill`
 - `SafetyAuditSkill`
 
-视频技能复用现有 `multimodal_agent`，不为视频技能新增 `AgentType`。最终资源输出必须通过已有 `POST /api/v1/audit/check`。
+视频技能默认复用现有 `multimodal_agent`。本次多模态增强同时登记 `digital_human_agent`、`video_generation_agent`、`script_agent`、`storyboard_agent` 和 `narration_agent`，用于任务日志和 provider 调用归因。最终资源输出必须通过已有 `POST /api/v1/audit/check`。
 
 `StoryboardSkill` 输出通用解释型 `clean_motion_graphics` 分镜，固定使用 `hook`、`definition`、`analogy`、`mechanism`、`comparison`、`process`、`example` 和 `summary` 场景节奏。`AnimationSpecSkill` 严格校验 `visualPlan`，不允许回退为算法专用动画或整段文字卡片。
 
-## 禁止事项
+`QualityAuditSkill` 在 TTS 和 Remotion 之前运行，检查具体对象、状态变化、屏幕文字、组件提示、动画步骤和数据结构领域组件；质量审计失败时最多触发 1 次分镜重写，仍失败则资源保持 `failed` 且不发布 `fileUrl`。
 
-- 不新增 `AgentType` 值。
-- 不新增 `workflowType`、`eventType` 或对话角色值。
+## 多模态数字人
+
+- `ChatSession.sessionType` 支持 `digital_human`。
+- 数字人对话围绕 `userId/courseId/nodeId/sessionId/message` 工作，必须结合学生画像、RAG 结果和 audit/safety。
+- 数字人媒体输出通过 provider adapter 返回 `audioUrl`、`videoUrl`、`providerTaskId`，前端不得写死讯飞字段。
+- 允许根据功能新增 `AgentType`、`workflowType` 或事件值，但必须同步契约、schema、前端类型和测试。

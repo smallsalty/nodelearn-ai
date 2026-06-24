@@ -10,6 +10,7 @@ import type {
   ResourceGenerateResult,
   ResourcePushRecord,
   ResourceRecommendation,
+  ResourceStreamEvent,
   RetrievedDocument,
   UploadedFile
 } from "@/types/resource";
@@ -54,6 +55,9 @@ export const resourceApi = {
   },
   getGenerationTask(taskId: string) {
     return request<ResourceGenerateResult>({ method: "GET", url: `/resources/generation-tasks/${taskId}` });
+  },
+  getGenerationStreamEvent(taskId: string) {
+    return request<ResourceStreamEvent>({ method: "GET", url: "/resources/generate/stream", params: { taskId } });
   },
   getResource(resourceId: string) {
     return request<GeneratedResource>({ method: "GET", url: `/resources/${resourceId}` });

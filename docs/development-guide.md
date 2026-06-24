@@ -14,14 +14,14 @@
 
 强制约束：
 
-- 不新增 `docs/interface-contract.md` 未定义的接口路径。
-- 不新增枚举值。
-- 不修改字段名。
+- 功能需要新增接口路径、枚举值、字段名、环境变量、数据库表或类型时，允许直接新增。
+- 新增内容必须同步更新 `docs/interface-contract.md`、后端 schema/model/router/service、前端 types/api/page、测试用例和项目状态。
 - 前端统一 camelCase。
 - 后端和数据库统一 snake_case。
 - HTTP 返回统一 `ApiResponse<T>`。
 - 前端页面和组件不能直接写 `fetch` 或 `axios`，必须调用 `src/api/modules/*`。
-- 如果契约缺少必要定义，停止开发并输出：`CONTRACT_MISSING: 缺少 xxx 定义`。
+- 不允许硬编码任何 API Key、Secret、Token、AppId。
+- 生成类资源、数字人口播文本和对话回答必须经过 safety/audit 或事实校验。
 
 ## 2. 通用开发顺序
 
@@ -53,8 +53,8 @@
 前端开发步骤：
 
 1. 读取对应 `docs/modules/*.md`。
-2. 如果需要新增或调整数据结构，先核对 `docs/interface-contract.md`，再改 `frontend/src/types/*`。
-3. 在 `frontend/src/api/modules/*` 添加或调整函数；路径只能来自契约。
+2. 如果需要新增或调整数据结构，先更新 `docs/interface-contract.md`，再改 `frontend/src/types/*`。
+3. 在 `frontend/src/api/modules/*` 添加或调整函数；路径必须同步登记在契约中。
 4. 页面或组件调用 API module。
 5. 检查页面中没有 `fetch(` 或 `axios`。
 6. 运行 `npm install` 后执行 `npm run build`。
@@ -72,14 +72,14 @@
 | `backend/app/schemas/*.py` | 模块结构定义 | Python 字段 snake_case，对外 JSON 通过 alias 保持契约字段 |
 | `backend/app/api/v1/*.py` | 路由层 | 只负责路径、参数、调用 service、包装响应 |
 | `backend/app/services/*.py` | 业务逻辑 | 写业务流程、存储适配、外部集成边界 |
-| `backend/app/agents/*.py` | 智能体预留 | 使用契约中的 `AgentType`，不新增 agent 类型 |
+| `backend/app/agents/*.py` | 智能体预留 | 使用契约中的 `AgentType`；新增 agent 类型时先同步契约 |
 | `backend/app/db/*` | 数据库预留 | PostgreSQL/MySQL session 和 base 占位 |
 
 后端开发步骤：
 
 1. 读取 `backend/AGENTS.md` 和模块文档。
-2. 在 `backend/app/schemas/*` 确认请求和响应结构。
-3. 在 `backend/app/api/v1/*` 实现契约中已有路径。
+2. 在 `backend/app/schemas/*` 确认请求和响应结构，必要时先扩展契约。
+3. 在 `backend/app/api/v1/*` 实现已登记到契约的路径。
 4. route 中使用 `success_response` 返回 `ApiResponse<T>`。
 5. 真实业务写入 `backend/app/services/*`；mock 数据字段也必须来自契约。
 6. 智能体输出资源前必须接入 safety/audit 边界。
@@ -91,7 +91,7 @@
 
 | 部分 | 读取文件 | 调用/修改位置 | 规则 |
 |---|---|---|---|
-| 数据库 PostgreSQL/MySQL | `docs/database-schema.md`, `docs/interface-contract.md` | `backend/app/db/*`, 后续 `backend/app/models` | 表名和字段来自契约，字段 snake_case |
+| 数据库 PostgreSQL/MySQL | `docs/database-schema.md`, `docs/interface-contract.md` | `backend/app/db/*`, 后续 `backend/app/models` | 新增表名和字段先同步契约，字段 snake_case |
 | Redis | `backend/.env.example`, `backend/app/core/config.py` | service 层内部使用 | 不在 route 中直接写缓存逻辑 |
 | Chroma/FAISS | `docs/modules/resource-generation.md` | `backend/app/services/resource_service.py` | 只作为 RAG/vector store 适配边界 |
 | Neo4j | `docs/modules/knowledge-graph.md` | `backend/app/services/graph_service.py` | 图谱接口仍走 `backend/app/api/v1/graph.py` |
@@ -141,7 +141,7 @@ npm run build
 
 ## 8. 修改文档的规则
 
-- `docs/interface-contract.md` 是最高优先级契约，不因实现方便而修改。
+- `docs/interface-contract.md` 是最高优先级契约；功能需要新增接口、字段、枚举或表时先修改契约，再修改实现。
 - `docs/modules/*.md` 只保留模块开发边界和关键文件引用，不复制完整接口定义。
 - `docs/development-guide.md` 说明流程和文件调用关系，不定义新接口。
 - 若发现文档与契约冲突，以 `docs/interface-contract.md` 为准，并修正文档。

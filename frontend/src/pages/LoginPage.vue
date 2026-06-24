@@ -48,8 +48,8 @@ function fillDemo() {
   <main class="login-page">
     <section class="login-hero">
       <div class="login-copy">
-        <h1>NodeLearn AI</h1>
-        <p>面向数据结构课程的多智能体个性化学习平台。</p>
+        <h1>NodeLearn</h1>
+        <p>面向数据结构课程的个性化学习工作台。</p>
         <ul>
           <li>真实连接后端 API，不默认使用本地 Mock。</li>
           <li>画像、路径、资源、练习和报告全链路可演示。</li>

@@ -18,7 +18,14 @@ const browserExecutableIndex = process.argv.indexOf("--browser-executable");
 const browserExecutable =
   browserExecutableIndex === -1 ? undefined : path.resolve(process.argv[browserExecutableIndex + 1]);
 
-const lesson = JSON.parse(await fs.readFile(inputPath, "utf8"));
+const renderInput = JSON.parse(await fs.readFile(inputPath, "utf8"));
+const lesson = renderInput.lesson ?? renderInput;
+const qualityPreset = renderInput.qualityPreset ?? "high";
+const qualitySettings = {
+  standard: { crf: 23 },
+  high: { crf: 18 },
+  ultra: { crf: 14 },
+}[qualityPreset] ?? { crf: 18 };
 const inputProps = { lesson };
 const serveUrl = await bundle({
   entryPoint: path.resolve("src/index.tsx"),
@@ -35,6 +42,7 @@ await renderMedia({
   serveUrl,
   codec: "h264",
   audioCodec: "aac",
+  crf: qualitySettings.crf,
   outputLocation: outputPath,
   inputProps,
   browserExecutable,

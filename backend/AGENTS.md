@@ -13,5 +13,8 @@
 - `app/api/v1` 只负责路由绑定、请求接收和响应编排。
 - `app/services` 放置业务逻辑和外部集成边界。
 - 后端 Python 变量和数据库字段使用 snake_case。
-- 不允许新增未定义的路由、字段或枚举值。
-- 缺少定义时必须输出 `CONTRACT_MISSING: 缺少 xxx 定义`。
+- 功能需要新增路由、字段、枚举、环境变量、数据库表或 DTO 时允许直接新增。
+- 新增内容必须同步更新 `../docs/interface-contract.md`、后端 schema/model/router/service、前端类型和 API、测试用例、项目状态。
+- 外部 provider 必须集中在 `app/services` 边界内，不允许在 route 或业务流程中散写密钥或 HTTP 调用。
+- 不允许硬编码 API Key、Secret、Token、AppId。
+- 生成内容、数字人口播文本和对话回答必须经过 audit/safety 或事实校验流程。

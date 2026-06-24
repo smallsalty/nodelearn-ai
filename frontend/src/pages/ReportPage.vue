@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import * as echarts from "echarts";
+import MetricCard from "@/components/cards/MetricCard.vue";
 import StateBlock from "@/components/StateBlock.vue";
 import { reportApi } from "@/api/modules/report";
 import { recordsApi } from "@/api/modules/records";
@@ -81,15 +82,29 @@ function renderTrend() {
   chart ??= echarts.init(chartRef.value);
   chart.setOption({
     tooltip: { trigger: "axis" },
-    xAxis: { type: "category", data: evaluation.value.progressTrend.map((_, index) => `阶段 ${index + 1}`) },
-    yAxis: { type: "value", min: 0, max: 100 },
+    grid: { left: 36, right: 20, top: 32, bottom: 28 },
+    xAxis: {
+      type: "category",
+      data: evaluation.value.progressTrend.map((_, index) => `阶段 ${index + 1}`),
+      axisLine: { lineStyle: { color: "#cbd5e1" } },
+      axisLabel: { color: "#475569" }
+    },
+    yAxis: {
+      type: "value",
+      min: 0,
+      max: 100,
+      axisLine: { lineStyle: { color: "#cbd5e1" } },
+      splitLine: { lineStyle: { color: "#e2e8f0" } },
+      axisLabel: { color: "#475569" }
+    },
     series: [
       {
         name: "掌握趋势",
         type: "line",
         smooth: true,
-        areaStyle: { opacity: 0.16 },
+        areaStyle: { opacity: 0.08, color: "#2563eb" },
         lineStyle: { width: 3, color: "#2563eb" },
+        itemStyle: { color: "#2563eb" },
         data: evaluation.value.progressTrend
       }
     ]
@@ -103,7 +118,7 @@ function renderTrend() {
       <header class="panel-header">
         <div>
           <h2>学习报告</h2>
-          <p>聚合完成率、正确率、薄弱节点和 AI 改进建议。</p>
+          <p>聚合完成率、正确率、薄弱节点和改进建议。</p>
         </div>
         <div class="button-row">
           <el-button :loading="loading" @click="loadPage">刷新</el-button>
@@ -113,18 +128,9 @@ function renderTrend() {
 
       <StateBlock :loading="loading" :error="errorMessage" :empty="!evaluation" empty-text="暂无评估数据" @retry="loadPage">
         <section class="metric-grid compact">
-          <article class="metric-card">
-            <span>完成率</span>
-            <strong>{{ percent(evaluation?.completionRate) }}</strong>
-          </article>
-          <article class="metric-card">
-            <span>正确率</span>
-            <strong>{{ percent(evaluation?.correctRate) }}</strong>
-          </article>
-          <article class="metric-card">
-            <span>平均掌握</span>
-            <strong>{{ Math.round(evaluation?.averageMasteryScore ?? 0) }}</strong>
-          </article>
+          <MetricCard label="完成率" :value="percent(evaluation?.completionRate)" tone="primary" />
+          <MetricCard label="正确率" :value="percent(evaluation?.correctRate)" tone="success" />
+          <MetricCard label="平均掌握" :value="Math.round(evaluation?.averageMasteryScore ?? 0)" tone="warning" />
         </section>
         <div ref="chartRef" class="trend-chart" role="img" aria-label="学习掌握趋势图" />
         <el-alert

@@ -41,7 +41,6 @@
 - 结构定义文件：`backend/app/schemas/note.py`
 - 服务文件：`backend/app/services/note_service.py`
 
-## 禁止事项
+## 约束事项
 
-- 不新增 `activeTab` 值。
-- 不新增 `relationType` 值。
+- 如需求需要新增 `activeTab` 或 `relationType` 值，必须先同步 `docs/interface-contract.md`，再更新 schema、类型、服务、页面和测试。
