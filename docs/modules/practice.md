@@ -40,7 +40,7 @@
 - `practice_agent` 在完整资源工作流中固定生成 `single_choice`、`short_answer`、`coding` 各 1 道题。
 - 真实 JSON 必须严格满足题目数量、题型、难度和完整字段要求；非法 JSON、数量不足或字段缺失必须明确失败。
 
-## 禁止事项
+## 约束事项
 
-- 不新增 `QuestionType` 或 `DifficultyLevel` 值。
+- 如需求需要新增 `QuestionType` 或 `DifficultyLevel` 值，必须先同步 `docs/interface-contract.md`，再更新 schema、类型、服务、页面和测试。
 - 不重命名答案字段：`userAnswer`、`correctAnswer`、`isCorrect`。

@@ -84,7 +84,7 @@ async function restartAudio() {
     <div class="lesson-stage">
       <header class="stage-header">
         <div>
-          <p>NodeLearn AI · Explainer</p>
+          <p>课程讲解</p>
           <h2>{{ lesson.title }}</h2>
         </div>
         <div class="scene-meta"><span>{{ currentScene.sceneType }}</span>{{ currentSceneIndex + 1 }} / {{ lesson.scenes.length }}</div>
@@ -105,12 +105,47 @@ async function restartAudio() {
               <strong>{{ element.label }}</strong>
               <div><span v-for="(item, itemIndex) in element.items ?? ['0','1','2','3','4','5','6','7','8']" :key="`${item}-${itemIndex}`" :class="{ active: itemIndex === element.highlightIndex }">{{ item }}</span></div>
             </div>
+            <div v-else-if="element.type === 'hash_table_buckets'" class="data-structure hash-buckets" :class="animationClass(element)" :style="animationDelay(index)">
+              <strong>{{ element.keyLabel ?? "hash buckets" }}</strong>
+              <div><span v-for="(bucket, bucketIndex) in element.buckets" :key="`${bucket}-${bucketIndex}`" :class="{ active: bucketIndex === element.activeIndex, collision: element.collisionIndices?.includes(bucketIndex) }">#{{ bucket }}</span></div>
+            </div>
+            <div v-else-if="element.type === 'hash_function_panel'" class="data-structure function-panel" :class="animationClass(element)" :style="animationDelay(index)">
+              <span>{{ element.inputKey }}</span><b>hash</b><span>{{ element.expression }}</span><b>=</b><span>{{ element.outputIndex }}</span>
+            </div>
+            <div v-else-if="element.type === 'collision_chain' || element.type === 'linked_list_nodes'" class="data-structure node-chain" :class="animationClass(element)" :style="animationDelay(index)">
+              <span v-for="(node, nodeIndex) in element.nodes" :key="`${node}-${nodeIndex}`" :class="{ active: nodeIndex === (element.type === 'collision_chain' ? element.activeNodeIndex : element.activeIndex) }">{{ node }}</span>
+            </div>
+            <div v-else-if="element.type === 'array_cells'" class="data-structure array-cells" :class="animationClass(element)" :style="animationDelay(index)">
+              <span v-for="(item, itemIndex) in element.items" :key="`${item}-${itemIndex}`" :class="{ active: element.activeIndices?.includes(itemIndex) }">{{ item }}</span>
+            </div>
+            <div v-else-if="element.type === 'stack_blocks'" class="data-structure stack-blocks" :class="animationClass(element)" :style="animationDelay(index)">
+              <strong>{{ element.operation }}</strong>
+              <span v-for="(item, itemIndex) in element.items" :key="`${item}-${itemIndex}`" :class="{ active: itemIndex === element.activeIndex }">{{ item }}</span>
+            </div>
+            <div v-else-if="element.type === 'queue_line'" class="data-structure queue-line" :class="animationClass(element)" :style="animationDelay(index)">
+              <strong>{{ element.operation }}</strong>
+              <span v-for="(item, itemIndex) in element.items" :key="`${item}-${itemIndex}`" :class="{ active: itemIndex === element.headIndex || itemIndex === element.tailIndex }">{{ item }}</span>
+            </div>
+            <div v-else-if="element.type === 'tree_node_graph'" class="data-structure tree-preview" :class="animationClass(element)" :style="animationDelay(index)">
+              <span v-for="node in element.nodes" :key="node" :class="{ active: element.activePath?.includes(node) }">{{ node }}</span>
+            </div>
+            <pre v-else-if="element.type === 'code_trace_panel'" class="code-element" :class="animationClass(element)" :style="animationDelay(index)"><code>{{ element.codeLines.join("\n") }}</code></pre>
+            <div v-else-if="element.type === 'pointer_arrow'" class="data-structure pointer-preview" :class="animationClass(element)" :style="animationDelay(index)">
+              <span>{{ element.fromLabel }}</span><b>{{ element.label }}</b><span>{{ element.toLabel }}</span>
+            </div>
+            <div v-else-if="element.type === 'memory_box'" class="data-structure memory-box" :class="animationClass(element)" :style="animationDelay(index)">
+              <small>{{ element.address }}</small><span :class="{ active: element.active }">{{ element.value }}</span>
+            </div>
+            <div v-else-if="element.type === 'complexity_chart'" class="data-structure complexity-chart" :class="animationClass(element)" :style="animationDelay(index)">
+              <strong>{{ element.label }}</strong>
+              <span v-for="(item, itemIndex) in element.items" :key="`${item}-${itemIndex}`" :class="{ active: itemIndex === element.activeIndex }">{{ item }}</span>
+            </div>
             <ol v-else-if="element.type === 'timeline'" class="timeline-steps" :class="animationClass(element)" :style="animationDelay(index)">
               <li v-for="item in element.items" :key="item">{{ item }}</li>
             </ol>
             <img v-else-if="element.type === 'image'" class="motion-image" :class="animationClass(element)" :style="animationDelay(index)" :src="element.imageUrl" :alt="element.alt" />
             <pre v-else-if="element.type === 'code'" class="code-element" :class="animationClass(element)" :style="animationDelay(index)"><code>{{ element.content }}</code></pre>
-            <div v-else class="formula-element" :class="animationClass(element)" :style="animationDelay(index)">{{ element.content }}</div>
+            <div v-else-if="element.type === 'formula'" class="formula-element" :class="animationClass(element)" :style="animationDelay(index)">{{ element.content }}</div>
           </template>
         </section>
       </main>
@@ -119,6 +154,17 @@ async function restartAudio() {
     </div>
 
     <section class="subtitle"><strong>旁白字幕</strong><p>{{ currentScene.narration }}</p></section>
+    <section class="scene-audit">
+      <div v-if="currentScene.teachingPurpose"><strong>Purpose</strong><span>{{ currentScene.teachingPurpose }}</span></div>
+      <div v-if="currentScene.concreteObjects?.length"><strong>Objects</strong><span>{{ currentScene.concreteObjects.join(" / ") }}</span></div>
+      <div v-if="currentScene.stateChanges?.length"><strong>State</strong><span>{{ currentScene.stateChanges.join(" -> ") }}</span></div>
+      <div v-if="currentScene.misconceptionFix"><strong>Fix</strong><span>{{ currentScene.misconceptionFix }}</span></div>
+      <ol v-if="currentScene.animationSteps?.length" class="animation-step-list">
+        <li v-for="step in currentScene.animationSteps" :key="`${step.startState}-${step.endState}`">
+          {{ step.startState }} -> {{ step.endState }} / {{ step.visualAction }}
+        </li>
+      </ol>
+    </section>
     <audio ref="audioElement" :src="currentScene.audioUrl" @timeupdate="updateProgress" @ended="handleEnded" @play="playing = true" @pause="playing = false" />
     <footer class="player-controls">
       <el-button :disabled="currentSceneIndex === 0" @click="previousScene">上一步</el-button>
@@ -132,45 +178,56 @@ async function restartAudio() {
 
 <style scoped>
 .video-lesson-player { display: grid; gap: 14px; }
-.lesson-stage { aspect-ratio: 16 / 9; display: grid; grid-template-rows: auto 1fr auto; gap: 16px; padding: 24px; overflow: hidden; box-sizing: border-box; border-radius: 16px; background: radial-gradient(circle at 15% 10%, #103b52, #071426 58%); color: #f7fbff; }
+.lesson-stage { aspect-ratio: 16 / 9; display: grid; grid-template-rows: auto 1fr auto; gap: 16px; padding: 24px; overflow: hidden; box-sizing: border-box; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-lg); background: var(--nl-surface); color: var(--nl-text); }
 .stage-header, .player-controls, .scene-meta { display: flex; align-items: center; gap: 12px; }
 .stage-header { justify-content: space-between; }
-.stage-header p { margin: 0; color: #33d6c5; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+.stage-header p { margin: 0; color: var(--nl-text-subtle); font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
 .stage-header h2, .motion-stage h3 { margin: 6px 0 0; }
-.scene-meta { color: #a9bdd7; font-size: 13px; }
-.scene-meta span { padding: 4px 9px; border: 1px solid #24415f; border-radius: 999px; }
+.scene-meta { color: var(--nl-text-muted); font-size: 13px; }
+.scene-meta span { padding: 4px 9px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm); background: var(--nl-bg); }
 .motion-stage { display: grid; grid-template-rows: auto 1fr; min-height: 0; }
-.motion-stage h3 { color: #ffc857; }
-.visual-plan { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px; min-height: 0; padding: 12px; }
+.motion-stage h3 { color: var(--nl-primary); }
+.visual-plan { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px; min-height: 0; padding: 12px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-lg); background: var(--nl-bg); }
 .layout-pipeline, .layout-left_right { flex-direction: row; }
 .layout-center_focus { flex-direction: column; }
 .layout-summary_cards, .layout-comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .layout-comparison { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.motion-text, .concept-card, .circle-label, .formula-element, .code-element { padding: 13px 17px; border: 1px solid #24415f; border-radius: 14px; background: rgba(16, 35, 63, .9); }
-.motion-text.keyword, .circle-label { border-color: #33d6c5; color: #33d6c5; border-radius: 999px; font-weight: 700; }
-.concept-card { color: #d7e8ff; text-align: center; }
-.icon-bubble { display: grid; place-items: center; width: 84px; height: 84px; border: 2px solid #33d6c5; border-radius: 50%; color: #33d6c5; background: rgba(51, 214, 197, .1); }
-.arrow-flow { display: grid; justify-items: center; min-width: 100px; color: #33d6c5; }
-.arrow-flow span { display: block; width: 100%; height: 3px; margin-top: 6px; background: #33d6c5; transform-origin: left; }
-.grid-focus { display: grid; gap: 8px; text-align: center; color: #ffc857; }
+.motion-text, .concept-card, .circle-label, .formula-element, .code-element { padding: 13px 17px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: var(--nl-surface); box-shadow: var(--nl-shadow-card); }
+.motion-text.keyword, .circle-label { border-color: var(--nl-primary-soft); color: var(--nl-primary); border-radius: var(--nl-radius-sm); font-weight: 700; }
+.concept-card { color: var(--nl-text); text-align: center; }
+.icon-bubble { display: grid; place-items: center; width: 84px; height: 84px; border: 1px solid var(--nl-primary-soft); border-radius: 50%; color: var(--nl-primary); background: var(--nl-primary-tint); }
+.arrow-flow { display: grid; justify-items: center; min-width: 100px; color: var(--nl-primary); }
+.arrow-flow span { display: block; width: 100%; height: 3px; margin-top: 6px; background: var(--nl-primary); transform-origin: left; }
+.grid-focus { display: grid; gap: 8px; text-align: center; color: var(--nl-primary); }
 .grid-focus div { display: grid; grid-template-columns: repeat(3, 42px); gap: 5px; }
-.grid-focus span { padding: 8px; border-radius: 6px; background: #173352; color: #d7e8ff; }
-.grid-focus span.active { background: #ffc857; color: #071426; }
-.timeline-steps { display: flex; gap: 10px; padding: 0; list-style-position: inside; color: #d7e8ff; }
-.timeline-steps li { padding: 10px; border: 1px solid #24415f; border-radius: 10px; background: #10233f; }
-.motion-image { width: 220px; height: 132px; border-radius: 12px; object-fit: cover; }
-.subtitle { padding: 12px 16px; border: 1px solid #dbe5ef; border-radius: 12px; background: #fff; }
-.subtitle p { margin: 6px 0 0; color: #475569; line-height: 1.6; }
-.stage-progress { height: 5px; overflow: hidden; border-radius: 999px; background: #24415f; }
-.stage-progress span { display: block; height: 100%; background: linear-gradient(90deg, #33d6c5, #5ea1ff); }
-.motion-fade_in, .motion-pop_in, .motion-slide_in_left, .motion-slide_in_right, .motion-float, .motion-draw, .motion-highlight, .motion-zoom_in, .motion-stagger_in { animation: enter .7s both; }
-.motion-slide_in_left { animation-name: enter-left; }.motion-slide_in_right { animation-name: enter-right; }.motion-pop_in, .motion-zoom_in { animation-name: enter-pop; }.motion-float { animation: enter .7s both, float 2.5s .7s ease-in-out infinite; }.motion-draw { animation-name: draw; }.motion-highlight { animation: enter .7s both, highlight 1.8s .7s ease-in-out infinite; }
-@keyframes enter { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes enter-left { from { opacity: 0; transform: translateX(-44px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes enter-right { from { opacity: 0; transform: translateX(44px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes enter-pop { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: scale(1); } }
-@keyframes float { 50% { transform: translateY(-8px); } }
+.grid-focus span { padding: 8px; border: 1px solid var(--nl-border); border-radius: 6px; background: var(--nl-surface); color: var(--nl-text-muted); }
+.grid-focus span.active { border-color: var(--nl-warning); background: var(--nl-warning-soft); color: var(--nl-text); }
+.data-structure { display: grid; gap: 8px; padding: 13px 17px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: var(--nl-surface); color: var(--nl-text); }
+.data-structure strong { color: var(--nl-primary); }
+.data-structure span { padding: 8px 10px; border: 1px solid var(--nl-border); border-radius: 8px; background: var(--nl-bg); text-align: center; }
+.data-structure span.active, .data-structure span.collision { border-color: var(--nl-warning); background: var(--nl-warning-soft); color: var(--nl-text); }
+.hash-buckets div, .array-cells, .queue-line, .node-chain, .function-panel, .pointer-preview, .complexity-chart { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.stack-blocks { justify-items: center; }
+.stack-blocks span { min-width: 90px; }
+.tree-preview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.memory-box small { color: var(--nl-text-subtle); }
+.timeline-steps { display: flex; gap: 10px; padding: 0; list-style-position: inside; color: var(--nl-text); }
+.timeline-steps li { padding: 10px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm); background: var(--nl-surface); }
+.motion-image { width: 220px; height: 132px; border-radius: var(--nl-radius-md); object-fit: cover; }
+.subtitle { padding: 12px 16px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: var(--nl-surface); }
+.subtitle p { margin: 6px 0 0; color: var(--nl-text-muted); line-height: 1.6; }
+.scene-audit { display: grid; gap: 8px; padding: 12px 16px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: var(--nl-bg); color: var(--nl-text-muted); }
+.scene-audit div { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; }
+.scene-audit strong { color: var(--nl-text); }
+.animation-step-list { margin: 0; padding-left: 20px; line-height: 1.55; }
+.stage-progress { height: 5px; overflow: hidden; border-radius: 999px; background: var(--nl-surface-muted); }
+.stage-progress span { display: block; height: 100%; background: var(--nl-primary); }
+.motion-fade_in, .motion-pop_in, .motion-slide_in_left, .motion-slide_in_right, .motion-float, .motion-draw, .motion-highlight, .motion-zoom_in, .motion-stagger_in { animation: enter 220ms both; }
+.motion-slide_in_left { animation-name: enter-left; }.motion-slide_in_right { animation-name: enter-right; }.motion-pop_in, .motion-zoom_in { animation-name: enter-pop; }.motion-float { animation-name: enter; }.motion-draw { animation-name: draw; }.motion-highlight { animation-name: enter; }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes enter-left { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes enter-right { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes enter-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
 @keyframes draw { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
-@keyframes highlight { 50% { filter: brightness(1.32); transform: scale(1.035); } }
 @media (max-width: 760px) { .lesson-stage { aspect-ratio: auto; min-height: 420px; }.layout-summary_cards { grid-template-columns: 1fr; }.timeline-steps { flex-wrap: wrap; } }
 </style>

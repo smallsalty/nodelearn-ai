@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from app.agents.multimodal_skills import TtsSkill, VideoAuditError, VideoRenderSkill
+from app.agents.multimodal_skills import QualityAuditSkill, TtsSkill, VideoAuditError, VideoRenderSkill
 from app.core.config import settings
 from app.repositories.learning_path_repository import LearningPathRepository
 from app.repositories.profile_repository import ProfileRepository
@@ -47,6 +47,36 @@ def render_ready_lesson(audio_urls: list[str] | None = None) -> AnimationScriptC
                 title=f"场景 {index}",
                 narration=f"这是第 {index} 个讲解场景。",
                 duration_seconds=12 if scene_type == "hook" else 16,
+                teaching_purpose="Explain with concrete objects",
+                concrete_objects=["key", "hash function", "bucket"],
+                animation_steps=[
+                    {
+                        "startState": "input pending",
+                        "endState": "input highlighted",
+                        "visualAction": "highlight input",
+                        "narrationSentence": "First observe the input object.",
+                        "durationSeconds": 3,
+                    },
+                    {
+                        "startState": "rule idle",
+                        "endState": "rule applied",
+                        "visualAction": "move pointer to rule",
+                        "narrationSentence": "Then apply the operation rule.",
+                        "durationSeconds": 3,
+                    },
+                    {
+                        "startState": "structure old",
+                        "endState": "structure updated",
+                        "visualAction": "update visible structure",
+                        "narrationSentence": "Finally compare the changed state.",
+                        "durationSeconds": 3,
+                    },
+                ],
+                state_changes=["input appears", "rule applies", "state updates"],
+                screen_text=[f"scene {index}"],
+                misconception_fix="Do not memorize the term without tracking state changes.",
+                component_hints=["HashTableBuckets", "CodeTracePanel"],
+                audit_checklist=["hasConcreteObjects", "hasStateChanges", "hasAnimationSteps"],
                 visual_plan={"layout": layout, "elements": elements},
                 audio_url=scene_audio_urls[index - 1],
             )
@@ -122,6 +152,13 @@ def test_video_render_skill_rejects_non_http_audio_url_before_dependency_checks(
     assert not (tmp_path / "output").exists()
 
 
+def test_quality_audit_rejects_abstract_scene_without_domain_component():
+    lesson = render_ready_lesson()
+
+    with pytest.raises(RuntimeError, match="data-structure visual component"):
+        QualityAuditSkill().audit(lesson)
+
+
 def test_video_request_saves_failed_resources_without_fake_file_url(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(settings, "tts_api_key", "")
     repository = ResourceRepository()
@@ -148,6 +185,9 @@ def test_video_request_saves_failed_resources_without_fake_file_url(monkeypatch:
     assert all(resource.audit_status == "unchecked" for resource in plan.resources)
     assert all(resource.file_url is None for resource in plan.resources)
     assert all(json.loads(resource.content)["scenes"] == [] for resource in plan.resources)
+    assert plan.result.progress == 100
+    assert plan.result.current_stage == "error"
+    assert plan.result.error_message
 
 
 def test_video_request_fails_in_mock_mode_without_fake_media():
@@ -202,3 +242,48 @@ def test_video_audit_rejection_never_returns_success():
     assert all(resource.status == "failed" for resource in plan.resources)
     assert all(resource.audit_status == "rejected" for resource in plan.resources)
     assert all(resource.file_url is None for resource in plan.resources)
+
+
+def test_successful_video_request_records_generation_stages():
+    class SuccessfulVideoGenerationService:
+        async def generate(self, **kwargs):
+            progress_callback = kwargs["progress_callback"]
+            for stage, progress in [
+                ("script", 12),
+                ("storyboard", 28),
+                ("quality_audit", 42),
+                ("tts", 60),
+                ("render", 78),
+                ("audit", 90),
+            ]:
+                progress_callback(stage, progress)
+            lesson = render_ready_lesson()
+            lesson.output.video_url = "http://localhost:8000/storage/generated_resources/test/lesson.mp4"
+            return lesson
+
+    repository = ResourceRepository()
+    service = ResourceService(
+        repository=repository,
+        profile_repository=ProfileRepository(),
+        learning_path_repository=LearningPathRepository(),
+        video_generation_service=SuccessfulVideoGenerationService(),
+    )
+
+    plan = run(
+        service.generate_resources(
+            ResourceGenerateRequest(
+                user_id="user_video_success_001",
+                course_id="course_ds_001",
+                node_id="node_stack_001",
+                resource_types=["video_script", "animation_script"],
+            )
+        )
+    )
+    stages = [event.stage for event in repository.list_generation_events(plan.result.task_id)]
+
+    assert plan.result.status == "success"
+    assert plan.result.progress == 100
+    assert plan.result.current_stage == "done"
+    assert ["script", "storyboard", "quality_audit", "tts", "render", "audit", "persist", "done"] == [
+        stage for stage in stages if stage in {"script", "storyboard", "quality_audit", "tts", "render", "audit", "persist", "done"}
+    ][-8:]

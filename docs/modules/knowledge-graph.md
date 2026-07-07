@@ -38,7 +38,7 @@
 - 服务文件：`backend/app/services/graph_service.py`
 - 智能体文件：`backend/app/agents/knowledge_graph_agent.py`
 
-## 禁止事项
+## 约束事项
 
-- 不新增掌握状态值。
+- 如需求需要新增掌握状态值，必须先同步 `docs/interface-contract.md`，再更新 schema、类型、服务、页面和测试。
 - 不修改图边的 `source` 或 `target` 名称。

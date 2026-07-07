@@ -5,6 +5,7 @@ export * from "./graph";
 export * from "./profile";
 export * from "./agent";
 export * from "./resource";
+export * from "./multimodal";
 export * from "./learningPath";
 export * from "./practice";
 export * from "./note";

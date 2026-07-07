@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Path, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Path, Query, UploadFile
 
 from app.core.config import settings
 from app.core.response import error_response, page_result, success_response
@@ -13,12 +13,14 @@ from app.schemas.resource import (
     RetrievedDocument,
     UploadedFile,
 )
+from app.services.multimodal_service import default_multimodal_service
 from app.services.resource_service import ResourceService
 
 router = APIRouter()
 
 MOCK_TIME = "2026-05-19T10:00:00Z"
 resource_service = ResourceService()
+MULTIMODAL_BRIDGE_TYPES = {ResourceType.knowledge_video, ResourceType.digital_human_video}
 
 
 def mock_uploaded_file(file_id: str = "file_demo_001") -> UploadedFile:
@@ -131,8 +133,33 @@ def embed_text(payload: EmbedRequest):
 
 
 @router.post("/resources/generate")
-async def generate_resource(payload: ResourceGenerateRequest):
+async def generate_resource(payload: ResourceGenerateRequest, background_tasks: BackgroundTasks):
     try:
+        if any(resource_type in MULTIMODAL_BRIDGE_TYPES for resource_type in payload.resource_types):
+            task_id = resource_service.repository.next_task_id()
+            target_type = ResourceType.digital_human_video if ResourceType.digital_human_video in payload.resource_types else ResourceType.knowledge_video
+            result = await default_multimodal_service.run_resource_bridge(
+                task_id,
+                user_id=payload.user_id,
+                course_id=payload.course_id,
+                node_id=payload.node_id,
+                resource_type=target_type,
+                learning_goal=payload.learning_goal,
+                custom_requirement=payload.custom_requirement,
+            )
+            resource_service.repository.save_generation_result(result)
+            resource_service.repository.add_generation_event(
+                task_id,
+                event_type="done" if result.status == TaskStatus.success else "error",
+                progress=result.progress or 100,
+                stage=result.current_stage,
+                error_message=result.error_message,
+            )
+            return success_response(result)
+        if resource_service.is_video_generation_request(payload):
+            result = resource_service.create_generation_task(payload)
+            background_tasks.add_task(resource_service.run_generation_task, result.task_id, payload)
+            return success_response(result)
         plan = await resource_service.generate_resources(payload)
         return success_response(
             plan.result,
@@ -196,7 +223,7 @@ def delete_resource(resource_id: str = Path(alias="resourceId")):
 
 @router.get("/resources/generate/stream")
 def stream_resource_generation(task_id: str = Query(alias="taskId")):
-    return success_response({"taskId": task_id, "eventType": "done", "progress": 100})
+    return success_response(resource_service.get_generation_stream_event(task_id))
 
 
 @router.post("/recommendations/resources")

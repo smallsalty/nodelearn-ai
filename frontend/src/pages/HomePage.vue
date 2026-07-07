@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import MetricCard from "@/components/cards/MetricCard.vue";
 import StateBlock from "@/components/StateBlock.vue";
 import { usersApi } from "@/api/modules/users";
 import { courseApi } from "@/api/modules/course";
@@ -7,6 +8,7 @@ import { profileApi } from "@/api/modules/profile";
 import { learningPathApi } from "@/api/modules/learningPath";
 import { recommendationsApi } from "@/api/modules/recommendations";
 import { recordsApi } from "@/api/modules/records";
+import { resourceApi } from "@/api/modules/resource";
 import { getErrorMessage } from "@/api/client";
 import { appState, setCurrentCourse, setCurrentProfile, setCurrentUser } from "@/stores";
 import type { User } from "@/types/auth";
@@ -14,10 +16,10 @@ import type { Course } from "@/types/course";
 import type { LearningPath } from "@/types/learningPath";
 import type { StudentProfile } from "@/types/profile";
 import type { LearningEvaluation } from "@/types/report";
-import type { ResourceRecommendation } from "@/types/resource";
+import type { GeneratedResource, ResourceRecommendation } from "@/types/resource";
 import { DEFAULT_COURSE_ID, DEFAULT_USER_ID, joinText, percent, resourceTypeLabel } from "@/utils/format";
 
-type PanelKey = "user" | "courses" | "profile" | "paths" | "recommendations" | "evaluation";
+type PanelKey = "user" | "courses" | "profile" | "paths" | "recommendations" | "evaluation" | "resources";
 
 const user = ref<User | null>(null);
 const courses = ref<Course[]>([]);
@@ -25,6 +27,7 @@ const profile = ref<StudentProfile | null>(null);
 const paths = ref<LearningPath[]>([]);
 const recommendations = ref<ResourceRecommendation[]>([]);
 const evaluation = ref<LearningEvaluation | null>(null);
+const recentResources = ref<GeneratedResource[]>([]);
 const loading = ref(false);
 const errors = reactive<Record<PanelKey, string>>({
   user: "",
@@ -32,7 +35,8 @@ const errors = reactive<Record<PanelKey, string>>({
   profile: "",
   paths: "",
   recommendations: "",
-  evaluation: ""
+  evaluation: "",
+  resources: ""
 });
 
 const currentCourse = computed(() => courses.value[0] ?? appState.currentCourse);
@@ -54,7 +58,8 @@ async function loadDashboard() {
     loadProfile(),
     loadPaths(),
     loadRecommendations(),
-    loadEvaluation()
+    loadEvaluation(),
+    loadRecentResources()
   ]);
   loading.value = false;
 }
@@ -119,6 +124,15 @@ async function loadEvaluation() {
   }
 }
 
+async function loadRecentResources() {
+  try {
+    const response = await resourceApi.getUserResources(user.value?.id ?? DEFAULT_USER_ID, { page: 1, pageSize: 6 });
+    recentResources.value = response.data.list;
+  } catch (error) {
+    errors.resources = getErrorMessage(error);
+  }
+}
+
 function clearErrors() {
   (Object.keys(errors) as PanelKey[]).forEach((key) => {
     errors[key] = "";
@@ -130,36 +144,27 @@ function clearErrors() {
   <section class="dashboard-page">
     <header class="hero-panel">
       <div>
-        <p class="section-label">NodeLearn AI Learning Console</p>
+        <p class="section-label">Learning Console</p>
         <h2>{{ user?.username ?? appState.currentUser?.username ?? "学习者" }}，继续推进数据结构学习</h2>
         <p>
-          当前课程：{{ currentCourse?.name ?? "数据结构" }}。系统将结合画像、知识图谱、RAG 资源和练习结果给出下一步建议。
+          当前课程：{{ currentCourse?.name ?? "数据结构" }}。工作台结合画像、知识图谱、课程材料和练习结果给出下一步建议。
         </p>
       </div>
       <el-button type="primary" :loading="loading" @click="loadDashboard">刷新总览</el-button>
     </header>
 
     <section class="metric-grid">
-      <article class="metric-card">
-        <span>完成率</span>
-        <strong>{{ percent(evaluation?.completionRate) }}</strong>
+      <MetricCard label="完成率" :value="percent(evaluation?.completionRate)" tone="primary">
         <el-progress :percentage="Math.round((evaluation?.completionRate ?? 0) * 100)" :show-text="false" />
-      </article>
-      <article class="metric-card">
-        <span>平均掌握度</span>
-        <strong>{{ Math.round(evaluation?.averageMasteryScore ?? ((profile?.confidenceScore ?? 0) * 100)) }}</strong>
-        <small>{{ profile?.knowledgeBaseLevel ? `基础水平：${profile.knowledgeBaseLevel}` : "等待画像更新" }}</small>
-      </article>
-      <article class="metric-card">
-        <span>正确率</span>
-        <strong>{{ percent(evaluation?.correctRate) }}</strong>
-        <small>{{ evaluation?.advice ?? "完成练习后生成改进建议" }}</small>
-      </article>
-      <article class="metric-card">
-        <span>薄弱节点</span>
-        <strong>{{ weakNodes.length }}</strong>
-        <small>{{ joinText(weakNodes.slice(0, 3)) }}</small>
-      </article>
+      </MetricCard>
+      <MetricCard
+        label="平均掌握度"
+        :value="Math.round(evaluation?.averageMasteryScore ?? ((profile?.confidenceScore ?? 0) * 100))"
+        :hint="profile?.knowledgeBaseLevel ? `基础水平：${profile.knowledgeBaseLevel}` : '等待画像更新'"
+        tone="success"
+      />
+      <MetricCard label="正确率" :value="percent(evaluation?.correctRate)" :hint="evaluation?.advice ?? '完成练习后生成改进建议'" tone="warning" />
+      <MetricCard label="薄弱节点" :value="weakNodes.length" :hint="joinText(weakNodes.slice(0, 3))" tone="danger" />
     </section>
 
     <section class="dashboard-grid">
@@ -203,6 +208,25 @@ function clearErrors() {
               <strong>{{ item.title }}</strong>
               <span>{{ resourceTypeLabel(item.resourceType) }}</span>
               <p>{{ item.reason }}</p>
+            </article>
+          </div>
+        </el-card>
+      </StateBlock>
+
+      <StateBlock
+        :loading="loading"
+        :error="errors.resources"
+        :empty="!recentResources.length"
+        empty-text="暂无最近资源"
+        @retry="loadRecentResources"
+      >
+        <el-card class="learning-card span-2" shadow="never">
+          <template #header>最近资源</template>
+          <div class="resource-strip">
+            <article v-for="item in recentResources.slice(0, 6)" :key="item.id" class="resource-chip-card">
+              <strong>{{ item.title }}</strong>
+              <span>{{ resourceTypeLabel(item.resourceType) }}</span>
+              <p>{{ item.auditStatus }} · {{ item.status }}</p>
             </article>
           </div>
         </el-card>

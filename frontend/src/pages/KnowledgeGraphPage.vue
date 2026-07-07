@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import * as echarts from "echarts";
 import StateBlock from "@/components/StateBlock.vue";
 import { courseApi } from "@/api/modules/course";
@@ -11,6 +12,7 @@ import type { GraphNode, GraphViewState, KnowledgeGraph } from "@/types/graph";
 import { DEFAULT_COURSE_ID, DEFAULT_USER_ID, difficultyLabel, masteryLabel } from "@/utils/format";
 
 const chartRef = ref<HTMLDivElement | null>(null);
+const router = useRouter();
 let chart: echarts.ECharts | null = null;
 const graph = ref<KnowledgeGraph | null>(null);
 const nodes = ref<KnowledgeNode[]>([]);
@@ -87,6 +89,7 @@ function renderGraph() {
   });
   const visibleIds = new Set(filteredNodes.map((node) => node.id));
   chart.setOption({
+    backgroundColor: "#ffffff",
     tooltip: {
       formatter: (params: { data?: GraphNode }) => {
         const data = params.data;
@@ -102,12 +105,16 @@ function renderGraph() {
         draggable: true,
         force: { repulsion: 160, edgeLength: 90 },
         label: { show: true, color: "#0f172a", fontSize: 12 },
-        lineStyle: { color: "#93c5fd", width: 2, curveness: 0.08 },
+        lineStyle: { color: "#cbd5e1", width: 1.5, curveness: 0.08 },
         data: filteredNodes.map((node) => ({
           ...node,
           name: node.label,
           symbolSize: Math.max(42, node.size ?? 46),
-          itemStyle: { color: nodeColor(node) }
+          itemStyle: {
+            color: nodeColor(node),
+            borderColor: node.id === selectedNodeId.value ? "#0f172a" : "#ffffff",
+            borderWidth: node.id === selectedNodeId.value ? 3 : 1
+          }
         })),
         links: graph.value.edges
           .filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
@@ -123,16 +130,17 @@ function renderGraph() {
 }
 
 function nodeColor(node: GraphNode) {
-  if (node.masteryStatus === "mastered") return "#16a34a";
-  if (node.masteryStatus === "weak") return "#d97706";
-  if (node.masteryStatus === "learning") return "#2563eb";
-  return "#94a3b8";
+  if (node.masteryStatus === "mastered") return "#bbf7d0";
+  if (node.masteryStatus === "weak") return "#fed7aa";
+  if (node.masteryStatus === "learning") return "#bfdbfe";
+  return "#e2e8f0";
 }
 
 function selectNode(nodeId: string): void {
   selectedNodeId.value = nodeId;
   viewState.selectedNodeId = nodeId;
   appState.selectedNodeId = nodeId;
+  renderGraph();
 }
 
 function zoomIn(): void {
@@ -161,6 +169,11 @@ function jumpToNode(nodeId: string): void {
 
 function openNodeDetail(nodeId: string): void {
   selectNode(nodeId);
+}
+
+function openResourceAction(action: "knowledge_video" | "digital_human_video" | "digital_human_chat") {
+  if (!selectedNodeId.value) return;
+  void router.push({ path: "/resources", query: { nodeId: selectedNodeId.value, action } });
 }
 </script>
 
@@ -219,9 +232,22 @@ function openNodeDetail(nodeId: string): void {
           <el-progress :percentage="Math.round(selectedGraphNode.masteryScore)" />
           <p>{{ selectedKnowledgeNode?.description ?? "暂无节点描述" }}</p>
           <p><strong>常见错因：</strong>{{ selectedKnowledgeNode?.commonMistakes.join("、") || "暂无" }}</p>
-          <el-button type="primary" plain @click="openNodeDetail(selectedGraphNode.id)">打开详情</el-button>
+          <div class="node-actions">
+            <el-button type="primary" plain @click="openResourceAction('knowledge_video')">生成知识点视频</el-button>
+            <el-button plain @click="openResourceAction('digital_human_video')">数字人讲解</el-button>
+            <el-button plain @click="openResourceAction('digital_human_chat')">和数字人对话</el-button>
+          </div>
         </article>
       </el-card>
     </aside>
   </section>
 </template>
+
+<style scoped>
+.node-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+</style>

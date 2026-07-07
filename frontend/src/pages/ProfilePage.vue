@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import MetricCard from "@/components/cards/MetricCard.vue";
 import StateBlock from "@/components/StateBlock.vue";
 import { profileApi } from "@/api/modules/profile";
 import { getErrorMessage } from "@/api/client";
@@ -143,11 +144,20 @@ function createMessage(role: "user" | "assistant", content: string): ChatMessage
       </header>
 
       <StateBlock :loading="loading" :error="errorMessage" :empty="!mergedProfile.userId" empty-text="暂无画像" @retry="loadProfile">
-        <el-descriptions :column="1" border>
-          <el-descriptions-item v-for="item in profileItems" :key="item.key" :label="item.label">
-            {{ item.value }}
-          </el-descriptions-item>
-        </el-descriptions>
+        <section class="metric-grid compact mb-16">
+          <MetricCard label="画像完整度" :value="`${confidencePercent}%`" :hint="mergedProfile.lastUpdatedBy ? `来源：${mergedProfile.lastUpdatedBy}` : '等待更新'" tone="primary">
+            <el-progress :percentage="confidencePercent" :show-text="false" />
+          </MetricCard>
+          <MetricCard label="薄弱知识点" :value="mergedProfile.weakNodeIds?.length ?? 0" :hint="joinText(mergedProfile.weakNodeIds?.slice(0, 3))" tone="warning" />
+          <MetricCard label="学习时间" :value="mergedProfile.availableStudyTime ?? '待补充'" :hint="mergedProfile.learningProgress ?? '暂无进度记录'" tone="success" />
+        </section>
+
+        <section class="profile-grid">
+          <article v-for="item in profileItems" :key="item.key" class="mini-list-item">
+            <strong>{{ item.label }}</strong>
+            <p>{{ item.value }}</p>
+          </article>
+        </section>
         <div class="button-row mt-16">
           <el-button type="primary" :loading="saving" :disabled="!Object.keys(profileDraft).length" @click="saveProfile">
             确认保存
@@ -161,7 +171,7 @@ function createMessage(role: "user" | "assistant", content: string): ChatMessage
       <header class="panel-header">
         <div>
           <h2>画像对话</h2>
-          <p>输入学习背景，调用画像抽取接口。</p>
+          <p>输入学习背景，调用画像抽取接口生成可确认字段。</p>
         </div>
       </header>
 

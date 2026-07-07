@@ -28,13 +28,9 @@
 | 笔记和浮窗 | `docs/modules/note-floating.md` |
 | 报告、记录、评估 | `docs/modules/report.md` |
 
-## 缺少契约规则
+## 契约新增规则
 
-如果模块需要的路径、字段、枚举值、页面或状态变量没有出现在 `docs/interface-contract.md` 中，停止并输出：
-
-```text
-CONTRACT_MISSING: 缺少 xxx 定义
-```
+如果模块需要新增路径、字段、枚举值、页面状态变量、环境变量或数据库字段，允许直接新增；新增内容必须同步写入 `docs/interface-contract.md`，再同步后端、前端、测试和项目状态。
 
 ## 项目状态规则
 

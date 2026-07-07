@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-06-04
+最后更新：2026-06-24
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -97,6 +97,16 @@
 - 2026-06-04 补强通用知识点 motion graphics 视频生成器：`VideoRenderSkill` 在 Remotion 依赖检查和渲染前显式校验 `AnimationScriptContent`、非空 8 场景、HTTP(S) scene 音频和 `output.audioUrls` 一致性；`UniversalExplainerVideoRenderer` 新增 `grid_focus` 主视觉布局，motion graphics 组件增加帧驱动重点强调。
 - 2026-06-04 补充视频契约、服务和真实流程测试断言，覆盖旧 `text_slide` 拒绝、缺少元素动画、definition keyword 边界、完整 8 场景、渲染前预检、真实输出 `videoUrl/fileUrl/audioUrls` 一致性和逐场景非静态抽帧；运行 `python -m pytest app/tests/contract/test_video_contract.py app/tests/services/test_video_generation.py -q`，结果为 `20 passed`；运行 `video-renderer` 的 `npx tsc --noEmit` 和前端 `npm run build`，结果均通过；付费真实视频测试按当前环境配置跳过。
 - 2026-06-04 显式运行真实多模态视频智能体生成“哈希表”讲解视频：启动 Docker PostgreSQL，导入 Hello Algo 数据后调用 `POST /api/v1/resources/generate`，节点为 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4`，任务 `resource_task_927160d4c1f7` 返回 `success`；两份资源 `resource_video_script_f3ae7e16b738` 和 `resource_animation_script_ce23c8852622` 均为 `status=success`、`auditStatus=passed`，共享 `http://localhost:8000/storage/generated_resources/resource_task_927160d4c1f7/lesson.mp4`；`ffprobe` 验证 H.264/AAC 音视频双流，逐场景抽帧确认 8 个场景均非静态画面。
+- 2026-06-05 按 MoneyPrinterTurbo 的阶段化任务、provider 抽象、失败处理和多版本思路完成 NodeLearn AI 视频生成质量改造：扩展 `VideoGenerateOptions`、`VideoGenerationStage`、数据结构 `VisualElement`、`AnimationStep` 和 `AnimationScriptContent` 内部 JSON；新增 `QualityAuditSkill`、视频任务进度事件、后台视频生成任务、Remotion 数据结构教学组件库、`qualityPreset` 渲染参数和前端进度/失败原因展示；当时仍复用 `/api/v1/resources/generate`、`/api/v1/resources/generation-tasks/{taskId}` 和 `/api/v1/resources/generate/stream?taskId={taskId}`，未额外建立独立短视频接口或资源枚举。
+- 2026-06-05 回归验证：运行 `python -m pytest app/tests -q`，结果为 `103 passed, 1 skipped`；运行 `video-renderer` 的 `npx tsc --noEmit` 通过；运行前端 `npm run build` 通过；运行 `git diff --check` 通过。付费真实视频测试仍由 `RUN_REAL_VIDEO_TESTS=true` 显式开启。
+- 2026-06-23 完成多模态资源增强：解除 AGENTS 和开发文档中阻止新增接口/字段/枚举的旧限制，新增 `knowledge_video`、`digital_human_video`、`digital_human_dialogue` 等资源类型和数字人/视频相关 AgentType；新增 `/api/v1/multimodal/videos/*`、`/api/v1/multimodal/digital-human/*` 接口，接入讯飞 Spark/TTS/数字人 provider adapter 与 mock provider，补充健康检查 `iflytekSpark/iflytekTts/iflytekDigitalHuman`。
+- 2026-06-23 前端资源页新增“知识点教学视频 / 数字人讲解 / 数字人对话”模式，新增 `MultimodalTaskProgress` 和 `DigitalHumanChatPanel`，知识图谱节点详情可携带 `nodeId` 跳转资源页生成视频、数字人讲解或对话。
+- 2026-06-23 回归验证：运行 `python -m pytest backend/app/tests -q`，结果为 `109 passed, 1 skipped`；运行 `cd frontend && npm run build` 通过；运行 `cd video-renderer && npx tsc --noEmit` 通过；静态检查 `frontend/src/pages` 与 `frontend/src/components` 未发现直接 `fetch(` 或 `axios`；运行 `git diff --check` 通过。
+- 2026-06-24 完成前端视觉重构：新增 `frontend/src/styles/tokens.css`，统一 Minimalism & Swiss Style / Clean Academic Dashboard 设计 tokens；应用壳改为左侧导航、顶部课程/节点切换、中央工作区和右侧上下文面板，小屏幕使用移动导航和上下文抽屉。
+- 2026-06-24 重排首页、对话学习、学生画像、学习路径、资源生成、知识图谱、练习测评、学习报告、知识库管理、登录页、浮窗、数字人对话和视频讲解播放器；去除大面积渐变、玻璃拟态、科幻暗色视频舞台、循环装饰动画和“AI 助手”式文案。
+- 2026-06-24 前端验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `frontend/src/pages` 与 `frontend/src/components` 未发现直接 `fetch(` 或 `axios`；运行 `git diff --check` 通过；Playwright 验证 375px、768px、1024px、1440px 首页无横向溢出，`/chat`、`/resources`、`/knowledge-graph`、`/reports` 在移动和桌面无横向溢出且控制台错误为 0。
+- 2026-06-24 完成真实数据库全流程验收报告 `docs/real-flow-verification-2026-06-24.md`：真实 PostgreSQL、DeepSeek 模型、RAG 问答、画像抽取、7 个单体智能体、普通资源生成、前端登录和核心页面联调均通过；`npm run build` 通过；Playwright CLI 验证核心页面 API 失败数为 0，控制台仅存在 Element Plus `el-radio` 废弃警告；讯飞数字人真实 provider 按用户选择跳过。
+- 2026-06-24 真实视频生成链路本次未通过：`python -m app.smoke.real_agent_flow` 在完整 `resource_generate` 工作流的视频资源阶段失败；直接调用 `POST /api/v1/resources/generate` 生成 `video_script` 和 `animation_script` 时，任务 `resource_task_c0f904bbb57e` 在 `AnimationScriptContent` 结构校验阶段失败，缺少 `array_cells.items`、`hash_function_panel.inputKey/expression/outputIndex`、`hash_table_buckets.activeIndex` 等必填字段，未产出新的 MP4。
 
 ### 进行中
 
@@ -117,14 +127,11 @@
 
 ### 阻塞
 
-- 任何新 API 路径、字段、枚举值、数据库字段、页面状态变量或模拟字段没有在 `docs/interface-contract.md` 中定义时，必须停止并输出：
-
-```text
-CONTRACT_MISSING: 缺少 xxx 定义
-```
+- 新增 API 路径、字段、枚举值、数据库字段、页面状态变量或模拟字段时，必须同步更新 `docs/interface-contract.md`、后端、前端、测试和项目状态；不再因缺少既有契约定义而停止开发。
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
 - 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
+- 当前真实视频生成存在 schema 对齐阻塞：DeepSeek 生成的 storyboard 可能不满足 `AnimationScriptContent` / `VisualElement` 严格字段要求，导致链路在 TTS 与 Remotion 之前失败。后续需要约束 `StoryboardSkill` 输出或在 `AnimationSpecSkill` 中补齐视觉元素必填字段后再回归真实视频任务。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 - 本机 Docker Desktop 已在 2026-06-04 手动启动并验证 PostgreSQL、Hello Algo 导入、`ENABLE_MOCK=false` 后端健康检查和真实视频生成链路；若后续桌面重启或 Docker 停止，需要重新启动 `docker compose -f docker/docker-compose.yml up -d postgres`。
 

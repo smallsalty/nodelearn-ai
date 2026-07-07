@@ -2,7 +2,17 @@ from typing import Any, Literal
 
 from pydantic import Field
 
-from app.schemas.common import AuditStatus, ContractModel, DifficultyLevel, ResourceType, TaskStatus
+from app.schemas.common import (
+    AuditStatus,
+    ContractModel,
+    DifficultyLevel,
+    ResourceType,
+    TaskStatus,
+    VideoAspect,
+    VideoGenerationStage,
+    VideoMaterialSource,
+    VideoQualityPreset,
+)
 
 
 class UploadedFile(ContractModel):
@@ -68,6 +78,16 @@ class GeneratedResource(ContractModel):
     updated_at: str
 
 
+class VideoGenerateOptions(ContractModel):
+    aspect_ratio: VideoAspect | None = VideoAspect.landscape
+    quality_preset: VideoQualityPreset | None = VideoQualityPreset.high
+    material_source: VideoMaterialSource | None = VideoMaterialSource.generated_motion_assets
+    version_count: int | None = Field(default=1, ge=1, le=3)
+    subtitle_enabled: bool | None = True
+    bgm_enabled: bool | None = False
+    bgm_volume: float | None = Field(default=0.0, ge=0, le=1)
+
+
 class ResourceGenerateRequest(ContractModel):
     user_id: str
     course_id: str
@@ -76,18 +96,23 @@ class ResourceGenerateRequest(ContractModel):
     difficulty: DifficultyLevel | None = None
     learning_goal: str | None = None
     custom_requirement: str | None = None
+    video_options: VideoGenerateOptions | None = None
 
 
 class ResourceGenerateResult(ContractModel):
     task_id: str
     resource_ids: list[str]
     status: TaskStatus
+    progress: float | None = None
+    current_stage: VideoGenerationStage | None = None
+    error_message: str | None = None
 
 
 class ResourceStreamEvent(ContractModel):
     task_id: str
     event_type: Literal["start", "progress", "chunk", "done", "error"]
     progress: float
+    stage: VideoGenerationStage | None = None
     content_chunk: str | None = None
     error_message: str | None = None
 

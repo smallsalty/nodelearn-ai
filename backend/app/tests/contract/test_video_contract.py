@@ -3,7 +3,34 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from app.schemas.resource import ResourceGenerateRequest, ResourceGenerateResult, ResourceStreamEvent, VideoGenerateOptions
 from app.schemas.video import AnimationScriptContent, VideoLessonScene
+
+
+def animation_steps() -> list[dict]:
+    return [
+        {
+            "startState": "input pending",
+            "endState": "input highlighted",
+            "visualAction": "highlight input",
+            "narrationSentence": "First observe the input object.",
+            "durationSeconds": 3,
+        },
+        {
+            "startState": "rule idle",
+            "endState": "rule applied",
+            "visualAction": "move pointer to rule",
+            "narrationSentence": "Then apply the operation rule.",
+            "durationSeconds": 3,
+        },
+        {
+            "startState": "structure old",
+            "endState": "structure updated",
+            "visualAction": "update visible structure",
+            "narrationSentence": "Finally compare the changed state.",
+            "durationSeconds": 3,
+        },
+    ]
 
 
 def scene_payload(**updates):
@@ -13,6 +40,14 @@ def scene_payload(**updates):
         "title": "哈希表是什么",
         "narration": "哈希表通过哈希函数把键映射到存储位置。",
         "duration_seconds": 12,
+        "teaching_purpose": "Explain hash table with concrete objects",
+        "concrete_objects": ["key", "hash function", "bucket"],
+        "animation_steps": animation_steps(),
+        "state_changes": ["key enters", "hash index calculated", "bucket highlighted"],
+        "screen_text": ["hash table"],
+        "misconception_fix": "Collisions are expected and need handling.",
+        "component_hints": ["HashTableBuckets", "HashFunctionPanel"],
+        "audit_checklist": ["hasConcreteObjects", "hasStateChanges", "hasAnimationSteps"],
         "visual_plan": {
             "layout": "center_focus",
             "elements": [
@@ -35,6 +70,14 @@ def universal_scene_payload(scene_type: str, index: int) -> dict:
         "narration": f"这是第 {index} 个讲解场景，用于解释哈希表。",
         "duration_seconds": 12 if scene_type == "hook" else 16,
         "audio_url": "",
+        "teaching_purpose": "Explain with concrete data structure objects",
+        "concrete_objects": ["key", "hash function", "bucket"],
+        "animation_steps": animation_steps(),
+        "state_changes": ["input appears", "rule applies", "state updates"],
+        "screen_text": [f"scene {index}"],
+        "misconception_fix": "Do not memorize the term without tracking the state change.",
+        "component_hints": ["HashTableBuckets", "CodeTracePanel"],
+        "audit_checklist": ["hasConcreteObjects", "hasStateChanges", "hasAnimationSteps"],
         "visual_plan": {"layout": "center_focus", "elements": [{"type": "text", "content": f"要点 {index}", "animation": "fade_in"}]},
     }
     if scene_type == "definition":
@@ -100,7 +143,23 @@ def universal_scene_payload(scene_type: str, index: int) -> dict:
 def test_video_lesson_scene_uses_motion_graphics_contract_fields():
     scene = VideoLessonScene(**scene_payload()).model_dump(by_alias=True)
 
-    assert set(scene.keys()) == {"sceneId", "sceneType", "title", "narration", "durationSeconds", "visualPlan", "audioUrl"}
+    assert set(scene.keys()) == {
+        "sceneId",
+        "sceneType",
+        "title",
+        "narration",
+        "durationSeconds",
+        "teachingPurpose",
+        "concreteObjects",
+        "animationSteps",
+        "stateChanges",
+        "screenText",
+        "misconceptionFix",
+        "componentHints",
+        "auditChecklist",
+        "visualPlan",
+        "audioUrl",
+    }
     assert scene["sceneType"] == "definition"
     assert scene["visualPlan"]["layout"] == "center_focus"
 
@@ -189,6 +248,53 @@ def test_animation_script_accepts_complete_universal_scene_sequence():
     assert [scene["sceneType"] for scene in dumped["scenes"]] == scene_types
 
 
+def test_video_generate_options_and_progress_fields_use_contract_aliases():
+    request = ResourceGenerateRequest(
+        userId="user_video_options_001",
+        courseId="course_ds_001",
+        resourceTypes=["video_script"],
+        videoOptions=VideoGenerateOptions(qualityPreset="ultra", materialSource="generated_motion_assets", versionCount=2),
+    ).model_dump(by_alias=True)
+    result = ResourceGenerateResult(
+        taskId="resource_task_001",
+        resourceIds=[],
+        status="running",
+        progress=42,
+        currentStage="quality_audit",
+    ).model_dump(by_alias=True)
+    event = ResourceStreamEvent(taskId="resource_task_001", eventType="progress", progress=42, stage="quality_audit").model_dump(by_alias=True)
+
+    assert request["videoOptions"]["aspectRatio"] == "16:9"
+    assert request["videoOptions"]["qualityPreset"] == "ultra"
+    assert result["currentStage"] == "quality_audit"
+    assert event["stage"] == "quality_audit"
+
+
+def test_scene_accepts_data_structure_visual_elements_and_animation_steps():
+    scene = VideoLessonScene(
+        **scene_payload(
+            scene_type="example",
+            visual_plan={
+                "layout": "grid_focus",
+                "elements": [
+                    {
+                        "type": "hash_table_buckets",
+                        "buckets": ["0", "1", "2", "3"],
+                        "activeIndex": 2,
+                        "keyLabel": "key",
+                        "collisionIndices": [2],
+                        "animation": "highlight",
+                    }
+                ],
+            },
+        )
+    )
+
+    dumped = scene.model_dump(by_alias=True)
+    assert dumped["animationSteps"][0]["visualAction"] == "highlight input"
+    assert dumped["visualPlan"]["elements"][0]["type"] == "hash_table_buckets"
+
+
 def test_video_environment_variables_are_registered_in_contract_and_example():
     root = Path(__file__).resolve().parents[4]
     contract = (root / "docs" / "interface-contract.md").read_text(encoding="utf-8")
@@ -199,6 +305,11 @@ def test_video_environment_variables_are_registered_in_contract_and_example():
         "VIDEO_RENDER_PROVIDER", "VIDEO_RENDER_PROJECT_PATH", "VIDEO_RENDER_BROWSER_EXECUTABLE",
         "VIDEO_RENDER_TIMEOUT_SECONDS", "FFMPEG_BINARY", "FFPROBE_BINARY", "AUDIT_API_BASE_URL",
         "AUDIT_TIMEOUT_SECONDS", "RUN_REAL_VIDEO_TESTS",
+        "IFLYTEK_APP_ID", "IFLYTEK_API_KEY", "IFLYTEK_API_SECRET", "IFLYTEK_BASE_URL",
+        "IFLYTEK_SPARK_MODEL", "IFLYTEK_TTS_VOICE", "IFLYTEK_DIGITAL_HUMAN_BASE_URL",
+        "IFLYTEK_DIGITAL_HUMAN_AVATAR_ID", "IFLYTEK_DIGITAL_HUMAN_VOICE_ID",
+        "IFLYTEK_DIGITAL_HUMAN_CALLBACK_URL", "IFLYTEK_CALLBACK_TOKEN",
+        "IFLYTEK_REQUEST_TIMEOUT_SECONDS", "IFLYTEK_ENABLE_MOCK",
     }
 
     assert all(f"{name}=" in contract for name in names)

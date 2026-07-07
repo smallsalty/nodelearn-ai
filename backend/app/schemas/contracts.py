@@ -19,9 +19,24 @@ from app.schemas.common import (
     QuestionType,
     ResourceType,
     TaskStatus,
+    VideoAspect,
+    VideoGenerationStage,
+    VideoMaterialSource,
+    VideoQualityPreset,
 )
 from app.schemas.course import KnowledgeNode
 from app.schemas.learning_path import LearningPath
+from app.schemas.multimodal import (
+    DigitalHumanCallbackRequest,
+    DigitalHumanChatRequest,
+    DigitalHumanChatResult,
+    DigitalHumanExplainRequest,
+    DigitalHumanExplainResult,
+    MultimodalStreamEvent,
+    MultimodalTaskEvent,
+    MultimodalTaskResult,
+    MultimodalVideoGenerateRequest,
+)
 from app.schemas.practice import PracticeGenerateRequest, PracticeQuestion, PracticeRecord, PracticeSubmitRequest
 from app.schemas.profile import ProfileUpdateByPracticeRequest, StudentProfile
 from app.schemas.report import AuditCheckRequest, AuditResult, LearningRecord, ModelCallLog
@@ -32,7 +47,9 @@ from app.schemas.resource import (
     ResourceGenerateResult,
     ResourcePushRecord,
     ResourceRecommendation,
+    ResourceStreamEvent,
     RetrievedDocument,
+    VideoGenerateOptions,
 )
 
 __all__ = [
@@ -47,6 +64,11 @@ __all__ = [
     "AuditStatus",
     "BehaviorType",
     "CognitiveStyle",
+    "DigitalHumanCallbackRequest",
+    "DigitalHumanChatRequest",
+    "DigitalHumanChatResult",
+    "DigitalHumanExplainRequest",
+    "DigitalHumanExplainResult",
     "DifficultyLevel",
     "GeneratedResource",
     "KnowledgeNode",
@@ -55,6 +77,10 @@ __all__ = [
     "MasteryStatus",
     "MasteryUpdateRequest",
     "ModelCallLog",
+    "MultimodalStreamEvent",
+    "MultimodalTaskEvent",
+    "MultimodalTaskResult",
+    "MultimodalVideoGenerateRequest",
     "MultiAgentWorkflowRequest",
     "MultiAgentWorkflowResult",
     "PracticePreference",
@@ -73,4 +99,10 @@ __all__ = [
     "RetrievedDocument",
     "StudentProfile",
     "TaskStatus",
+    "VideoAspect",
+    "VideoGenerateOptions",
+    "VideoGenerationStage",
+    "VideoMaterialSource",
+    "VideoQualityPreset",
+    "ResourceStreamEvent",
 ]

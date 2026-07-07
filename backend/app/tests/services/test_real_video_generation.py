@@ -2,6 +2,7 @@ import json
 import hashlib
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import httpx
@@ -46,6 +47,11 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
         )
         generated_response.raise_for_status()
         generated = generated_response.json()["data"]
+        for _ in range(240):
+            if generated["status"] not in {"running", "pending"}:
+                break
+            time.sleep(2)
+            generated = client.get(f"/resources/generation-tasks/{generated['taskId']}").json()["data"]
         assert generated["status"] == "success"
         assert len(generated["resourceIds"]) == 2
 

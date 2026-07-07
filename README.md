@@ -8,6 +8,8 @@
 
 视频画面使用通用 `clean_motion_graphics` 解释模板，不再依赖栈、队列等算法专用动画。分镜按问题开场、定义、类比、机制、对比、流程、例子和总结组织，Remotion 渲染关键词、图标、箭头、概念卡片、流程图、网格高亮和总结卡片。整段旁白只用于真实 TTS，不会堆叠到导出画面中。
 
+多模态资源增强新增稳定知识点视频、数字人讲解和数字人对话。新接口使用 `/api/v1/multimodal/*`，旧 `/api/v1/resources/generate` 在收到 `knowledge_video` 或 `digital_human_video` 时会转交新的多模态 workflow，旧 `video_script`、`animation_script` 行为保持兼容。
+
 ## 技术栈
 
 - 前端：Vue 3、TypeScript、Vite、Element Plus
@@ -142,10 +144,52 @@ PowerShell 使用 `$env:RUN_REAL_VIDEO_TESTS="true"`。该测试会真实调用 
 
 开发环境前端可访问 `/dev/agent-flow-test`，通过自然语言输入触发真实 RAG 问答和 `resource_generate` 完整工作流。
 
+## 多模态资源增强
+
+### 新增接口
+
+- `POST /api/v1/multimodal/videos/generate`：生成稳定知识点教学视频。
+- `GET /api/v1/multimodal/videos/tasks/{taskId}`：查询视频生成任务。
+- `GET /api/v1/multimodal/videos/tasks/{taskId}/events`：查询任务步骤事件。
+- `GET /api/v1/multimodal/videos/stream?taskId={taskId}`：获取最新进度事件。
+- `POST /api/v1/multimodal/digital-human/explain`：生成数字人讲解。
+- `POST /api/v1/multimodal/digital-human/chat`：数字人对话。
+- `GET /api/v1/multimodal/digital-human/sessions/{sessionId}/messages`：获取数字人对话历史。
+- `POST /api/v1/multimodal/digital-human/callback`：接收讯飞异步回调。
+
+稳定视频链路固定为：读取知识点与画像 -> 生成教学计划 -> 生成脚本 -> 生成分镜 -> 校验脚本 -> 语音合成 -> 视频渲染 -> 安全校验 -> 保存资源 -> 写入进度事件。
+
+数字人讲解复用脚本和分镜链路，再通过讯飞数字人 provider 创建讲解任务。数字人对话会结合 `userId/courseId/nodeId`、学生画像和 RAG 检索结果生成回答，回答经过 audit 后再返回可选 `audioUrl`、`videoUrl` 和 `providerTaskId`。
+
+### 讯飞配置
+
+在 `backend/.env` 中按需填写：
+
+```env
+IFLYTEK_APP_ID=
+IFLYTEK_API_KEY=
+IFLYTEK_API_SECRET=
+IFLYTEK_BASE_URL=
+IFLYTEK_SPARK_MODEL=
+IFLYTEK_TTS_VOICE=
+IFLYTEK_DIGITAL_HUMAN_BASE_URL=
+IFLYTEK_DIGITAL_HUMAN_AVATAR_ID=
+IFLYTEK_DIGITAL_HUMAN_VOICE_ID=
+IFLYTEK_DIGITAL_HUMAN_CALLBACK_URL=
+IFLYTEK_CALLBACK_TOKEN=
+IFLYTEK_REQUEST_TIMEOUT_SECONDS=60
+IFLYTEK_ENABLE_MOCK=false
+```
+
+如果 `ENABLE_MOCK=true`、`IFLYTEK_ENABLE_MOCK=true` 或缺少讯飞密钥，provider 会进入 mock 模式，返回结构与真实 adapter 保持一致。`GET /api/v1/system/health` 会显示 `iflytekSpark`、`iflytekTts`、`iflytekDigitalHuman` 为 `mock`、`ok` 或 `error`。
+
+常见错误：
+
+- 缺少讯飞 key：health 显示 `mock`，不会调用真实讯飞。
+- 缺少 `ffmpeg`/`ffprobe`：真实视频渲染会失败并保留可读 `errorMessage`。
+- TTS 失败：任务标记 `failed`，保留脚本/分镜中间结果。
+- 讯飞回调 token 错误：callback 接口返回 `code=401`。
+
 ## 契约规则
 
-开发前先阅读 `docs/context-index.md`。涉及模块开发时，还必须阅读对应的 `docs/modules/*.md`。不得新增契约未定义的路由、枚举值、变量或字段。如果契约缺少必要定义，输出：
-
-```text
-CONTRACT_MISSING: 缺少 xxx 定义
-```
+开发前先阅读 `docs/context-index.md`。涉及模块开发时，还必须阅读对应的 `docs/modules/*.md`。功能需要新增路由、枚举值、变量、字段、环境变量或数据库表时，允许直接新增，但必须先同步 `docs/interface-contract.md`，并同步后端、前端、测试和项目状态。

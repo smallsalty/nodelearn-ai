@@ -43,7 +43,7 @@
 - 结构定义文件：`backend/app/schemas/course.py`
 - 服务文件：`backend/app/services/course_service.py`
 
-## 禁止事项
+## 约束事项
 
-- 不新增 `CourseStatus`、`NodeType`、`DifficultyLevel`、`MasteryStatus` 或关系类型值。
+- 如需求需要新增 `CourseStatus`、`NodeType`、`DifficultyLevel`、`MasteryStatus` 或关系类型值，必须先同步 `docs/interface-contract.md`，再更新 schema、类型、服务、页面和测试。
 - 不重命名 `orderIndex`、`learningValue` 或节点 id 数组字段。

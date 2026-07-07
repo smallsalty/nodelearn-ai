@@ -21,6 +21,9 @@ def health_check():
         vector_store="ok",
         graph_db="ok",
         llm_service=llm_status,
+        iflytek_spark=_iflytek_status("spark"),
+        iflytek_tts=_iflytek_status("tts"),
+        iflytek_digital_human=_iflytek_status("digital_human"),
     )
     return success_response(result)
 
@@ -36,6 +39,21 @@ def _database_status() -> str:
         return "ok"
     except Exception:
         return "error"
+
+
+def _iflytek_status(kind: str) -> str:
+    if settings.enable_mock or settings.iflytek_enable_mock:
+        return "mock"
+    has_common_config = bool(settings.iflytek_app_id and settings.iflytek_api_key and settings.iflytek_api_secret)
+    if not has_common_config:
+        return "mock"
+    if kind == "spark":
+        return "ok" if settings.iflytek_base_url and settings.iflytek_spark_model else "error"
+    if kind == "tts":
+        return "ok" if settings.iflytek_base_url and settings.iflytek_tts_voice else "error"
+    if kind == "digital_human":
+        return "ok" if settings.iflytek_digital_human_base_url else "error"
+    return "error"
 
 
 @router.get("/system/config")

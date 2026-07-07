@@ -7,6 +7,7 @@ import logging
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -14,10 +15,10 @@ from uuid import uuid4
 import httpx
 
 from app.core.config import settings
-from app.schemas.common import AuditStatus
+from app.schemas.common import AuditStatus, VideoAspect, VideoGenerationStage, VideoQualityPreset
 from app.schemas.course import KnowledgeNode
 from app.schemas.report import AuditResult
-from app.schemas.resource import RetrievedDocument
+from app.schemas.resource import RetrievedDocument, VideoGenerateOptions
 from app.schemas.video import AnimationScriptContent, VideoLessonOutput, VideoLessonScene
 from app.services.llm_service import LLMService
 
@@ -42,6 +43,89 @@ def _command_path(command: str) -> str | None:
     if path.is_file():
         return str(path)
     return shutil.which(command)
+
+
+SCENE_SEQUENCE = ["hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"]
+
+
+def _domain_objects(node_name: str) -> list[str]:
+    if "哈希" in node_name or "hash" in node_name.lower():
+        return ["key", "hash 函数", "桶数组", "冲突链"]
+    if "链表" in node_name:
+        return ["节点", "next 指针", "头节点", "尾节点"]
+    if "栈" in node_name:
+        return ["栈顶", "栈底", "入栈元素", "出栈元素"]
+    if "队列" in node_name:
+        return ["队头", "队尾", "入队元素", "出队元素"]
+    if "树" in node_name:
+        return ["根节点", "子节点", "边", "路径"]
+    return ["输入数据", "中间状态", "操作规则", "输出结果"]
+
+
+def _component_hints(scene_type: str, node_name: str) -> list[str]:
+    if "哈希" in node_name or "hash" in node_name.lower():
+        if scene_type in {"definition", "mechanism", "process", "example"}:
+            return ["HashFunctionPanel", "HashTableBuckets", "CodeTracePanel"]
+        if scene_type == "comparison":
+            return ["ComplexityCompareChart", "HashTableBuckets"]
+        return ["HashTableBuckets", "CollisionChain"]
+    if "链表" in node_name:
+        return ["LinkedListNodes", "PointerArrow", "CodeTracePanel"]
+    if "栈" in node_name:
+        return ["StackBlocks", "OperationStepPanel", "CodeTracePanel"]
+    if "队列" in node_name:
+        return ["QueueLine", "OperationStepPanel", "CodeTracePanel"]
+    if "树" in node_name:
+        return ["TreeNodeGraph", "PointerArrow", "CodeTracePanel"]
+    return ["ArrayCells", "OperationStepPanel", "CodeTracePanel"]
+
+
+def _animation_steps(scene_type: str, node_name: str) -> list[dict[str, Any]]:
+    objects = _domain_objects(node_name)
+    return [
+        {
+            "startState": f"{objects[0]}尚未进入演示区",
+            "endState": f"{objects[0]}被高亮并进入第一步",
+            "visualAction": "高亮核心对象并显示输入箭头",
+            "narrationSentence": f"先观察{node_name}处理输入时的第一个对象。",
+            "durationSeconds": 3,
+        },
+        {
+            "startState": f"{objects[1]}尚未触发",
+            "endState": f"{objects[1]}驱动状态变化",
+            "visualAction": "用箭头展示规则如何改变结构状态",
+            "narrationSentence": f"关键规则会把输入转换成可操作的中间状态。",
+            "durationSeconds": 4,
+        },
+        {
+            "startState": f"{objects[2]}尚未更新",
+            "endState": f"{objects[2]}完成更新并显示结果",
+            "visualAction": "展示更新后的结构和结果标签",
+            "narrationSentence": f"最后把变化落到具体结构上，避免只记结论。",
+            "durationSeconds": 4,
+        },
+    ]
+
+
+def _state_changes(scene_type: str, node_name: str) -> list[str]:
+    objects = _domain_objects(node_name)
+    return [
+        f"{objects[0]}进入当前场景",
+        f"{objects[1]}触发操作规则",
+        f"{objects[2]}更新为新状态",
+    ]
+
+
+def _misconception_fix(scene_type: str, node_name: str) -> str:
+    if "哈希" in node_name or "hash" in node_name.lower():
+        return "哈希表不是按 key 的原始顺序存放；冲突也不是错误，而是需要冲突处理策略。"
+    if "链表" in node_name:
+        return "链表的插入删除不是只改数据值，关键在于正确更新 next 指针。"
+    if "栈" in node_name:
+        return "栈只能从栈顶操作，不能把中间元素当作普通数组随意访问。"
+    if "队列" in node_name:
+        return "队列的出队发生在队头，入队发生在队尾，不能混淆两端职责。"
+    return f"不要只背{node_name}的定义，要把对象、规则和状态变化连起来理解。"
 
 
 @dataclass(slots=True)
@@ -129,11 +213,14 @@ class VideoScriptSkill:
         }
         prompt = (
             "你是 multimodal_agent 的 VideoScriptSkill。"
-            "请根据知识点材料生成适合 motion graphics 科普动画的讲解脚本。"
+            "请根据知识点材料生成数据结构课程教学动画脚本，不是泛短视频营销文案。"
             "只返回 JSON 对象，结构为 title 和 scenes；"
             "scenes 必须严格按 hook、definition、analogy、mechanism、comparison、process、example、summary 排列；"
-            "每个 scene 仅包含 sceneType、title、narration、durationSeconds。"
+            "每个 scene 必须包含 sceneType、title、narration、durationSeconds、teachingPurpose、"
+            "concreteObjects、stateChanges 和 misconceptionFix。"
             "旁白要适合 TTS，语言自然、简洁，不要把定义堆成长段文字。hook 不超过 15 秒。"
+            "必须引用参考材料中的知识点事实，必须解释为什么，不允许只说结论。"
+            "画面设计要围绕具体数据结构对象，例如桶数组、链表节点、栈块、队列、树节点、代码追踪。"
             f"\n知识点：{node_name}\n学习目标：{target_goal}\n参考材料：\n{_documents_text(documents)}"
         )
         return await self.llm_service.generate_json(prompt, mock_data=mock_data)
@@ -207,11 +294,17 @@ class StoryboardSkill:
             "请将讲解脚本改写为 clean_motion_graphics 风格的通用知识解释动画 JSON。只返回 JSON 对象。"
             "顶层必须包含 title、style、durationSeconds、aspectRatio、scenes、output。"
             "每个 scene 必须包含 sceneId、sceneType、title、narration、durationSeconds、visualPlan、audioUrl。"
+            "每个 scene 还必须包含 teachingPurpose、concreteObjects、animationSteps、stateChanges、screenText、"
+            "misconceptionFix、componentHints 和 auditChecklist。"
+            "每个 scene 至少 3 个 animationSteps；每个 animationStep 必须包含 startState、endState、visualAction、narrationSentence。"
             "scenes 必须严格按 hook、definition、analogy、mechanism、comparison、process、example、summary 排列。"
             "visualPlan.layout 只能使用 center_focus、left_right、pipeline、comparison、timeline、grid_focus、summary_cards。"
             "visualPlan.elements 只能使用 text、keyword、card、icon、arrow、circle、grid、timeline、image、formula、code；"
+            "优先使用 hash_table_buckets、hash_function_panel、collision_chain、array_cells、linked_list_nodes、"
+            "stack_blocks、queue_line、tree_node_graph、code_trace_panel、pointer_arrow、memory_box、complexity_chart 这些教学元素。"
             "每个元素必须指定 animation，animation 只能使用 fade_in、pop_in、slide_in_left、slide_in_right、float、draw、highlight、zoom_in、stagger_in。"
             "icon 元素必须使用 name 字段，不得使用 imageUrl；image 元素必须使用 HTTPS imageUrl 和 alt；arrow 元素必须包含 label，允许空字符串。"
+            "画面必须有具体数据结构对象和状态变化，禁止纯标题页、纯图标页、纯概念卡。"
             "画面只展示关键词、短句和标签，每屏文字不超过 80 个中文字，不得复制整段 narration。"
             "definition 使用 1-3 个 keyword；summary 使用 3 个 card；imageUrl 只能使用 HTTPS。"
             f"\n知识点：{node_name}\n脚本：{_json_text(script)}"
@@ -228,12 +321,21 @@ class StoryboardSkill:
         layout: str,
         elements: list[dict[str, Any]],
     ) -> dict[str, Any]:
+        node_name = title.replace("为什么需要", "").replace("？", "") or "当前知识点"
         return {
             "sceneId": scene_id,
             "sceneType": scene_type,
             "title": title,
             "narration": narration,
             "durationSeconds": duration_seconds,
+            "teachingPurpose": f"帮助学习者用具体对象理解{title}",
+            "concreteObjects": _domain_objects(node_name),
+            "animationSteps": _animation_steps(scene_type, node_name),
+            "stateChanges": _state_changes(scene_type, node_name),
+            "screenText": [title],
+            "misconceptionFix": _misconception_fix(scene_type, node_name),
+            "componentHints": _component_hints(scene_type, node_name),
+            "auditChecklist": ["hasConcreteObjects", "hasStateChanges", "hasAnimationSteps"],
             "visualPlan": {"layout": layout, "elements": elements},
             "audioUrl": "",
         }
@@ -252,7 +354,7 @@ class AnimationSpecSkill:
             "durationSeconds": sum(float(item.get("durationSeconds") or 0) for item in raw_scenes if isinstance(item, dict)),
             "aspectRatio": "16:9",
             "scenes": [
-                self._normalize_scene(item, index)
+                self._normalize_scene(item, index, node_name)
                 for index, item in enumerate(raw_scenes, start=1)
                 if isinstance(item, dict)
             ],
@@ -260,25 +362,129 @@ class AnimationSpecSkill:
         }
         return AnimationScriptContent.model_validate(payload)
 
-    def _normalize_scene(self, scene: dict[str, Any], index: int) -> dict[str, Any]:
+    def _normalize_scene(self, scene: dict[str, Any], index: int, node_name: str) -> dict[str, Any]:
         normalized = {**scene, "audioUrl": ""}
         scene_id = normalized.get("sceneId") or normalized.get("scene_id")
         normalized["sceneId"] = scene_id if isinstance(scene_id, str) and scene_id.strip() else f"scene_{index:03d}"
+        scene_type = str(normalized.get("sceneType") or normalized.get("scene_type") or SCENE_SEQUENCE[min(index - 1, len(SCENE_SEQUENCE) - 1)])
+        normalized["sceneType"] = scene_type
+        normalized.setdefault("title", f"{node_name}场景 {index}")
+        normalized.setdefault("teachingPurpose", f"用具体对象解释{node_name}的{scene_type}环节")
+        normalized["concreteObjects"] = self._string_list(normalized.get("concreteObjects"), _domain_objects(node_name))
+        normalized["animationSteps"] = self._normalize_animation_steps(normalized.get("animationSteps"), scene_type, node_name)
+        normalized["stateChanges"] = self._string_list(normalized.get("stateChanges"), _state_changes(scene_type, node_name))
+        normalized["screenText"] = self._string_list(normalized.get("screenText"), [str(normalized.get("title") or node_name)])
+        normalized.setdefault("misconceptionFix", _misconception_fix(scene_type, node_name))
+        normalized["componentHints"] = self._string_list(normalized.get("componentHints"), _component_hints(scene_type, node_name))
+        normalized["auditChecklist"] = self._string_list(
+            normalized.get("auditChecklist"),
+            ["hasConcreteObjects", "hasStateChanges", "hasAnimationSteps"],
+        )
         visual_plan = scene.get("visualPlan")
         if not isinstance(visual_plan, dict):
+            normalized["visualPlan"] = self._default_visual_plan(scene_type, node_name)
             return normalized
         elements = visual_plan.get("elements")
         if not isinstance(elements, list):
+            normalized["visualPlan"] = self._default_visual_plan(scene_type, node_name)
             return normalized
+        normalized_elements = [
+            self._normalize_element(element, str(scene.get("title") or "知识点图解"))
+            for element in elements
+            if isinstance(element, dict)
+        ]
+        if not normalized_elements:
+            normalized["visualPlan"] = self._default_visual_plan(scene_type, node_name)
+            return normalized
+        if not any(str(element.get("type")) in self._domain_element_types() for element in normalized_elements):
+            normalized_elements.insert(0, self._domain_visual_element(scene_type, node_name))
         normalized["visualPlan"] = {
             **visual_plan,
-            "elements": [
-                self._normalize_element(element, str(scene.get("title") or "知识点图解"))
-                for element in elements
-                if isinstance(element, dict)
-            ],
+            "elements": normalized_elements,
         }
         return normalized
+
+    def _normalize_animation_steps(self, value: Any, scene_type: str, node_name: str) -> list[dict[str, Any]]:
+        if not isinstance(value, list):
+            return _animation_steps(scene_type, node_name)
+        steps = []
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            steps.append(
+                {
+                    "startState": str(item.get("startState") or item.get("start_state") or "开始状态"),
+                    "endState": str(item.get("endState") or item.get("end_state") or "结束状态"),
+                    "visualAction": str(item.get("visualAction") or item.get("visual_action") or "高亮状态变化"),
+                    "narrationSentence": str(item.get("narrationSentence") or item.get("narration_sentence") or item.get("narration") or "解释这一步为什么发生。"),
+                    "durationSeconds": item.get("durationSeconds") or item.get("duration_seconds") or 3,
+                }
+            )
+        while len(steps) < 3:
+            steps.append(_animation_steps(scene_type, node_name)[len(steps)])
+        return steps[:6]
+
+    def _string_list(self, value: Any, fallback: list[str]) -> list[str]:
+        if not isinstance(value, list):
+            return fallback
+        result = [str(item).strip() for item in value if str(item).strip()]
+        return result or fallback
+
+    def _domain_element_types(self) -> set[str]:
+        return {
+            "hash_table_buckets",
+            "hash_function_panel",
+            "collision_chain",
+            "array_cells",
+            "linked_list_nodes",
+            "stack_blocks",
+            "queue_line",
+            "tree_node_graph",
+            "code_trace_panel",
+            "pointer_arrow",
+            "memory_box",
+            "complexity_chart",
+        }
+
+    def _default_visual_plan(self, scene_type: str, node_name: str) -> dict[str, Any]:
+        if scene_type == "definition":
+            return {
+                "layout": "center_focus",
+                "elements": [
+                    {"type": "keyword", "content": "对象", "animation": "pop_in"},
+                    {"type": "keyword", "content": "规则", "animation": "pop_in"},
+                    {"type": "keyword", "content": "状态", "animation": "pop_in"},
+                ],
+            }
+        if scene_type == "summary":
+            return {
+                "layout": "summary_cards",
+                "elements": [
+                    {"type": "card", "content": "看对象", "animation": "stagger_in"},
+                    {"type": "card", "content": "看规则", "animation": "stagger_in"},
+                    {"type": "card", "content": "看变化", "animation": "stagger_in"},
+                ],
+            }
+        return {"layout": "grid_focus", "elements": [self._domain_visual_element(scene_type, node_name)]}
+
+    def _domain_visual_element(self, scene_type: str, node_name: str) -> dict[str, Any]:
+        if "哈希" in node_name or "hash" in node_name.lower():
+            if scene_type == "definition":
+                return {"type": "hash_function_panel", "inputKey": "key", "expression": "hash(key)%m", "outputIndex": 2, "animation": "highlight"}
+            if scene_type == "comparison":
+                return {"type": "complexity_chart", "label": "查找成本", "items": ["数组 O(n)", "哈希表 O(1)"], "activeIndex": 1, "animation": "highlight"}
+            if scene_type == "example":
+                return {"type": "collision_chain", "bucketIndex": 2, "nodes": ["keyA", "keyB"], "activeNodeIndex": 1, "animation": "stagger_in"}
+            return {"type": "hash_table_buckets", "buckets": ["0", "1", "2", "3"], "activeIndex": 2, "keyLabel": "key", "collisionIndices": [2], "animation": "highlight"}
+        if "链表" in node_name:
+            return {"type": "linked_list_nodes", "nodes": ["head", "node", "tail"], "activeIndex": 1, "pointerLabel": "next", "animation": "stagger_in"}
+        if "栈" in node_name:
+            return {"type": "stack_blocks", "items": ["A", "B", "C"], "activeIndex": 2, "operation": "pop", "animation": "stagger_in"}
+        if "队列" in node_name:
+            return {"type": "queue_line", "items": ["A", "B", "C"], "headIndex": 0, "tailIndex": 2, "operation": "dequeue", "animation": "stagger_in"}
+        if "树" in node_name:
+            return {"type": "tree_node_graph", "nodes": ["root", "left", "right"], "edges": [["root", "left"], ["root", "right"]], "activePath": ["root", "left"], "animation": "highlight"}
+        return {"type": "array_cells", "items": ["0", "1", "2", "3"], "activeIndices": [1], "pointerLabels": {"1": "active"}, "animation": "highlight"}
 
     def _normalize_element(self, element: dict[str, Any], scene_title: str) -> dict[str, Any]:
         normalized = dict(element)
@@ -307,7 +513,62 @@ class AnimationSpecSkill:
                 }
         if normalized.get("type") in {"grid", "timeline"} and isinstance(normalized.get("items"), list):
             normalized["items"] = [str(item) for item in normalized["items"]]
+        if normalized.get("type") in {"hash_table_buckets", "array_cells", "complexity_chart"} and isinstance(normalized.get("items"), list):
+            normalized["items"] = [str(item) for item in normalized["items"]]
+        if normalized.get("type") in {"collision_chain", "linked_list_nodes", "tree_node_graph"} and isinstance(normalized.get("nodes"), list):
+            normalized["nodes"] = [str(item) for item in normalized["nodes"]]
+        if normalized.get("type") == "hash_table_buckets" and isinstance(normalized.get("buckets"), list):
+            normalized["buckets"] = [str(item) for item in normalized["buckets"]]
+        if normalized.get("type") == "code_trace_panel" and isinstance(normalized.get("codeLines"), list):
+            normalized["codeLines"] = [str(item) for item in normalized["codeLines"]]
         return normalized
+
+
+class QualityAuditSkill:
+    _domain_element_types = {
+        "hash_table_buckets",
+        "hash_function_panel",
+        "collision_chain",
+        "array_cells",
+        "linked_list_nodes",
+        "stack_blocks",
+        "queue_line",
+        "tree_node_graph",
+        "code_trace_panel",
+        "pointer_arrow",
+        "memory_box",
+        "complexity_chart",
+    }
+
+    def audit(self, lesson: AnimationScriptContent) -> float:
+        issues: list[str] = []
+        expected = ["hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"]
+        actual = [scene.scene_type for scene in lesson.scenes]
+        if actual != expected:
+            issues.append("sceneType sequence is incomplete")
+        for scene in lesson.scenes:
+            scene_label = f"{scene.scene_id}:{scene.scene_type}"
+            if len(scene.concrete_objects) < 1:
+                issues.append(f"{scene_label} missing concreteObjects")
+            if len(scene.animation_steps) < 3:
+                issues.append(f"{scene_label} missing at least 3 animationSteps")
+            if not scene.state_changes:
+                issues.append(f"{scene_label} missing stateChanges")
+            if not scene.screen_text:
+                issues.append(f"{scene_label} missing screenText")
+            if not scene.misconception_fix.strip():
+                issues.append(f"{scene_label} missing misconceptionFix")
+            if not scene.component_hints:
+                issues.append(f"{scene_label} missing componentHints")
+            if not all(step.visual_action.strip() and step.start_state.strip() and step.end_state.strip() for step in scene.animation_steps):
+                issues.append(f"{scene_label} has incomplete animationSteps")
+            if not any(element.type in self._domain_element_types for element in scene.visual_plan.elements):
+                issues.append(f"{scene_label} missing data-structure visual component")
+        if issues:
+            raise RuntimeError("video quality audit failed: " + "; ".join(issues[:6]))
+        score = min(1.0, 0.72 + 0.02 * len(lesson.scenes))
+        lesson.quality_score = score
+        return score
 
 
 class TtsSkill:
@@ -452,8 +713,17 @@ class TtsSkill:
 
 
 class VideoRenderSkill:
-    async def render(self, lesson: AnimationScriptContent, output_dir: Path) -> RenderedVideo:
-        render_input = self._validate_lesson_for_render(lesson)
+    async def render(
+        self,
+        lesson: AnimationScriptContent,
+        output_dir: Path,
+        quality_preset: VideoQualityPreset | str = VideoQualityPreset.high,
+    ) -> RenderedVideo:
+        quality_value = quality_preset.value if hasattr(quality_preset, "value") else str(quality_preset)
+        render_input = {
+            "lesson": self._validate_lesson_for_render(lesson),
+            "qualityPreset": quality_value,
+        }
         node = self._validate_configuration()
         output_dir.mkdir(parents=True, exist_ok=True)
         render_input_path = output_dir / "render-input.json"
@@ -594,6 +864,7 @@ class VideoGenerationService:
         video_script_skill: VideoScriptSkill | None = None,
         storyboard_skill: StoryboardSkill | None = None,
         animation_spec_skill: AnimationSpecSkill | None = None,
+        quality_audit_skill: QualityAuditSkill | None = None,
         tts_skill: TtsSkill | None = None,
         video_render_skill: VideoRenderSkill | None = None,
         safety_audit_skill: SafetyAuditSkill | None = None,
@@ -602,6 +873,7 @@ class VideoGenerationService:
         self.video_script_skill = video_script_skill or VideoScriptSkill(llm_service)
         self.storyboard_skill = storyboard_skill or StoryboardSkill(llm_service)
         self.animation_spec_skill = animation_spec_skill or AnimationSpecSkill()
+        self.quality_audit_skill = quality_audit_skill or QualityAuditSkill()
         self.tts_skill = tts_skill or TtsSkill()
         self.video_render_skill = video_render_skill or VideoRenderSkill()
         self.safety_audit_skill = safety_audit_skill or SafetyAuditSkill()
@@ -615,30 +887,66 @@ class VideoGenerationService:
         node: KnowledgeNode | None,
         target_goal: str,
         documents: list[RetrievedDocument],
+        video_options: VideoGenerateOptions | None = None,
+        learner_profile_summary: str | None = None,
+        progress_callback: Callable[[VideoGenerationStage, float, str | None], None] | None = None,
     ) -> AnimationScriptContent:
         if settings.enable_mock:
             raise RuntimeError("video generation requires ENABLE_MOCK=false")
         storage_root = Path(settings.file_storage_path).resolve()
         output_dir = storage_root / "generated_resources" / task_id
+        options = video_options or VideoGenerateOptions()
+        quality_preset = options.quality_preset or VideoQualityPreset.high
+        aspect_ratio = options.aspect_ratio or VideoAspect.landscape
+
+        def emit(stage: VideoGenerationStage, progress: float, error_message: str | None = None) -> None:
+            if progress_callback is not None:
+                progress_callback(stage, progress, error_message)
+
+        def annotate_lesson(lesson: AnimationScriptContent) -> AnimationScriptContent:
+            lesson.course_id = course_id
+            lesson.node_id = node.id if node else None
+            lesson.learner_profile_summary = learner_profile_summary
+            lesson.aspect_ratio = aspect_ratio
+            return lesson
+
         try:
+            emit(VideoGenerationStage.script, 12)
             script = await self.video_script_skill.generate(node, target_goal, documents)
+            emit(VideoGenerationStage.storyboard, 28)
             storyboard = await self.storyboard_skill.generate(node, script)
-            lesson = self.animation_spec_skill.normalize(node, storyboard)
+            lesson = annotate_lesson(self.animation_spec_skill.normalize(node, storyboard))
+            emit(VideoGenerationStage.quality_audit, 42)
+            try:
+                self.quality_audit_skill.audit(lesson)
+            except RuntimeError as first_error:
+                rewrite_script = {
+                    **script,
+                    "qualityAuditError": str(first_error),
+                    "rewriteRequirement": "Add concrete data-structure visual components and at least three animation steps per scene.",
+                }
+                storyboard = await self.storyboard_skill.generate(node, rewrite_script)
+                lesson = annotate_lesson(self.animation_spec_skill.normalize(node, storyboard))
+                self.quality_audit_skill.audit(lesson)
             audio_urls: list[str] = []
-            for scene in lesson.scenes:
+            for index, scene in enumerate(lesson.scenes):
+                emit(VideoGenerationStage.tts, 48 + index * 3)
                 audio = await self.tts_skill.synthesize(scene.narration, scene.scene_id, output_dir / "audio")
                 scene.audio_url = audio.url
                 scene.duration_seconds = max(scene.duration_seconds, audio.duration_seconds + 0.4)
                 audio_urls.append(audio.url)
             lesson.duration_seconds = sum(scene.duration_seconds for scene in lesson.scenes)
             lesson.output.audio_urls = audio_urls
-            video = await self.video_render_skill.render(lesson, output_dir)
+            emit(VideoGenerationStage.render, 78)
+            video = await self.video_render_skill.render(lesson, output_dir, quality_preset=quality_preset)
             lesson.output.video_url = video.url
             content = json.dumps(lesson.model_dump(by_alias=True, mode="json"), ensure_ascii=False)
+            emit(VideoGenerationStage.audit, 90)
             audit = await self.safety_audit_skill.check(content, target_id, user_id, course_id)
             if audit.audit_status != AuditStatus.passed:
                 raise VideoAuditError(AuditStatus(audit.audit_status))
             return lesson
-        except Exception:
+        except Exception as exc:
+            emit(VideoGenerationStage.error, 100, str(exc) or exc.__class__.__name__)
             shutil.rmtree(output_dir, ignore_errors=True)
             raise

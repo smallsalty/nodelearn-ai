@@ -11,7 +11,7 @@ export interface ChatSession {
   courseId?: string;
   nodeId?: string;
   title: string;
-  sessionType: "profile" | "qa" | "resource" | "practice";
+  sessionType: "profile" | "qa" | "resource" | "practice" | "digital_human";
   createdAt: string;
   updatedAt: string;
 }
@@ -24,6 +24,10 @@ export interface ChatMessage {
   content: string;
   contentType: "text" | "markdown" | "json";
   agentType?: AgentType;
+  audioUrl?: string;
+  videoUrl?: string;
+  providerTaskId?: string;
+  usedDocuments?: RetrievedDocument[];
   createdAt: string;
 }
 

@@ -36,9 +36,8 @@ docs/interface-contract.md
 
 ```text
 请先阅读 docs/interface-contract.md。
-你必须严格按照该文件中的接口路径、字段名、枚举值、请求结构、返回结构、数据库表名和变量名编写代码。
-如果需要的接口或变量没有出现在 docs/interface-contract.md 中，不允许自行新增，必须输出：
-CONTRACT_MISSING: 缺少 xxx 定义
+你必须先让接口路径、字段名、枚举值、请求结构、返回结构、数据库表名和变量名与该文件对齐。
+如果功能需要新增接口、字段、枚举值、环境变量、数据库表或类型，允许直接新增，但必须先同步更新 docs/interface-contract.md，再修改后端、前端、测试和开发日志。
 ```
 
 ---
@@ -68,7 +67,7 @@ CONTRACT_MISSING: 缺少 xxx 定义
 4. 所有 HTTP 返回必须使用 ApiResponse<T>。
 5. 前端组件不得直接请求后端，只能调用统一 API Client。
 6. 未实现功能可以返回模拟数据，但接口路径和字段必须保持一致。
-7. 不允许随意新增枚举值、字段名、接口路径。
+7. 功能需要新增枚举值、字段名、接口路径、环境变量或数据库表时，必须先同步登记到本文件。
 8. 智能体输出资源前必须经过 safety_agent 或 audit 接口。
 9. 所有生成内容必须能追踪 userId、courseId、nodeId、agentType。
 10. 所有核心数据必须保留 createdAt / updatedAt。
@@ -92,15 +91,16 @@ CONTRACT_MISSING: 缺少 xxx 定义
 9. chat              对话学习与实时问答
 10. agents           多智能体编排
 11. resources        个性化资源生成
-12. recommendations  个性化资源推送
-13. learning-paths   学习路径规划
-14. practices        练习题与测评
-15. notes            笔记与错题整理
-16. reports          学习报告
-17. records          学习行为记录
-18. audit            安全校验与防幻觉
-19. files            文件上传与存储
-20. system           系统健康检查
+12. multimodal       稳定视频、数字人讲解与数字人对话
+13. recommendations  个性化资源推送
+14. learning-paths   学习路径规划
+15. practices        练习题与测评
+16. notes            笔记与错题整理
+17. reports          学习报告
+18. records          学习行为记录
+19. audit            安全校验与防幻觉
+20. files            文件上传与存储
+21. system           系统健康检查
 ```
 
 ---
@@ -275,6 +275,12 @@ type ResourceType =
   | "code_case"
   | "video_script"
   | "animation_script"
+  | "knowledge_video"
+  | "digital_human_video"
+  | "digital_human_dialogue"
+  | "audio_explanation"
+  | "subtitle"
+  | "storyboard"
   | "project_task"
   | "summary_note";
 ```
@@ -289,6 +295,11 @@ type AgentType =
   | "resource_agent"
   | "practice_agent"
   | "multimodal_agent"
+  | "digital_human_agent"
+  | "video_generation_agent"
+  | "script_agent"
+  | "storyboard_agent"
+  | "narration_agent"
   | "recommendation_agent"
   | "safety_agent"
   | "knowledge_graph_agent"
@@ -1015,7 +1026,7 @@ interface ChatSession {
   courseId?: string;
   nodeId?: string;
   title: string;
-  sessionType: "profile" | "qa" | "resource" | "practice";
+  sessionType: "profile" | "qa" | "resource" | "practice" | "digital_human";
   createdAt: string;
   updatedAt: string;
 }
@@ -1053,6 +1064,10 @@ interface ChatMessage {
   content: string;
   contentType: "text" | "markdown" | "json";
   agentType?: AgentType;
+  audioUrl?: string;
+  videoUrl?: string;
+  providerTaskId?: string;
+  usedDocuments?: RetrievedDocument[];
   createdAt: string;
 }
 ```
@@ -1073,6 +1088,10 @@ role
 content
 content_type
 agent_type
+audio_url
+video_url
+provider_task_id
+used_documents
 created_at
 ```
 
@@ -1251,6 +1270,20 @@ interface GeneratedResource {
 
 ```ts
 type VideoStyle = "clean_motion_graphics";
+type VideoAspect = "16:9" | "9:16" | "1:1";
+type VideoQualityPreset = "standard" | "high" | "ultra";
+type VideoGenerationStage =
+  | "queued"
+  | "script"
+  | "storyboard"
+  | "quality_audit"
+  | "tts"
+  | "render"
+  | "audit"
+  | "persist"
+  | "done"
+  | "error";
+type VideoMaterialSource = "none" | "local_assets" | "generated_motion_assets";
 
 type SceneType =
   | "hook"
@@ -1345,6 +1378,104 @@ interface CodeVisualElement {
   animation: VisualAnimationType;
 }
 
+interface HashTableBucketsVisualElement {
+  type: "hash_table_buckets";
+  buckets: string[];
+  activeIndex: number;
+  keyLabel?: string;
+  collisionIndices?: number[];
+  animation: VisualAnimationType;
+}
+
+interface HashFunctionPanelVisualElement {
+  type: "hash_function_panel";
+  inputKey: string;
+  expression: string;
+  outputIndex: number;
+  animation: VisualAnimationType;
+}
+
+interface CollisionChainVisualElement {
+  type: "collision_chain";
+  bucketIndex: number;
+  nodes: string[];
+  activeNodeIndex?: number;
+  animation: VisualAnimationType;
+}
+
+interface ArrayCellsVisualElement {
+  type: "array_cells";
+  items: string[];
+  activeIndices?: number[];
+  pointerLabels?: Record<string, string>;
+  animation: VisualAnimationType;
+}
+
+interface LinkedListNodesVisualElement {
+  type: "linked_list_nodes";
+  nodes: string[];
+  activeIndex?: number;
+  pointerLabel?: string;
+  animation: VisualAnimationType;
+}
+
+interface StackBlocksVisualElement {
+  type: "stack_blocks";
+  items: string[];
+  activeIndex?: number;
+  operation: string;
+  animation: VisualAnimationType;
+}
+
+interface QueueLineVisualElement {
+  type: "queue_line";
+  items: string[];
+  headIndex?: number;
+  tailIndex?: number;
+  operation: string;
+  animation: VisualAnimationType;
+}
+
+interface TreeNodeGraphVisualElement {
+  type: "tree_node_graph";
+  nodes: string[];
+  edges?: string[][];
+  activePath?: string[];
+  animation: VisualAnimationType;
+}
+
+interface CodeTracePanelVisualElement {
+  type: "code_trace_panel";
+  codeLines: string[];
+  activeLineIndex?: number;
+  variables?: Record<string, string>;
+  animation: VisualAnimationType;
+}
+
+interface PointerArrowVisualElement {
+  type: "pointer_arrow";
+  fromLabel: string;
+  toLabel: string;
+  label: string;
+  animation: VisualAnimationType;
+}
+
+interface MemoryBoxVisualElement {
+  type: "memory_box";
+  address: string;
+  value: string;
+  active?: boolean;
+  animation: VisualAnimationType;
+}
+
+interface ComplexityChartVisualElement {
+  type: "complexity_chart";
+  items: string[];
+  activeIndex?: number;
+  label: string;
+  animation: VisualAnimationType;
+}
+
 type VisualElement =
   | TextVisualElement
   | CardVisualElement
@@ -1355,11 +1486,31 @@ type VisualElement =
   | TimelineVisualElement
   | ImageVisualElement
   | FormulaVisualElement
-  | CodeVisualElement;
+  | CodeVisualElement
+  | HashTableBucketsVisualElement
+  | HashFunctionPanelVisualElement
+  | CollisionChainVisualElement
+  | ArrayCellsVisualElement
+  | LinkedListNodesVisualElement
+  | StackBlocksVisualElement
+  | QueueLineVisualElement
+  | TreeNodeGraphVisualElement
+  | CodeTracePanelVisualElement
+  | PointerArrowVisualElement
+  | MemoryBoxVisualElement
+  | ComplexityChartVisualElement;
 
 interface VisualPlan {
   layout: VisualLayout;
   elements: VisualElement[];
+}
+
+interface AnimationStep {
+  startState: string;
+  endState: string;
+  visualAction: string;
+  narrationSentence: string;
+  durationSeconds?: number;
 }
 
 interface VideoLessonScene {
@@ -1368,6 +1519,14 @@ interface VideoLessonScene {
   title: string;
   narration: string;
   durationSeconds: number;
+  teachingPurpose: string;
+  concreteObjects: string[];
+  animationSteps: AnimationStep[];
+  stateChanges: string[];
+  screenText: string[];
+  misconceptionFix: string;
+  componentHints: string[];
+  auditChecklist: string[];
   visualPlan: VisualPlan;
   audioUrl: string;
 }
@@ -1381,7 +1540,11 @@ interface AnimationScriptContent {
   title: string;
   style: VideoStyle;
   durationSeconds: number;
-  aspectRatio: "16:9";
+  aspectRatio: VideoAspect;
+  courseId?: string;
+  nodeId?: string;
+  learnerProfileSummary?: string;
+  qualityScore?: number;
   scenes: VideoLessonScene[];
   output: VideoLessonOutput;
 }
@@ -1440,6 +1603,19 @@ interface ResourceGenerateRequest {
   difficulty?: DifficultyLevel;
   learningGoal?: string;
   customRequirement?: string;
+  videoOptions?: VideoGenerateOptions;
+}
+```
+
+```ts
+interface VideoGenerateOptions {
+  aspectRatio?: VideoAspect;
+  qualityPreset?: VideoQualityPreset;
+  materialSource?: VideoMaterialSource;
+  versionCount?: number;
+  subtitleEnabled?: boolean;
+  bgmEnabled?: boolean;
+  bgmVolume?: number;
 }
 ```
 
@@ -1450,6 +1626,9 @@ interface ResourceGenerateResult {
   taskId: string;
   resourceIds: string[];
   status: TaskStatus;
+  progress?: number;
+  currentStage?: VideoGenerationStage;
+  errorMessage?: string;
 }
 ```
 
@@ -1460,6 +1639,7 @@ interface ResourceStreamEvent {
   taskId: string;
   eventType: "start" | "progress" | "chunk" | "done" | "error";
   progress: number;
+  stage?: VideoGenerationStage;
   contentChunk?: string;
   errorMessage?: string;
 }
@@ -1478,6 +1658,182 @@ interface ResourceStreamEvent {
 | GET | `/api/v1/resources/generate/stream?taskId={taskId}` | 资源生成流式输出 | SSE | `ResourceStreamEvent` |
 
 ---
+
+## 11.6 多模态资源增强接口
+
+### 11.6.1 稳定知识点视频任务
+
+```ts
+interface MultimodalVideoGenerateRequest {
+  userId: string;
+  courseId: string;
+  nodeId: string;
+  title?: string;
+  learningGoal?: string;
+  difficulty?: DifficultyLevel;
+  durationSeconds?: number;
+  style?: string;
+  useDigitalHuman?: boolean;
+  useRag: boolean;
+  customRequirement?: string;
+}
+
+interface MultimodalTaskResult {
+  taskId: string;
+  status: TaskStatus;
+  progress: number;
+  currentStep?: string;
+  resourceId?: string;
+  fileUrl?: string;
+  videoUrl?: string;
+  script?: string;
+  storyboard?: Record<string, any>[];
+  subtitleText?: string;
+  errorMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MultimodalTaskEvent {
+  taskId: string;
+  eventType: "start" | "progress" | "step" | "done" | "error";
+  stepName: string;
+  progress: number;
+  message: string;
+  payload?: Record<string, any>;
+  createdAt: string;
+}
+
+interface MultimodalStreamEvent {
+  taskId: string;
+  eventType: "start" | "progress" | "step" | "done" | "error";
+  progress: number;
+  stepName?: string;
+  message?: string;
+  errorMessage?: string;
+}
+```
+
+### 11.6.2 数字人讲解
+
+```ts
+interface DigitalHumanExplainRequest {
+  userId: string;
+  courseId: string;
+  nodeId: string;
+  avatarId?: string;
+  voiceId?: string;
+  useRag: boolean;
+  customRequirement?: string;
+}
+
+interface DigitalHumanExplainResult {
+  taskId: string;
+  status: TaskStatus;
+  resourceId?: string;
+  videoUrl?: string;
+  script?: string;
+  progress: number;
+}
+```
+
+### 11.6.3 数字人对话
+
+```ts
+interface DigitalHumanChatRequest {
+  userId: string;
+  courseId?: string;
+  nodeId?: string;
+  sessionId?: string;
+  message: string;
+  avatarId?: string;
+  voiceId?: string;
+  useRag: boolean;
+  useProfile: boolean;
+}
+
+interface DigitalHumanChatResult {
+  sessionId: string;
+  messageId: string;
+  answer: string;
+  audioUrl?: string;
+  videoUrl?: string;
+  providerTaskId?: string;
+  usedDocuments?: RetrievedDocument[];
+  status: TaskStatus;
+}
+
+interface DigitalHumanCallbackRequest {
+  taskId: string;
+  providerTaskId?: string;
+  status: TaskStatus;
+  fileUrl?: string;
+  videoUrl?: string;
+  errorMessage?: string;
+  token?: string;
+  payload?: Record<string, any>;
+}
+```
+
+数据库表：
+
+```sql
+multimodal_generation_task
+multimodal_task_event
+```
+
+字段：
+
+```sql
+multimodal_generation_task:
+id
+user_id
+course_id
+node_id
+resource_id
+task_type
+provider
+status
+progress
+current_step
+input_payload
+output_payload
+error_message
+created_at
+updated_at
+
+multimodal_task_event:
+id
+task_id
+event_type
+step_name
+progress
+message
+payload
+created_at
+```
+
+接口列表：
+
+| 方法 | 路径 | 说明 | 请求体 | 返回 |
+|---|---|---|---|---|
+| POST | `/api/v1/multimodal/videos/generate` | 生成稳定知识点教学视频 | `MultimodalVideoGenerateRequest` | `ApiResponse<MultimodalTaskResult>` |
+| GET | `/api/v1/multimodal/videos/tasks/{taskId}` | 查询视频生成任务 | 无 | `ApiResponse<MultimodalTaskResult>` |
+| GET | `/api/v1/multimodal/videos/tasks/{taskId}/events` | 查询视频任务事件 | 无 | `ApiResponse<MultimodalTaskEvent[]>` |
+| GET | `/api/v1/multimodal/videos/stream?taskId={taskId}` | 视频任务流式进度 | SSE | `MultimodalStreamEvent` |
+| POST | `/api/v1/multimodal/digital-human/explain` | 生成数字人讲解 | `DigitalHumanExplainRequest` | `ApiResponse<DigitalHumanExplainResult>` |
+| POST | `/api/v1/multimodal/digital-human/chat` | 数字人对话 | `DigitalHumanChatRequest` | `ApiResponse<DigitalHumanChatResult>` |
+| GET | `/api/v1/multimodal/digital-human/sessions/{sessionId}/messages` | 获取数字人对话历史 | 无 | `ApiResponse<ChatMessage[]>` |
+| POST | `/api/v1/multimodal/digital-human/callback` | 接收讯飞异步任务回调 | `DigitalHumanCallbackRequest` | `ApiResponse<MultimodalTaskResult>` |
+
+兼容规则：
+
+```text
+1. `POST /api/v1/resources/generate` 收到 `knowledge_video` 或 `digital_human_video` 时，内部转交多模态 workflow。
+2. 旧 `video_script` 和 `animation_script` 资源行为保持兼容。
+3. 生成内容必须经过 audit/safety；未通过时不得将 GeneratedResource.status 标记为 success。
+4. 真实讯飞字段只允许出现在 provider adapter 和 provider DTO 中，业务 service 使用统一结构。
+```
 
 # 12. 个性化资源推荐接口
 
@@ -2188,6 +2544,9 @@ interface HealthCheckResult {
   vectorStore?: "ok" | "error";
   graphDb?: "ok" | "error";
   llmService?: "ok" | "error";
+  iflytekSpark?: "mock" | "ok" | "error";
+  iflytekTts?: "mock" | "ok" | "error";
+  iflytekDigitalHuman?: "mock" | "ok" | "error";
 }
 ```
 
@@ -2241,8 +2600,8 @@ const routes = [
 | 对话学习页 | `/api/v1/chat/send`, `/api/v1/chat/stream`, `/api/v1/profiles/extract` |
 | 学生画像页 | `/api/v1/profiles/{userId}` |
 | 学习路径页 | `/api/v1/learning-paths/generate`, `/api/v1/users/{userId}/learning-paths` |
-| 资源生成页 | `/api/v1/resources/generate`, `/api/v1/users/{userId}/resources` |
-| 知识图谱页 | `/api/v1/courses/{courseId}/graph`, `/api/v1/users/{userId}/courses/{courseId}/graph` |
+| 资源生成页 | `/api/v1/resources/generate`, `/api/v1/users/{userId}/resources`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain`, `/api/v1/multimodal/digital-human/chat` |
+| 知识图谱页 | `/api/v1/courses/{courseId}/graph`, `/api/v1/users/{userId}/courses/{courseId}/graph`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain` |
 | 学习报告页 | `/api/v1/reports/generate`, `/api/v1/users/{userId}/reports` |
 | 测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit` |
 | 浮窗菜单 | `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
@@ -2449,6 +2808,20 @@ TTS_AUDIO_FORMAT=mp3
 TTS_SAMPLE_RATE=24000
 TTS_TIMEOUT_SECONDS=120
 
+IFLYTEK_APP_ID=
+IFLYTEK_API_KEY=
+IFLYTEK_API_SECRET=
+IFLYTEK_BASE_URL=
+IFLYTEK_SPARK_MODEL=
+IFLYTEK_TTS_VOICE=
+IFLYTEK_DIGITAL_HUMAN_BASE_URL=
+IFLYTEK_DIGITAL_HUMAN_AVATAR_ID=
+IFLYTEK_DIGITAL_HUMAN_VOICE_ID=
+IFLYTEK_DIGITAL_HUMAN_CALLBACK_URL=
+IFLYTEK_CALLBACK_TOKEN=
+IFLYTEK_REQUEST_TIMEOUT_SECONDS=60
+IFLYTEK_ENABLE_MOCK=false
+
 VIDEO_RENDER_PROVIDER=remotion
 VIDEO_RENDER_PROJECT_PATH=../video-renderer
 VIDEO_RENDER_BROWSER_EXECUTABLE=
@@ -2513,6 +2886,8 @@ chat_session
 chat_message
 agent_task
 agent_task_event
+multimodal_generation_task
+multimodal_task_event
 ```
 
 ## 25.5 学习过程
@@ -2561,7 +2936,7 @@ audit_log
 2. 模拟返回必须包裹 ApiResponse<T>。
 3. 模拟接口路径必须与正式接口路径一致。
 4. 模拟枚举值必须来自本文件定义。
-5. 模拟数据不得新增临时字段。
+5. 模拟数据需要新增字段时，必须先同步登记到本文件，不能使用未登记的临时字段。
 ```
 
 示例：
@@ -2604,14 +2979,14 @@ audit_log
 你必须先阅读 docs/interface-contract.md。
 
 强制规则：
-1. 所有接口路径、请求字段、返回字段、枚举值、数据库字段、前端变量名，必须完全使用 docs/interface-contract.md 中的定义。
+1. 所有接口路径、请求字段、返回字段、枚举值、数据库字段、前端变量名，必须与 docs/interface-contract.md 对齐；功能需要新增时先同步更新本文件。
 2. 前端统一使用 camelCase。
 3. 后端和数据库统一使用 snake_case。
 4. HTTP 返回必须使用 ApiResponse<T>。
 5. 前端不得直接在组件中写 fetch 或 axios，只能调用 src/api/modules 中的方法。
-6. 后端不得新增未定义路由。
-7. 未实现功能只能保留空接口、TODO 或模拟返回，不允许自造替代接口。
-8. 如果发现说明书中缺少必要接口或变量，停止编码，输出：CONTRACT_MISSING: 缺少【名称】定义。
+6. 后端新增路由前必须同步登记到本文件。
+7. 未实现功能只能保留空接口、TODO 或模拟返回，模拟字段也必须登记到本文件。
+8. 如果发现说明书中缺少必要接口或变量，直接补充本文件并同步实现、类型和测试。
 9. 每次提交代码后，必须运行契约测试，确保接口和变量没有偏离说明书。
 10. safety_agent 或 audit 接口未通过时，不允许把生成资源标记为可用。
 ```
@@ -2643,18 +3018,16 @@ tests/contract/test_frontend_types.py
 
 ---
 
-# 29. 不允许 Codex 自行新增的内容
+# 29. 新增内容同步规则
 
 ```text
-不允许新增接口路径。
-不允许新增字段名。
-不允许改写枚举值。
+允许为功能新增接口路径。
+允许为功能新增字段名。
+允许为功能新增枚举值。
 不允许混用 camelCase 和 snake_case。
 不允许前端直接写死后端返回结构。
 不允许跳过 ApiResponse<T>。
-不允许新增未登记的 AgentType。
-不允许新增未登记的 ResourceType。
-不允许新增未登记的 NodeType。
+新增 AgentType、ResourceType、NodeType 或其他枚举值必须先登记到本文件。
 不允许绕过 safety_agent 或 audit 输出最终资源。
 不允许手写散乱 fetch，必须统一 API Client。
 不允许组件直接依赖后端 URL。

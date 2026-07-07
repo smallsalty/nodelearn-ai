@@ -2,6 +2,20 @@ import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import type { VideoLessonScene, VisualElement } from "../types";
 import { ArrowFlow, ComparisonPanel, ConceptCard, GridHighlight, IconBubble, ImageElement, MotionText, SummaryCards, TimelineSteps, palette } from "./MotionGraphicsComponents";
+import {
+  ArrayCells,
+  CodeTracePanel,
+  CollisionChain,
+  ComplexityChart,
+  HashFunctionPanel,
+  HashTableBuckets,
+  LinkedListNodes,
+  MemoryBox,
+  PointerArrow,
+  QueueLine,
+  StackBlocks,
+  TreeNodeGraph,
+} from "./data-structures/DataStructureComponents";
 
 const renderElement = (element: VisualElement, index: number) => {
   if (element.type === "text" || element.type === "keyword") {
@@ -15,8 +29,38 @@ const renderElement = (element: VisualElement, index: number) => {
   if (element.type === "timeline") return <TimelineSteps key={index} items={element.items} animation={element.animation} />;
   if (element.type === "image") return <ImageElement key={index} imageUrl={element.imageUrl} alt={element.alt} animation={element.animation} index={index} />;
   if (element.type === "formula") return <MotionText key={index} content={element.content} animation={element.animation} index={index} keyword />;
-  return <ConceptCard key={index} content={element.content} animation={element.animation} index={index} />;
+  if (element.type === "code") return <ConceptCard key={index} content={element.content} animation={element.animation} index={index} />;
+  if (element.type === "hash_table_buckets") return <HashTableBuckets key={index} element={element} index={index} />;
+  if (element.type === "hash_function_panel") return <HashFunctionPanel key={index} element={element} index={index} />;
+  if (element.type === "collision_chain") return <CollisionChain key={index} element={element} index={index} />;
+  if (element.type === "array_cells") return <ArrayCells key={index} element={element} index={index} />;
+  if (element.type === "linked_list_nodes") return <LinkedListNodes key={index} element={element} index={index} />;
+  if (element.type === "stack_blocks") return <StackBlocks key={index} element={element} index={index} />;
+  if (element.type === "queue_line") return <QueueLine key={index} element={element} index={index} />;
+  if (element.type === "tree_node_graph") return <TreeNodeGraph key={index} element={element} index={index} />;
+  if (element.type === "code_trace_panel") return <CodeTracePanel key={index} element={element} index={index} />;
+  if (element.type === "pointer_arrow") return <PointerArrow key={index} element={element} index={index} />;
+  if (element.type === "memory_box") return <MemoryBox key={index} element={element} index={index} />;
+  if (element.type === "complexity_chart") return <ComplexityChart key={index} element={element} index={index} />;
+  return null;
 };
+
+const dataStructureTypes = new Set<VisualElement["type"]>([
+  "hash_table_buckets",
+  "hash_function_panel",
+  "collision_chain",
+  "array_cells",
+  "linked_list_nodes",
+  "stack_blocks",
+  "queue_line",
+  "tree_node_graph",
+  "code_trace_panel",
+  "pointer_arrow",
+  "memory_box",
+  "complexity_chart",
+]);
+
+const isDataStructureElement = (element: VisualElement) => dataStructureTypes.has(element.type);
 
 const SceneVisual: React.FC<{ scene: VideoLessonScene }> = ({ scene }) => {
   const elements = scene.visualPlan.elements;
@@ -25,8 +69,8 @@ const SceneVisual: React.FC<{ scene: VideoLessonScene }> = ({ scene }) => {
     return <ComparisonPanel left={elements.slice(0, splitAt).map(renderElement)} right={elements.slice(splitAt).map(renderElement)} />;
   }
   if (scene.visualPlan.layout === "grid_focus") {
-    const gridElements = elements.filter((element) => element.type === "grid");
-    const supportElements = elements.filter((element) => element.type !== "grid");
+    const gridElements = elements.filter((element) => element.type === "grid" || isDataStructureElement(element));
+    const supportElements = elements.filter((element) => element.type !== "grid" && !isDataStructureElement(element));
     return (
       <div style={{ display: "grid", gridTemplateColumns: gridElements.length ? "minmax(460px, 1.2fr) minmax(320px, 0.8fr)" : "1fr", alignItems: "center", gap: 56, width: "100%" }}>
         <div style={{ display: "grid", placeItems: "center", transform: "scale(1.18)" }}>

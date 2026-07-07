@@ -32,7 +32,6 @@
 - 服务文件：`backend/app/services/learning_path_service.py`
 - 智能体文件：`backend/app/agents/planner_agent.py`
 
-## 禁止事项
+## 约束事项
 
-- 不新增学习任务 `taskType` 值。
-- 不新增 `TaskStatus` 之外的任务状态值。
+- 如需求需要新增学习任务 `taskType` 或 `TaskStatus` 值，必须先同步 `docs/interface-contract.md`，再更新 schema、类型、服务、页面和测试。

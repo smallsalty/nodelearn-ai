@@ -49,6 +49,8 @@ chat_session
 chat_message
 agent_task
 agent_task_event
+multimodal_generation_task
+multimodal_task_event
 ```
 
 ### 学习过程
@@ -86,4 +88,39 @@ model_call_log
 audit_log
 ```
 
-后续创建真实模型或迁移时，必须从 `docs/interface-contract.md` 复制准确字段列表，不得自行推断缺失列。
+## 多模态增强字段
+
+```sql
+chat_session.session_type
+chat_message.audio_url
+chat_message.video_url
+chat_message.provider_task_id
+chat_message.used_documents
+
+multimodal_generation_task.id
+multimodal_generation_task.user_id
+multimodal_generation_task.course_id
+multimodal_generation_task.node_id
+multimodal_generation_task.resource_id
+multimodal_generation_task.task_type
+multimodal_generation_task.provider
+multimodal_generation_task.status
+multimodal_generation_task.progress
+multimodal_generation_task.current_step
+multimodal_generation_task.input_payload
+multimodal_generation_task.output_payload
+multimodal_generation_task.error_message
+multimodal_generation_task.created_at
+multimodal_generation_task.updated_at
+
+multimodal_task_event.id
+multimodal_task_event.task_id
+multimodal_task_event.event_type
+multimodal_task_event.step_name
+multimodal_task_event.progress
+multimodal_task_event.message
+multimodal_task_event.payload
+multimodal_task_event.created_at
+```
+
+后续创建真实模型或迁移时，必须先从 `docs/interface-contract.md` 复制准确字段列表；如果功能需要新增列，先同步契约再实现。

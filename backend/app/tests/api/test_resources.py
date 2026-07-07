@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-RESOURCE_GENERATE_RESULT_FIELDS = {"taskId", "resourceIds", "status"}
+RESOURCE_GENERATE_RESULT_FIELDS = {"taskId", "resourceIds", "status", "progress", "currentStage", "errorMessage"}
 GENERATED_RESOURCE_FIELDS = {
     "id",
     "userId",

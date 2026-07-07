@@ -50,6 +50,20 @@ class Settings(BaseSettings):
     tts_sample_rate: int = 24000
     tts_timeout_seconds: int = 120
 
+    iflytek_app_id: str = ""
+    iflytek_api_key: str = ""
+    iflytek_api_secret: str = ""
+    iflytek_base_url: str = ""
+    iflytek_spark_model: str = ""
+    iflytek_tts_voice: str = ""
+    iflytek_digital_human_base_url: str = ""
+    iflytek_digital_human_avatar_id: str = ""
+    iflytek_digital_human_voice_id: str = ""
+    iflytek_digital_human_callback_url: str = ""
+    iflytek_callback_token: str = ""
+    iflytek_request_timeout_seconds: int = 60
+    iflytek_enable_mock: bool = False
+
     video_render_provider: str = "remotion"
     video_render_project_path: str = "../video-renderer"
     video_render_browser_executable: str = ""
