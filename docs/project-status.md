@@ -105,6 +105,8 @@
 - 2026-06-24 完成前端视觉重构：新增 `frontend/src/styles/tokens.css`，统一 Minimalism & Swiss Style / Clean Academic Dashboard 设计 tokens；应用壳改为左侧导航、顶部课程/节点切换、中央工作区和右侧上下文面板，小屏幕使用移动导航和上下文抽屉。
 - 2026-06-24 重排首页、对话学习、学生画像、学习路径、资源生成、知识图谱、练习测评、学习报告、知识库管理、登录页、浮窗、数字人对话和视频讲解播放器；去除大面积渐变、玻璃拟态、科幻暗色视频舞台、循环装饰动画和“AI 助手”式文案。
 - 2026-06-24 前端验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `frontend/src/pages` 与 `frontend/src/components` 未发现直接 `fetch(` 或 `axios`；运行 `git diff --check` 通过；Playwright 验证 375px、768px、1024px、1440px 首页无横向溢出，`/chat`、`/resources`、`/knowledge-graph`、`/reports` 在移动和桌面无横向溢出且控制台错误为 0。
+- 2026-06-24 完成真实数据库全流程验收报告 `docs/real-flow-verification-2026-06-24.md`：真实 PostgreSQL、DeepSeek 模型、RAG 问答、画像抽取、7 个单体智能体、普通资源生成、前端登录和核心页面联调均通过；`npm run build` 通过；Playwright CLI 验证核心页面 API 失败数为 0，控制台仅存在 Element Plus `el-radio` 废弃警告；讯飞数字人真实 provider 按用户选择跳过。
+- 2026-06-24 真实视频生成链路本次未通过：`python -m app.smoke.real_agent_flow` 在完整 `resource_generate` 工作流的视频资源阶段失败；直接调用 `POST /api/v1/resources/generate` 生成 `video_script` 和 `animation_script` 时，任务 `resource_task_c0f904bbb57e` 在 `AnimationScriptContent` 结构校验阶段失败，缺少 `array_cells.items`、`hash_function_panel.inputKey/expression/outputIndex`、`hash_table_buckets.activeIndex` 等必填字段，未产出新的 MP4。
 
 ### 进行中
 
@@ -129,6 +131,7 @@
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
 - 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
+- 当前真实视频生成存在 schema 对齐阻塞：DeepSeek 生成的 storyboard 可能不满足 `AnimationScriptContent` / `VisualElement` 严格字段要求，导致链路在 TTS 与 Remotion 之前失败。后续需要约束 `StoryboardSkill` 输出或在 `AnimationSpecSkill` 中补齐视觉元素必填字段后再回归真实视频任务。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 - 本机 Docker Desktop 已在 2026-06-04 手动启动并验证 PostgreSQL、Hello Algo 导入、`ENABLE_MOCK=false` 后端健康检查和真实视频生成链路；若后续桌面重启或 Docker 停止，需要重新启动 `docker compose -f docker/docker-compose.yml up -d postgres`。
 
