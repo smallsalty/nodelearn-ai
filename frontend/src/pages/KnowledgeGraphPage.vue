@@ -82,6 +82,9 @@ async function loadKnowledgeNodes() {
 function renderGraph() {
   if (!chartRef.value || !graph.value) return;
   chart ??= echarts.init(chartRef.value);
+  const surface = themeColor("--nl-surface", "#ffffff");
+  const text = themeColor("--nl-text", "#15342b");
+  const border = themeColor("--nl-border-strong", "#b9d4c5");
   const filteredNodes = graph.value.nodes.filter((node) => {
     if (viewState.showWeakOnly) return node.masteryStatus === "weak" || node.masteryScore < 60;
     if (viewState.showCompletedOnly) return node.masteryStatus === "mastered";
@@ -89,7 +92,7 @@ function renderGraph() {
   });
   const visibleIds = new Set(filteredNodes.map((node) => node.id));
   chart.setOption({
-    backgroundColor: "#ffffff",
+    backgroundColor: surface,
     tooltip: {
       formatter: (params: { data?: GraphNode }) => {
         const data = params.data;
@@ -104,15 +107,15 @@ function renderGraph() {
         zoom: viewState.zoom,
         draggable: true,
         force: { repulsion: 160, edgeLength: 90 },
-        label: { show: true, color: "#0f172a", fontSize: 12 },
-        lineStyle: { color: "#cbd5e1", width: 1.5, curveness: 0.08 },
+        label: { show: true, color: text, fontSize: 12 },
+        lineStyle: { color: border, width: 1.5, curveness: 0.08 },
         data: filteredNodes.map((node) => ({
           ...node,
           name: node.label,
           symbolSize: Math.max(42, node.size ?? 46),
           itemStyle: {
             color: nodeColor(node),
-            borderColor: node.id === selectedNodeId.value ? "#0f172a" : "#ffffff",
+            borderColor: node.id === selectedNodeId.value ? text : surface,
             borderWidth: node.id === selectedNodeId.value ? 3 : 1
           }
         })),
@@ -130,10 +133,14 @@ function renderGraph() {
 }
 
 function nodeColor(node: GraphNode) {
-  if (node.masteryStatus === "mastered") return "#bbf7d0";
-  if (node.masteryStatus === "weak") return "#fed7aa";
-  if (node.masteryStatus === "learning") return "#bfdbfe";
-  return "#e2e8f0";
+  if (node.masteryStatus === "mastered") return themeColor("--nl-success-soft", "#ddf5e8");
+  if (node.masteryStatus === "weak") return themeColor("--nl-warning-soft", "#fff4d8");
+  if (node.masteryStatus === "learning") return themeColor("--nl-primary-soft", "#d8f3e5");
+  return themeColor("--nl-surface-muted", "#f1f7f3");
+}
+
+function themeColor(token: string, fallback: string) {
+  return getComputedStyle(document.documentElement).getPropertyValue(token).trim() || fallback;
 }
 
 function selectNode(nodeId: string): void {
@@ -178,7 +185,7 @@ function openResourceAction(action: "knowledge_video" | "digital_human_video" | 
 </script>
 
 <template>
-  <section class="knowledge-graph-page two-column-page graph-page">
+  <section class="knowledge-graph-page graph-page">
     <section class="panel-card graph-card">
       <header class="panel-header">
         <div>
@@ -203,16 +210,14 @@ function openResourceAction(action: "knowledge_video" | "digital_human_video" | 
       </StateBlock>
     </section>
 
-    <aside class="side-stack">
-      <el-card shadow="never">
-        <template #header>节点跳转</template>
+    <el-tabs class="page-tabs">
+      <el-tab-pane label="节点跳转" name="jump">
         <el-select filterable placeholder="选择节点" :model-value="selectedNodeId" @change="jumpToNode">
           <el-option v-for="node in graph?.nodes ?? []" :key="node.id" :label="node.label" :value="node.id" />
         </el-select>
-      </el-card>
+      </el-tab-pane>
 
-      <el-card shadow="never">
-        <template #header>节点详情</template>
+      <el-tab-pane label="节点详情" name="detail">
         <el-alert
           v-if="nodeErrorMessage"
           :title="nodeErrorMessage"
@@ -238,8 +243,8 @@ function openResourceAction(action: "knowledge_video" | "digital_human_video" | 
             <el-button plain @click="openResourceAction('digital_human_chat')">和数字人对话</el-button>
           </div>
         </article>
-      </el-card>
-    </aside>
+      </el-tab-pane>
+    </el-tabs>
   </section>
 </template>
 

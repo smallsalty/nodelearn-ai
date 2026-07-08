@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-06-24
+最后更新：2026-07-08
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -107,6 +107,14 @@
 - 2026-06-24 前端验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `frontend/src/pages` 与 `frontend/src/components` 未发现直接 `fetch(` 或 `axios`；运行 `git diff --check` 通过；Playwright 验证 375px、768px、1024px、1440px 首页无横向溢出，`/chat`、`/resources`、`/knowledge-graph`、`/reports` 在移动和桌面无横向溢出且控制台错误为 0。
 - 2026-06-24 完成真实数据库全流程验收报告 `docs/real-flow-verification-2026-06-24.md`：真实 PostgreSQL、DeepSeek 模型、RAG 问答、画像抽取、7 个单体智能体、普通资源生成、前端登录和核心页面联调均通过；`npm run build` 通过；Playwright CLI 验证核心页面 API 失败数为 0，控制台仅存在 Element Plus `el-radio` 废弃警告；讯飞数字人真实 provider 按用户选择跳过。
 - 2026-06-24 真实视频生成链路本次未通过：`python -m app.smoke.real_agent_flow` 在完整 `resource_generate` 工作流的视频资源阶段失败；直接调用 `POST /api/v1/resources/generate` 生成 `video_script` 和 `animation_script` 时，任务 `resource_task_c0f904bbb57e` 在 `AnimationScriptContent` 结构校验阶段失败，缺少 `array_cells.items`、`hash_function_panel.inputKey/expression/outputIndex`、`hash_table_buckets.activeIndex` 等必填字段，未产出新的 MP4。
+- 2026-07-08 完成前端浅绿色学习平台 UI 重构：`frontend/src/styles/tokens.css` 统一改为浅绿、白色和浅灰绿主题；应用壳改为可折叠左侧项目栏、顶部轻量状态栏、宽主内容区和按需 `DetailDrawer`，固定右侧栏已删除。
+- 2026-07-08 重排首页、对话、画像、学习路径、资源生成、知识图谱、练习、报告和知识库管理页面；原右侧栏承载的课程/节点上下文、画像摘要、薄弱节点、快捷入口、推荐资源和学习进度入口迁移到顶部摘要卡、页面卡片、Tabs 或详情抽屉，未新增接口、字段或数据结构。
+- 2026-07-08 前端验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `rg "fetch\\(|axios" frontend/src/pages frontend/src/components` 无匹配；检查固定右侧栏和旧三栏样式引用无残留；Browser 插件不可用，使用 Playwright CLI 回退验证 `/home`、`/chat`、`/profile`、`/learning-path`、`/resources`、`/knowledge-graph`、`/practice`、`/reports`、`/admin/knowledge-base`，375px 与桌面视口无横向溢出，右侧固定栏数量为 0，控制台无新增错误。
+- 2026-07-08 完成黄白学院风工作台优化：主题升级为白色应用壳、浅灰工作区、黄色主交互、浅绿状态色和深墨重点卡片；左侧学习工作台取消桌面 hover 自动展开，改为点击式真实收缩，收起时主内容区从 `1082px` 拉伸到 `1294px`，展开后恢复。
+- 2026-07-08 黄白学院风验证结果：运行 `cd frontend && npm run build` 通过；静态检查页面/组件无直接 `fetch(` 或 `axios`；旧右栏、旧三栏和 `is-peeking` 残留检查无匹配；Browser 插件不可用，使用 Playwright CLI 验证 `/home`、`/resources`、`/knowledge-graph`、`/practice`、`/reports`，1440px、1024px、768px、375px 无横向溢出，右侧固定栏数量为 0，控制台无新增错误。
+- 2026-07-08 完成工作台层级与满屏布局优化：应用壳外层留白收紧到小边距，`.app-layout` 接近满屏铺开，顶部栏、内容区和卡片间距同步收紧；左侧工作台展开态区分一级入口与二级目录，二级目录增加缩进并使用黄色强选中，所属一级只保留浅黄弱提示。
+- 2026-07-08 收起态侧栏优化为只显示一级入口图标，当前二级所属一级通过小点/短线保留状态；hover、focus 或点击一级入口会通过 Element Plus Popover 弹出二级目录，知识节点入口在有节点数据时按大节点/子节点逐级展开，当前后端返回空节点时显示空状态。
+- 2026-07-08 工作台层级验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `rg "fetch\\(|axios" frontend/src/pages frontend/src/components` 无匹配；旧结构残留检查 `rg "is-peeking|ContextPanel|AcademicSidebar|side-stack|two-column-page|chat-workspace" frontend/src` 无匹配；Browser 插件不可用，使用 Playwright CLI 回退验证 `/home`、`/chat`、`/knowledge-graph` 以及 1440px、1024px、768px、375px 视口，展开态二级缩进约 `18px`、父级弱选中与二级强选中同时成立，收起态仅显示一级入口并可弹出二级目录，无横向溢出，右侧固定栏数量为 0，控制台无新增错误。
 
 ### 进行中
 

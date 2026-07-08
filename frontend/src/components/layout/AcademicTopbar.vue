@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Menu, SwitchButton } from "@element-plus/icons-vue";
+import { InfoFilled, Menu, SwitchButton } from "@element-plus/icons-vue";
 import type { Course, KnowledgeNode } from "@/types/course";
+import type { StudentProfile } from "@/types/profile";
 
 defineProps<{
   title: string;
@@ -9,6 +10,9 @@ defineProps<{
   selectedCourseId?: string;
   selectedNodeId?: string | null;
   username: string;
+  course?: Course | null;
+  node?: KnowledgeNode | null;
+  profile?: StudentProfile | null;
   loading?: boolean;
   error?: string;
 }>();
@@ -16,6 +20,7 @@ defineProps<{
 const emit = defineEmits<{
   courseChange: [courseId: string];
   nodeChange: [nodeId: string];
+  openSidebar: [];
   openContext: [];
   logout: [];
 }>();
@@ -31,9 +36,12 @@ function handleNodeChange(value: string | number | boolean | Record<string, unkn
 
 <template>
   <header class="app-topbar">
-    <div class="topbar-title">
-      <p>Clean Academic Dashboard</p>
-      <h1>{{ title }}</h1>
+    <div class="topbar-heading">
+      <el-button class="sidebar-mobile-toggle" plain :icon="Menu" aria-label="打开项目栏" @click="emit('openSidebar')" />
+      <div class="topbar-title">
+        <p>NodeLearn 学习平台</p>
+        <h1>{{ title }}</h1>
+      </div>
     </div>
 
     <div class="topbar-controls">
@@ -61,7 +69,13 @@ function handleNodeChange(value: string | number | boolean | Record<string, unkn
         <el-option v-for="node in nodes" :key="node.id" :label="node.name" :value="node.id" />
       </el-select>
       <span class="user-chip">{{ username }}</span>
-      <el-button class="context-toggle" plain :icon="Menu" @click="emit('openContext')">上下文</el-button>
+      <button type="button" class="top-context-card" @click="emit('openContext')">
+        <el-icon><InfoFilled /></el-icon>
+        <span>
+          <strong>{{ course?.name ?? "数据结构" }}</strong>
+          <small>{{ node?.name ?? profile?.learningProgress ?? "查看学习上下文" }}</small>
+        </span>
+      </button>
       <el-button plain size="small" :icon="SwitchButton" @click="emit('logout')">退出</el-button>
     </div>
   </header>

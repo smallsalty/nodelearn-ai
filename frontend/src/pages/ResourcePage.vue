@@ -60,6 +60,7 @@ const resourceTypeOptions: Array<{ value: ResourceType; title: string; descripti
   { value: "lecture_doc", title: "讲解文档", description: "结构化概念说明" },
   { value: "mind_map", title: "思维导图", description: "Mermaid 知识结构" },
   { value: "practice_question", title: "练习题", description: "选择、简答和代码题" },
+  { value: "reading_material", title: "拓展阅读", description: "补充材料和延伸理解" },
   { value: "code_case", title: "代码案例", description: "数据结构实现片段" },
   { value: "video_script", title: "视频脚本", description: "旧链路旁白脚本" },
   { value: "animation_script", title: "动画脚本", description: "旧链路分镜 JSON" },
@@ -275,7 +276,12 @@ function sleep(duration: number) {
 }
 
 function isMarkdownResource(resource: GeneratedResource) {
-  return resource.resourceType === "lecture_doc" || resource.resourceType === "summary_note" || resource.resourceType === "mind_map";
+  return (
+    resource.resourceType === "lecture_doc" ||
+    resource.resourceType === "summary_note" ||
+    resource.resourceType === "mind_map" ||
+    resource.resourceType === "reading_material"
+  );
 }
 
 function toggleResourceType(resourceType: ResourceType) {
@@ -288,7 +294,7 @@ function toggleResourceType(resourceType: ResourceType) {
 </script>
 
 <template>
-  <section class="resource-page two-column-page wide-left">
+  <section class="resource-page">
     <section class="panel-card">
       <header class="panel-header">
         <div>
@@ -422,9 +428,8 @@ function toggleResourceType(resourceType: ResourceType) {
       </StateBlock>
     </section>
 
-    <aside class="side-stack">
-      <el-card shadow="never">
-        <template #header>资源详情</template>
+    <el-tabs class="page-tabs">
+      <el-tab-pane label="资源详情" name="detail">
         <el-empty v-if="!selectedResource" description="选择一个资源查看详情" />
         <article v-else class="resource-detail">
           <header class="detail-title">
@@ -457,18 +462,19 @@ function toggleResourceType(resourceType: ResourceType) {
           <MarkdownContent v-else-if="isMarkdownResource(selectedResource)" :content="selectedResource.content" />
           <pre v-else class="resource-content">{{ selectedResource.content }}</pre>
         </article>
-      </el-card>
+      </el-tab-pane>
 
-      <el-card shadow="never">
-        <template #header>推荐资源</template>
+      <el-tab-pane label="推荐资源" name="recommendations">
         <el-empty v-if="!recommendations.length" description="暂无推荐" />
-        <article v-for="item in recommendations" :key="item.id" class="mini-list-item">
-          <strong>{{ item.title }}</strong>
-          <span>{{ resourceTypeLabel(item.resourceType) }} · {{ Math.round(item.score * 100) }}%</span>
-          <p>{{ item.reason }}</p>
-        </article>
-      </el-card>
-    </aside>
+        <section v-else class="soft-card-grid">
+          <article v-for="item in recommendations" :key="item.id" class="mini-list-item">
+            <strong>{{ item.title }}</strong>
+            <span>{{ resourceTypeLabel(item.resourceType) }} · {{ Math.round(item.score * 100) }}%</span>
+            <p>{{ item.reason }}</p>
+          </article>
+        </section>
+      </el-tab-pane>
+    </el-tabs>
   </section>
 </template>
 

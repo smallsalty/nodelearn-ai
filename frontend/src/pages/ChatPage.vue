@@ -138,90 +138,90 @@ function selectNode(node: KnowledgeNode) {
         <el-button :loading="loading" @click="loadSessions">刷新会话</el-button>
       </header>
 
-      <section class="chat-workspace">
-        <aside class="academic-card">
-          <header class="panel-header">
-            <div>
-              <h2>知识节点</h2>
-              <p>选择一个节点作为问答上下文。</p>
-            </div>
-          </header>
-          <button
-            v-for="node in nodes"
-            :key="node.id"
-            type="button"
-            class="node-list-button"
-            :class="{ active: appState.selectedNodeId === node.id }"
-            @click="selectNode(node)"
-          >
-            <strong>{{ node.name }}</strong>
-            <span>{{ node.nodeType }} · {{ difficultyLabel(node.difficulty) }}</span>
-          </button>
-        </aside>
+      <el-tabs class="page-tabs">
+        <el-tab-pane label="对话" name="chat">
+          <section class="academic-card chat-main-card">
+            <StateBlock :loading="loading" :error="errorMessage" :empty="!messages.length" empty-text="暂无消息" @retry="loadSessions">
+              <div class="message-list">
+                <article v-for="message in messages" :key="message.id" class="chat-bubble" :class="message.role">
+                  <header>
+                    <strong>{{ message.role === "user" ? "我" : "课程助教" }}</strong>
+                    <time>{{ formatDate(message.createdAt) }}</time>
+                  </header>
+                  <MarkdownContent v-if="message.contentType !== 'text'" :content="message.content" />
+                  <p v-else>{{ message.content }}</p>
+                </article>
+              </div>
+            </StateBlock>
 
-        <section class="academic-card chat-main-card">
-          <StateBlock :loading="loading" :error="errorMessage" :empty="!messages.length" empty-text="暂无消息" @retry="loadSessions">
-            <div class="message-list">
-              <article v-for="message in messages" :key="message.id" class="chat-bubble" :class="message.role">
-                <header>
-                  <strong>{{ message.role === "user" ? "我" : "课程助教" }}</strong>
-                  <time>{{ formatDate(message.createdAt) }}</time>
-                </header>
-                <MarkdownContent v-if="message.contentType !== 'text'" :content="message.content" />
-                <p v-else>{{ message.content }}</p>
+            <footer class="chat-composer">
+              <el-input
+                v-model="input"
+                type="textarea"
+                :rows="4"
+                resize="none"
+                placeholder="输入你的数据结构问题"
+                aria-label="课程问答输入"
+                @keydown.ctrl.enter.prevent="sendMessage"
+              />
+              <div class="button-row">
+                <el-button type="primary" :loading="sending" :disabled="!input.trim()" @click="sendMessage">发送</el-button>
+                <el-button :loading="workflowRunning" @click="runQaWorkflow">运行 QA 工作流</el-button>
+              </div>
+            </footer>
+          </section>
+        </el-tab-pane>
+
+        <el-tab-pane label="知识节点" name="nodes">
+          <section class="soft-card-grid">
+            <button
+              v-for="node in nodes"
+              :key="node.id"
+              type="button"
+              class="node-list-button"
+              :class="{ active: appState.selectedNodeId === node.id }"
+              @click="selectNode(node)"
+            >
+              <strong>{{ node.name }}</strong>
+              <span>{{ node.nodeType }} · {{ difficultyLabel(node.difficulty) }}</span>
+            </button>
+          </section>
+        </el-tab-pane>
+
+        <el-tab-pane label="引用与步骤" name="context">
+          <section class="soft-card-grid">
+            <el-card shadow="never">
+              <template #header>使用的智能体</template>
+              <el-empty v-if="!lastResult?.usedAgentTypes.length" description="发送问题后展示" />
+              <div v-else class="tag-row">
+                <el-tag v-for="agent in lastResult.usedAgentTypes" :key="agent" type="success" effect="plain">
+                  {{ agentLabel(agent) }}
+                </el-tag>
+              </div>
+            </el-card>
+
+            <el-card shadow="never">
+              <template #header>引用资料</template>
+              <el-empty v-if="!retrievedDocuments.length" description="暂无检索材料" />
+              <article v-for="doc in retrievedDocuments" :key="doc.id" class="mini-list-item">
+                <strong>{{ doc.title }}</strong>
+                <span>score {{ doc.score.toFixed(2) }}</span>
+                <p>{{ doc.content.slice(0, 120) }}</p>
               </article>
-            </div>
-          </StateBlock>
+            </el-card>
 
-          <footer class="chat-composer">
-            <el-input
-              v-model="input"
-              type="textarea"
-              :rows="4"
-              resize="none"
-              placeholder="输入你的数据结构问题"
-              aria-label="课程问答输入"
-              @keydown.ctrl.enter.prevent="sendMessage"
-            />
-            <div class="button-row">
-              <el-button type="primary" :loading="sending" :disabled="!input.trim()" @click="sendMessage">发送</el-button>
-              <el-button :loading="workflowRunning" @click="runQaWorkflow">运行 QA 工作流</el-button>
-            </div>
-          </footer>
-        </section>
-
-        <aside class="side-stack">
-          <el-card shadow="never">
-            <template #header>使用的智能体</template>
-            <el-empty v-if="!lastResult?.usedAgentTypes.length" description="发送问题后展示" />
-            <div v-else class="tag-row">
-              <el-tag v-for="agent in lastResult.usedAgentTypes" :key="agent" type="success" effect="plain">
-                {{ agentLabel(agent) }}
-              </el-tag>
-            </div>
-          </el-card>
-
-          <el-card shadow="never">
-            <template #header>引用资料</template>
-            <el-empty v-if="!retrievedDocuments.length" description="暂无检索材料" />
-            <article v-for="doc in retrievedDocuments" :key="doc.id" class="mini-list-item">
-              <strong>{{ doc.title }}</strong>
-              <span>score {{ doc.score.toFixed(2) }}</span>
-              <p>{{ doc.content.slice(0, 120) }}</p>
-            </article>
-          </el-card>
-
-          <el-card shadow="never">
-            <template #header>智能体步骤</template>
-            <el-empty v-if="!workflowSteps.length" description="暂无工作流步骤" />
-            <el-timeline v-else>
-              <el-timeline-item v-for="step in workflowSteps" :key="step.taskId" :timestamp="step.status">
-                {{ agentLabel(step.agentType) }}
-              </el-timeline-item>
-            </el-timeline>
-          </el-card>
-        </aside>
-      </section>
+            <el-card shadow="never">
+              <template #header>智能体步骤</template>
+              <el-empty v-if="!workflowSteps.length" description="暂无工作流步骤" />
+              <el-timeline v-else>
+                <el-timeline-item v-for="step in workflowSteps" :key="step.taskId" :timestamp="step.status">
+                  {{ agentLabel(step.agentType) }}
+                </el-timeline-item>
+              </el-timeline>
+            </el-card>
+          </section>
+        </el-tab-pane>
+      </el-tabs>
     </section>
   </section>
 </template>

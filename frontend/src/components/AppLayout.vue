@@ -9,26 +9,31 @@ import {
   FolderOpened,
   Guide,
   House,
+  Management,
+  Notebook,
   Share,
   User
 } from "@element-plus/icons-vue";
-import AcademicSidebar from "@/components/layout/AcademicSidebar.vue";
 import AcademicTopbar from "@/components/layout/AcademicTopbar.vue";
-import ContextPanel from "@/components/layout/ContextPanel.vue";
+import DetailDrawer from "@/components/layout/DetailDrawer.vue";
+import ExpandableSidebar, { type SidebarNavGroup } from "@/components/layout/ExpandableSidebar.vue";
 import { courseApi } from "@/api/modules/course";
 import { getErrorMessage } from "@/api/client";
 import { appState, clearAuthState, setCurrentCourse } from "@/stores";
-import type { Course, KnowledgeNode } from "@/types/course";
+import type { Chapter, Course, KnowledgeNode } from "@/types/course";
 import { DEFAULT_COURSE_ID } from "@/utils/format";
 
 const route = useRoute();
 const router = useRouter();
 const courses = ref<Course[]>([]);
+const chapters = ref<Chapter[]>([]);
 const nodes = ref<KnowledgeNode[]>([]);
 const selectedCourseId = ref(appState.currentCourse?.id ?? DEFAULT_COURSE_ID);
 const layoutLoading = ref(false);
 const layoutError = ref("");
 const contextOpen = ref(false);
+const sidebarCollapsed = ref(false);
+const sidebarMobileOpen = ref(false);
 
 const navItems = [
   { path: "/home", label: "首页", description: "学习概览", icon: House },
@@ -40,6 +45,24 @@ const navItems = [
   { path: "/practice", label: "练习测评", description: "题目与错因", icon: EditPen },
   { path: "/reports", label: "学习报告", description: "评估与建议", icon: DataAnalysis },
   { path: "/admin/knowledge-base", label: "知识库管理", description: "课程材料", icon: FolderOpened }
+];
+
+const navGroups: SidebarNavGroup[] = [
+  {
+    title: "学习入口",
+    icon: Notebook,
+    items: navItems.slice(0, 4)
+  },
+  {
+    title: "学习工具",
+    icon: Collection,
+    items: navItems.slice(4, 8)
+  },
+  {
+    title: "项目管理",
+    icon: Management,
+    items: navItems.slice(8)
+  }
 ];
 
 const currentPageTitle = computed(() => {
@@ -85,8 +108,15 @@ async function loadCourses() {
 async function loadNodes() {
   if (!selectedCourseId.value) return;
   try {
-    const response = await courseApi.getNodes(selectedCourseId.value);
-    nodes.value = response.data;
+    const [nodeResponse, chapterResponse] = await Promise.allSettled([
+      courseApi.getNodes(selectedCourseId.value),
+      courseApi.getChapters(selectedCourseId.value)
+    ]);
+    if (nodeResponse.status === "rejected") {
+      throw nodeResponse.reason;
+    }
+    nodes.value = nodeResponse.value.data;
+    chapters.value = chapterResponse.status === "fulfilled" ? chapterResponse.value.data : [];
     if (!appState.selectedNodeId && nodes.value[0]) {
       appState.selectedNodeId = nodes.value[0].id;
     }
@@ -100,6 +130,7 @@ function changeCourse(courseId: string) {
   const course = courses.value.find((item) => item.id === courseId) ?? null;
   setCurrentCourse(course);
   appState.selectedNodeId = null;
+  chapters.value = [];
   void loadNodes();
 }
 
@@ -114,26 +145,19 @@ async function logout() {
 </script>
 
 <template>
-  <div class="app-layout">
-    <AcademicSidebar :items="navItems" />
-
-    <nav class="mobile-bottom-nav" aria-label="移动导航">
-      <RouterLink
-        v-for="item in navItems"
-        :key="`mobile-${item.path}`"
-        class="nav-item"
-        :to="item.path"
-        :aria-current="route.path === item.path ? 'page' : undefined"
-      >
-        <span class="nav-icon" aria-hidden="true">
-          <el-icon><component :is="item.icon" /></el-icon>
-        </span>
-        <span class="nav-text">
-          <span>{{ item.label }}</span>
-          <small>{{ item.description }}</small>
-        </span>
-      </RouterLink>
-    </nav>
+  <div class="app-layout" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <ExpandableSidebar
+      v-model:collapsed="sidebarCollapsed"
+      v-model:mobile-open="sidebarMobileOpen"
+      :nav-groups="navGroups"
+      :courses="courses"
+      :chapters="chapters"
+      :nodes="nodes"
+      :selected-course-id="selectedCourseId"
+      :selected-node-id="appState.selectedNodeId"
+      @course-change="changeCourse"
+      @node-change="changeNode"
+    />
 
     <section class="app-main">
       <AcademicTopbar
@@ -143,10 +167,14 @@ async function logout() {
         :selected-course-id="selectedCourseId"
         :selected-node-id="appState.selectedNodeId"
         :username="appState.currentUser?.username ?? 'demo_student'"
+        :course="currentCourse"
+        :node="selectedNode"
+        :profile="appState.currentProfile"
         :loading="layoutLoading"
         :error="layoutError"
         @course-change="changeCourse"
         @node-change="changeNode"
+        @open-sidebar="sidebarMobileOpen = true"
         @open-context="contextOpen = true"
         @logout="logout"
       />
@@ -156,12 +184,11 @@ async function logout() {
       </main>
     </section>
 
-    <ContextPanel
-      :mobile-open="contextOpen"
+    <DetailDrawer
+      v-model="contextOpen"
       :course="currentCourse"
       :node="selectedNode"
       :profile="appState.currentProfile"
-      @close="contextOpen = false"
     />
   </div>
 </template>
