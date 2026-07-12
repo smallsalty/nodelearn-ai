@@ -79,6 +79,15 @@ class Settings(BaseSettings):
     audit_timeout_seconds: int = 30
     run_real_video_tests: bool = False
 
+    judge0_base_url: str = ""
+    judge0_auth_token: str = ""
+    judge0_cpp_language_id: int = 54
+    judge0_c_language_id: int = 50
+    judge0_python_language_id: int = 71
+    judge0_timeout_seconds: int = 20
+    programming_time_limit_seconds: float = 2
+    programming_max_source_length: int = 20000
+
     enable_safety_audit: bool = True
     enable_stream_output: bool = True
     enable_mock: bool = True

@@ -40,6 +40,7 @@ from app.schemas.multimodal import (
     MultimodalVideoGenerateRequest,
 )
 from app.schemas.practice import PracticeGenerateRequest, PracticeQuestion, PracticeRecord, PracticeSubmitRequest
+from app.schemas.programming import ProgrammingGenerateRequest, ProgrammingJudgeResult, ProgrammingQuestion, ProgrammingSubmissionRequest
 from app.schemas.profile import ProfileUpdateByPracticeRequest, StudentProfile
 from app.schemas.report import AuditCheckRequest, AuditResult, LearningRecord, ModelCallLog
 from app.schemas.resource import (
@@ -91,6 +92,10 @@ __all__ = [
     "PracticeQuestion",
     "PracticeRecord",
     "PracticeSubmitRequest",
+    "ProgrammingGenerateRequest",
+    "ProgrammingJudgeResult",
+    "ProgrammingQuestion",
+    "ProgrammingSubmissionRequest",
     "ProfileUpdateByPracticeRequest",
     "QuestionType",
     "RecommendationRequest",

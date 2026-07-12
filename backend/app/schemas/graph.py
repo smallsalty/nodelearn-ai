@@ -34,6 +34,7 @@ class KnowledgeGraph(ContractModel):
 
 class GraphViewState(ContractModel):
     selected_node_id: str | None = None
+    expanded_chapter_id: str | None = None
     zoom: float
     center_x: float
     center_y: float

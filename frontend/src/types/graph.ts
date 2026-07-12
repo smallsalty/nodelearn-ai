@@ -31,6 +31,7 @@ export interface KnowledgeGraph {
 
 export interface GraphViewState {
   selectedNodeId?: string;
+  expandedChapterId?: string;
   zoom: number;
   centerX: number;
   centerY: number;

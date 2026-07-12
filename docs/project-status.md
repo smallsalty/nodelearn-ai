@@ -1,6 +1,7 @@
 # NodeLearn AI 项目状态
 
 最后更新：2026-07-12
+最后更新：2026-07-11
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -130,6 +131,10 @@
 - 2026-06-24 重排首页、对话学习、学生画像、学习路径、资源生成、知识图谱、练习测评、学习报告、知识库管理、登录页、浮窗、数字人对话和视频讲解播放器；去除大面积渐变、玻璃拟态、科幻暗色视频舞台、循环装饰动画和“AI 助手”式文案。
 - 2026-06-24 前端验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `frontend/src/pages` 与 `frontend/src/components` 未发现直接 `fetch(` 或 `axios`；运行 `git diff --check` 通过；Playwright 验证 375px、768px、1024px、1440px 首页无横向溢出，`/chat`、`/resources`、`/knowledge-graph`、`/reports` 在移动和桌面无横向溢出且控制台错误为 0。
 - 2026-06-24 完成真实数据库全流程验收报告 `docs/real-flow-verification-2026-06-24.md`：真实 PostgreSQL、DeepSeek 模型、RAG 问答、画像抽取、7 个单体智能体、普通资源生成、前端登录和核心页面联调均通过；`npm run build` 通过；Playwright CLI 验证核心页面 API 失败数为 0，控制台仅存在 Element Plus `el-radio` 废弃警告；讯飞数字人真实 provider 按用户选择跳过。
+- 2026-07-11 调整知识图谱前端展示层：默认按课程章节聚合为大节点，点击大节点后才显示该章节的知识节点；图谱接口、节点字段和关系字段保持不变。
+- 2026-07-11 新增编程题页面、Judge0 远程判题接口与 C++/C/Python 代码模板；普通练习页面默认仅生成选择题和简答题。
+- 2026-07-11 编程题判题改为 Docker Compose 自建 Judge0 CE，使用官方 server/worker 镜像及独立 PostgreSQL、Redis，不再依赖付费云端判题 API。
+- 2026-07-11 分离资源与题目边界：资源生成不再创建或返回 `practice_question` 资源，普通题目使用独立 `practice_question`、`practice_record`、`wrong_question_record` ORM 表模型。
 - 2026-06-24 真实视频生成链路本次未通过：`python -m app.smoke.real_agent_flow` 在完整 `resource_generate` 工作流的视频资源阶段失败；直接调用 `POST /api/v1/resources/generate` 生成 `video_script` 和 `animation_script` 时，任务 `resource_task_c0f904bbb57e` 在 `AnimationScriptContent` 结构校验阶段失败，缺少 `array_cells.items`、`hash_function_panel.inputKey/expression/outputIndex`、`hash_table_buckets.activeIndex` 等必填字段，未产出新的 MP4。
 - 2026-07-08 完成前端浅绿色学习平台 UI 重构：`frontend/src/styles/tokens.css` 统一改为浅绿、白色和浅灰绿主题；应用壳改为可折叠左侧项目栏、顶部轻量状态栏、宽主内容区和按需 `DetailDrawer`，固定右侧栏已删除。
 - 2026-07-08 重排首页、对话、画像、学习路径、资源生成、知识图谱、练习、报告和知识库管理页面；原右侧栏承载的课程/节点上下文、画像摘要、薄弱节点、快捷入口、推荐资源和学习进度入口迁移到顶部摘要卡、页面卡片、Tabs 或详情抽屉，未新增接口、字段或数据结构。

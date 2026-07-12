@@ -8,9 +8,12 @@ from app.models.content import (
     KnowledgeNodeModel,
     KnowledgeRelationModel,
     ModelCallLogModel,
+    PracticeQuestionModel,
+    PracticeRecordModel,
     MultimodalGenerationTaskModel,
     MultimodalTaskEventModel,
     UploadedFileModel,
+    WrongQuestionRecordModel,
 )
 
 __all__ = [
@@ -23,7 +26,10 @@ __all__ = [
     "KnowledgeNodeModel",
     "KnowledgeRelationModel",
     "ModelCallLogModel",
+    "PracticeQuestionModel",
+    "PracticeRecordModel",
     "MultimodalGenerationTaskModel",
     "MultimodalTaskEventModel",
     "UploadedFileModel",
+    "WrongQuestionRecordModel",
 ]

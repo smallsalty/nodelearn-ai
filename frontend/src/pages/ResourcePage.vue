@@ -62,6 +62,7 @@ const resourceTypeOptions: Array<{ value: ResourceType; title: string; descripti
   { value: "mind_map", title: "思维导图", description: "结构化知识导图" },
   { value: "practice_question", title: "练习题", description: "选择、简答和代码题" },
   { value: "reading_material", title: "拓展阅读", description: "补充材料和延伸理解" },
+  { value: "mind_map", title: "思维导图", description: "Mermaid 知识结构" },
   { value: "code_case", title: "代码案例", description: "数据结构实现片段" },
   { value: "summary_note", title: "总结笔记", description: "可复习的要点记录" }
 ];
