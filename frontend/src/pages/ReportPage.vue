@@ -80,40 +80,48 @@ async function exportPdf(report: StudyReport) {
 function renderTrend() {
   if (!chartRef.value || !evaluation.value) return;
   chart ??= echarts.init(chartRef.value);
+  const primary = themeColor("--nl-primary", "#35b779");
+  const border = themeColor("--nl-border-strong", "#b9d4c5");
+  const muted = themeColor("--nl-text-muted", "#4f665c");
+  const gridLine = themeColor("--nl-border", "#d9e8df");
   chart.setOption({
     tooltip: { trigger: "axis" },
     grid: { left: 36, right: 20, top: 32, bottom: 28 },
     xAxis: {
       type: "category",
       data: evaluation.value.progressTrend.map((_, index) => `阶段 ${index + 1}`),
-      axisLine: { lineStyle: { color: "#cbd5e1" } },
-      axisLabel: { color: "#475569" }
+      axisLine: { lineStyle: { color: border } },
+      axisLabel: { color: muted }
     },
     yAxis: {
       type: "value",
       min: 0,
       max: 100,
-      axisLine: { lineStyle: { color: "#cbd5e1" } },
-      splitLine: { lineStyle: { color: "#e2e8f0" } },
-      axisLabel: { color: "#475569" }
+      axisLine: { lineStyle: { color: border } },
+      splitLine: { lineStyle: { color: gridLine } },
+      axisLabel: { color: muted }
     },
     series: [
       {
         name: "掌握趋势",
         type: "line",
         smooth: true,
-        areaStyle: { opacity: 0.08, color: "#2563eb" },
-        lineStyle: { width: 3, color: "#2563eb" },
-        itemStyle: { color: "#2563eb" },
+        areaStyle: { opacity: 0.1, color: primary },
+        lineStyle: { width: 3, color: primary },
+        itemStyle: { color: primary },
         data: evaluation.value.progressTrend
       }
     ]
   });
 }
+
+function themeColor(token: string, fallback: string) {
+  return getComputedStyle(document.documentElement).getPropertyValue(token).trim() || fallback;
+}
 </script>
 
 <template>
-  <section class="reports-page two-column-page">
+  <section class="reports-page">
     <section class="panel-card">
       <header class="panel-header">
         <div>
@@ -143,35 +151,37 @@ function renderTrend() {
       </StateBlock>
     </section>
 
-    <aside class="side-stack">
-      <el-card shadow="never">
-        <template #header>报告列表</template>
+    <el-tabs class="page-tabs">
+      <el-tab-pane label="报告列表" name="list">
         <el-empty v-if="!reports.length" description="暂无报告" />
-        <button
-          v-for="report in reports"
-          :key="report.id"
-          type="button"
-          class="list-button"
-          :class="{ active: report.id === selectedReport?.id }"
-          @click="selectedReport = report"
-        >
-          <strong>{{ report.title }}</strong>
-          <span>{{ formatDate(report.createdAt) }}</span>
-        </button>
-      </el-card>
+        <section v-else class="soft-card-grid">
+          <button
+            v-for="report in reports"
+            :key="report.id"
+            type="button"
+            class="list-button"
+            :class="{ active: report.id === selectedReport?.id }"
+            @click="selectedReport = report"
+          >
+            <strong>{{ report.title }}</strong>
+            <span>{{ formatDate(report.createdAt) }}</span>
+          </button>
+        </section>
+      </el-tab-pane>
 
-      <el-card shadow="never">
-        <template #header>报告详情</template>
+      <el-tab-pane label="报告详情" name="detail">
         <el-empty v-if="!selectedReport" description="选择或生成报告" />
         <article v-else class="report-detail">
           <h3>{{ selectedReport.title }}</h3>
           <p>{{ selectedReport.summary }}</p>
           <p><strong>薄弱节点：</strong>{{ selectedReport.weakNodeSummary || joinText(evaluation?.weakNodeIds) }}</p>
           <p><strong>改进建议：</strong>{{ selectedReport.improvementAdvice }}</p>
-          <el-button type="primary" plain @click="exportPdf(selectedReport)">导出 PDF</el-button>
-          <el-link v-if="selectedReport.pdfUrl" :href="selectedReport.pdfUrl" target="_blank">查看 PDF</el-link>
+          <div class="button-row">
+            <el-button type="primary" plain @click="exportPdf(selectedReport)">导出 PDF</el-button>
+            <el-link v-if="selectedReport.pdfUrl" :href="selectedReport.pdfUrl" target="_blank">查看 PDF</el-link>
+          </div>
         </article>
-      </el-card>
-    </aside>
+      </el-tab-pane>
+    </el-tabs>
   </section>
 </template>

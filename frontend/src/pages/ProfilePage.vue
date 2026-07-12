@@ -130,7 +130,7 @@ function createMessage(role: "user" | "assistant", content: string): ChatMessage
 </script>
 
 <template>
-  <section class="profile-page two-column-page">
+  <section class="profile-page">
     <section class="panel-card">
       <header class="panel-header">
         <div>
@@ -167,7 +167,7 @@ function createMessage(role: "user" | "assistant", content: string): ChatMessage
       </StateBlock>
     </section>
 
-    <aside class="panel-card chat-main-card">
+    <section class="panel-card chat-main-card">
       <header class="panel-header">
         <div>
           <h2>画像对话</h2>
@@ -196,6 +196,6 @@ function createMessage(role: "user" | "assistant", content: string): ChatMessage
           <el-button plain @click="useSample">填入示例</el-button>
         </div>
       </footer>
-    </aside>
+    </section>
   </section>
 </template>

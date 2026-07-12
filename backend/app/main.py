@@ -1,3 +1,5 @@
+import mimetypes
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -7,9 +9,20 @@ from fastapi.staticfiles import StaticFiles
 from app.api.v1 import agents, audit, auth, course, graph, learning_path, multimodal, notes, practice, profile, programming, reports, resources, system
 from app.core.config import settings
 
-app = FastAPI(title=settings.app_name, version=settings.app_version)
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    yield
+    from app.services.multimodal_service import default_multimodal_service
+
+    await default_multimodal_service.shutdown()
+
+
+app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 storage_path = Path(settings.file_storage_path).resolve()
 storage_path.mkdir(parents=True, exist_ok=True)
+mimetypes.add_type("application/vnd.apple.mpegurl", ".m3u8")
+mimetypes.add_type("video/mp2t", ".ts")
 
 app.add_middleware(
     CORSMiddleware,

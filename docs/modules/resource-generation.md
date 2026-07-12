@@ -19,6 +19,7 @@
 - `DigitalHumanExplainRequest`
 - `DigitalHumanChatRequest`
 - `DigitalHumanChatResult`
+- `DigitalHumanLiveSessionResult`
 - `DigitalHumanCallbackRequest`
 - `VideoAspect`
 - `VideoQualityPreset`
@@ -29,12 +30,15 @@
 - `ResourcePushRecord`
 - `RecommendationRequest`
 - `VideoStyle`
+- `VideoTheme`
 - `SceneType`
 - `VisualLayout`
 - `VisualAnimationType`
 - `VisualElement`
 - `VisualPlan`
 - `AnimationStep`
+- `VideoSourceReference`
+- `VideoNarrationBeat`
 - `VideoLessonScene`
 - `AnimationScriptContent`
 
@@ -61,6 +65,8 @@
 - `POST /api/v1/multimodal/digital-human/explain`
 - `POST /api/v1/multimodal/digital-human/chat`
 - `GET /api/v1/multimodal/digital-human/sessions/{sessionId}/messages`
+- `GET /api/v1/multimodal/digital-human/sessions/{sessionId}/live`
+- `POST /api/v1/multimodal/digital-human/sessions/{sessionId}/stop`
 - `POST /api/v1/multimodal/digital-human/callback`
 - `POST /api/v1/recommendations/resources`
 - `GET /api/v1/users/{userId}/recommendations`
@@ -76,6 +82,11 @@
 - Required generation stages are `script -> storyboard -> quality_audit -> tts -> render -> audit -> persist -> done`; failures use `error`.
 - `AnimationScriptContent.scenes[]` must include `teachingPurpose`, `concreteObjects`, `animationSteps`, `stateChanges`, `screenText`, `misconceptionFix`, `componentHints`, and `auditChecklist`.
 - The first version uses Remotion frame-driven data-structure teaching components and local teaching presets as primary visuals. External stock media is not a default source.
+- 新生成视频写入 `schemaVersion="2.0"`，使用 beat 作为口播、TTS、字幕和 Remotion Sequence 的唯一节拍来源；历史 v1 仅保留前端查看兼容。
+- 主题固定为 `warm_academic`、`chalk_classroom`、`technical_blueprint`，默认暖白学院风；导出画面不包含常驻页眉、页脚、场景编号或进度条。
+- LLM 只生成教学事实、口播和高层视觉意图；`AnimationSpecSkill` 作为确定性 Visual Director 构造严格 `VisualElement`，避免模型漏填组件字段。
+- 每个 factual beat 必须引用 RAG 文档或知识节点来源，质量/安全预审未通过不得启动 TTS；最终 MP4 仍需媒体与资源审核。
+- `POST /api/v1/multimodal/videos/generate` 复用真实 Remotion 核心，mock 模式明确失败且不得返回固定 `/mock/knowledge-video.mp4`。
 
 ## 前端
 
@@ -115,13 +126,19 @@
 
 - 真实资源生成未传入材料时，自动检索 Hello Algo PostgreSQL 来源资源。
 - 指定节点时，优先取该节点的阅读材料，再补充同节点代码案例；无节点材料时才使用全文和课程级兜底。
-- `mind_map` 内容统一使用 Mermaid `mindmap` 源码；规范化会移除 Markdown 围栏和可选图标指令，并转义会与 Mermaid 形状语法冲突的非根节点标点。
+- `mind_map` 内容统一保存为 `GeneratedResource.content` 中的 `KnowledgeMindMap` JSON 字符串，不生成 Markdown、Mermaid、前端坐标或 `.xmind` 文件。
+- 后端使用 `MindMapValidator` 校验导图 JSON 的必填字段、分支数量、节点数量、标题质量、叶子节点说明和跨分支关系引用；校验失败会触发 1 次 DeepSeek JSON 重试，仍失败则资源保存为 `failed`。
+- 前端使用 `MindMapViewer` 渲染 `mind_map`，支持逐级展开、全部展开/收起、重置、搜索、聚焦当前节点和异常原始内容查看。
 - 开发验收页同时展示真实 MP4 和 `VideoLessonPlayer` 分镜、字幕、音频控制。
 
 ## 多模态资源增强
 
 - 新增资源类型：`knowledge_video`、`digital_human_video`、`digital_human_dialogue`、`audio_explanation`、`subtitle`、`storyboard`。
-- 稳定知识点视频链路：`load_context -> generate_teaching_plan -> generate_script -> generate_storyboard -> validate_script -> synthesize_audio -> render_video -> audit_resource -> persist_resource -> emit_progress`。
+- 稳定知识点视频链路：`load_context -> plan_content -> generate_script -> generate_storyboard -> audit_storyboard -> synthesize_audio -> render_video -> audit_resource -> persist_resource -> emit_progress`。
 - 数字人讲解复用脚本/分镜链路，再通过讯飞数字人 provider 创建讲解任务；无真实讯飞配置时使用 mock provider，返回结构与真实 provider adapter 保持一致。
-- 数字人对话复用 RAG、学生画像和最小 audit 流程，保存 session/message，并可返回 mock audio/video URL。
+- 数字人对话复用 RAG、学生画像和最小 audit 流程，保存 session/message；回答由虚拟人接口服务自带的大模型对话能力生成，缺少真实配置或调用失败时直接失败，不返回 mock 回答。
+- 只有大模型返回非空文本且 audit/safety 通过后，才允许启动或复用在线虚拟人会话并发送文本驱动。
+- 真实数字人对话使用讯飞 AI 虚拟人实时流：后端将 RTMP 转为低延迟 HLS，前端只播放本地 `videoUrl`，不得获得 provider session 或原始 RTMP 地址。
+- 接口服务在线驱动使用 `wss://avatar.cn-huadong-1.xf-yun.com/v1/interact` WebSocket；start 获取 RTMP 后由 FFmpeg 转 HLS，审核后的回答通过同一连接以明文 `text_driver` 顺序追加。
+- 同一对话复用一个直播会话；后端每 5 秒心跳，空闲 5 分钟自动停止，HLS 滚动保留最近 5 分钟并在停止 10 分钟后清理。
 - 生成资源必须保留 `userId`、`courseId`、`nodeId`、`agentType`、`taskId`、`status`、`auditStatus`、`createdAt`、`updatedAt`。

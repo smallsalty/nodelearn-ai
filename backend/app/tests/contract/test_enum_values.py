@@ -13,6 +13,7 @@ from app.schemas.common import (
     PracticePreference,
     ResourceType,
     TaskStatus,
+    VideoTheme,
 )
 
 
@@ -32,4 +33,5 @@ def test_core_enum_values_match_contract_subset():
     assert CognitiveStyle.diagram.value == "diagram"
     assert PracticePreference.case.value == "case"
     assert ResourceType.mind_map.value == "mind_map"
+    assert [item.value for item in VideoTheme] == ["warm_academic", "chalk_classroom", "technical_blueprint"]
     # TODO: exhaustively compare enum values against docs/interface-contract.md.

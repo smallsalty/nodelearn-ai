@@ -5,8 +5,10 @@ import type { AnimationScriptContent } from "./types";
 
 const FPS = 30;
 const defaultLesson: AnimationScriptContent = {
+  schemaVersion: "2.0",
   title: "NodeLearn AI",
   style: "clean_motion_graphics",
+  theme: "warm_academic",
   durationSeconds: 1,
   aspectRatio: "16:9",
   scenes: [],
@@ -25,7 +27,12 @@ export const Root: React.FC = () => (
     calculateMetadata={({ props }) => ({
       durationInFrames: Math.max(
         1,
-        props.lesson.scenes.reduce((total, scene) => total + Math.ceil(scene.durationSeconds * FPS), 0)
+        props.lesson.scenes.reduce(
+          (total, scene) => total + (scene.beats?.length
+            ? scene.beats.reduce((beatTotal, beat) => beatTotal + Math.ceil(beat.durationSeconds * FPS), 0)
+            : Math.ceil(scene.durationSeconds * FPS)),
+          0
+        )
       ),
     })}
   />

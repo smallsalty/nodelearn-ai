@@ -1,6 +1,7 @@
 export type VideoStyle = "clean_motion_graphics";
 export type VideoAspect = "16:9" | "9:16" | "1:1";
 export type VideoQualityPreset = "standard" | "high" | "ultra";
+export type VideoTheme = "warm_academic" | "chalk_classroom" | "technical_blueprint";
 export type SceneType = "hook" | "definition" | "analogy" | "mechanism" | "comparison" | "process" | "example" | "summary";
 export type VisualLayout = "center_focus" | "left_right" | "pipeline" | "comparison" | "timeline" | "grid_focus" | "summary_cards";
 export type VisualAnimationType = "fade_in" | "pop_in" | "slide_in_left" | "slide_in_right" | "float" | "draw" | "highlight" | "zoom_in" | "stagger_in";
@@ -46,29 +47,52 @@ export interface VideoLessonScene {
   sceneId: string;
   sceneType: SceneType;
   title: string;
-  narration: string;
+  narration?: string;
   durationSeconds: number;
   teachingPurpose: string;
-  concreteObjects: string[];
-  animationSteps: AnimationStep[];
-  stateChanges: string[];
-  screenText: string[];
+  concreteObjects?: string[];
+  animationSteps?: AnimationStep[];
+  stateChanges?: string[];
+  screenText?: string[];
   misconceptionFix: string;
-  componentHints: string[];
-  auditChecklist: string[];
+  componentHints?: string[];
+  auditChecklist?: string[];
+  visualPlan?: VisualPlan;
+  audioUrl?: string;
+  beats?: VideoNarrationBeat[];
+}
+
+export interface VideoSourceReference {
+  id: string;
+  title: string;
+  sourceId?: string;
+}
+
+export interface VideoNarrationBeat {
+  beatId: string;
+  narration: string;
+  durationSeconds: number;
+  screenText: string[];
+  claims: string[];
+  sourceIds: string[];
   visualPlan: VisualPlan;
   audioUrl: string;
 }
 
 export interface AnimationScriptContent {
+  schemaVersion?: "1.0" | "2.0";
   title: string;
   style: VideoStyle;
+  theme?: VideoTheme;
   durationSeconds: number;
+  targetDurationSeconds?: number;
   aspectRatio: VideoAspect;
   courseId?: string;
   nodeId?: string;
   learnerProfileSummary?: string;
   qualityScore?: number;
+  subtitleEnabled?: boolean;
+  sources?: VideoSourceReference[];
   scenes: VideoLessonScene[];
   output: {
     videoUrl: string;

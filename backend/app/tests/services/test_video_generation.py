@@ -5,13 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from app.agents.multimodal_skills import QualityAuditSkill, TtsSkill, VideoAuditError, VideoRenderSkill
+from app.agents.multimodal_skills import AnimationSpecSkill, QualityAuditSkill, TtsSkill, VideoAuditError, VideoRenderSkill
 from app.core.config import settings
 from app.repositories.learning_path_repository import LearningPathRepository
 from app.repositories.profile_repository import ProfileRepository
 from app.repositories.resource_repository import ResourceRepository
 from app.schemas.common import AuditStatus
-from app.schemas.resource import ResourceGenerateRequest
+from app.schemas.resource import ResourceGenerateRequest, RetrievedDocument
 from app.schemas.video import AnimationScriptContent, VideoLessonOutput, VideoLessonScene
 from app.services.resource_service import ResourceService
 
@@ -157,6 +157,43 @@ def test_quality_audit_rejects_abstract_scene_without_domain_component():
 
     with pytest.raises(RuntimeError, match="data-structure visual component"):
         QualityAuditSkill().audit(lesson)
+
+
+def test_v2_visual_director_replaces_malformed_llm_visual_elements():
+    scene_types = ["hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"]
+    storyboard = {
+        "title": "数组科普",
+        "scenes": [
+            {
+                "sceneType": scene_type,
+                "title": f"场景 {index}",
+                "narration": "观察数组元素如何根据下标定位。",
+                "visualPlan": {"layout": "grid_focus", "elements": [{"type": "array_cells"}]},
+            }
+            for index, scene_type in enumerate(scene_types, start=1)
+        ],
+    }
+    lesson = AnimationSpecSkill().normalize(
+        None,
+        storyboard,
+        schema_version="2.0",
+        documents=[RetrievedDocument(id="doc_001", sourceId="source_001", title="数组", content="数组支持按下标访问。", score=1)],
+    )
+
+    assert lesson.schema_version == "2.0"
+    assert lesson.scenes[1].beats[0].source_ids == ["doc_001"]
+    assert lesson.scenes[1].beats[0].visual_plan.elements[0].type == "array_cells"
+    QualityAuditSkill().audit(lesson)
+
+    audio_urls = []
+    for scene in lesson.scenes:
+        for beat in scene.beats:
+            beat.audio_url = f"http://localhost:8000/storage/test/{beat.beat_id}.mp3"
+            audio_urls.append(beat.audio_url)
+    lesson.output.audio_urls = audio_urls
+    payload = VideoRenderSkill()._validate_lesson_for_render(lesson)
+    assert payload["theme"] == "warm_academic"
+    assert payload["output"]["audioUrls"] == audio_urls
 
 
 def test_video_request_saves_failed_resources_without_fake_file_url(monkeypatch: pytest.MonkeyPatch):

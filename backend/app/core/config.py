@@ -54,14 +54,18 @@ class Settings(BaseSettings):
     iflytek_api_key: str = ""
     iflytek_api_secret: str = ""
     iflytek_base_url: str = ""
-    iflytek_spark_model: str = ""
     iflytek_tts_voice: str = ""
-    iflytek_digital_human_base_url: str = ""
+    iflytek_digital_human_url: str = "wss://avatar.cn-huadong-1.xf-yun.com/v1/interact"
+    iflytek_digital_human_chat_url: str = "wss://apigateway.xfyousheng.com/nlp/v1/interact_nlp"
+    iflytek_digital_human_service_id: str = ""
     iflytek_digital_human_avatar_id: str = ""
     iflytek_digital_human_voice_id: str = ""
     iflytek_digital_human_callback_url: str = ""
     iflytek_callback_token: str = ""
     iflytek_request_timeout_seconds: int = 60
+    iflytek_digital_human_heartbeat_seconds: int = 5
+    iflytek_digital_human_idle_timeout_seconds: int = 300
+    iflytek_digital_human_stream_ready_timeout_seconds: int = 20
     iflytek_enable_mock: bool = False
 
     video_render_provider: str = "remotion"
@@ -87,7 +91,16 @@ class Settings(BaseSettings):
     enable_safety_audit: bool = True
     enable_stream_output: bool = True
     enable_mock: bool = True
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+        "http://localhost:5176",
+        "http://127.0.0.1:5176",
+    ]
 
     hello_algo_repo_url: str = "https://github.com/krahets/hello-algo.git"
     hello_algo_branch: str = "main"

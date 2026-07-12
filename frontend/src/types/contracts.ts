@@ -123,6 +123,7 @@ export type VideoGenerationStage =
   | "done"
   | "error";
 export type VideoMaterialSource = "none" | "local_assets" | "generated_motion_assets";
+export type VideoTheme = "warm_academic" | "chalk_classroom" | "technical_blueprint";
 
 export type BehaviorType =
   | "view_resource"
@@ -139,7 +140,7 @@ export interface HealthCheckResult {
   vectorStore?: "ok" | "error";
   graphDb?: "ok" | "error";
   llmService?: "ok" | "error";
-  iflytekSpark?: "mock" | "ok" | "error";
+  iflytekDigitalHumanChat?: "ok" | "error";
   iflytekTts?: "mock" | "ok" | "error";
   iflytekDigitalHuman?: "mock" | "ok" | "error";
 }

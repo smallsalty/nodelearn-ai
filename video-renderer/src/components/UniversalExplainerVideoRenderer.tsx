@@ -1,7 +1,8 @@
 import React from "react";
-import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
-import type { VideoLessonScene, VisualElement } from "../types";
-import { ArrowFlow, ComparisonPanel, ConceptCard, GridHighlight, IconBubble, ImageElement, MotionText, SummaryCards, TimelineSteps, palette } from "./MotionGraphicsComponents";
+import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import type { VideoLessonScene, VideoNarrationBeat, VideoTheme, VisualElement, VisualPlan } from "../types";
+import { VIDEO_THEMES, themeCssVariables } from "../themes";
+import { ArrowFlow, ComparisonPanel, ConceptCard, GridHighlight, IconBubble, ImageElement, MotionText, SummaryCards, TimelineSteps } from "./MotionGraphicsComponents";
 import {
   ArrayCells,
   CodeTracePanel,
@@ -18,9 +19,7 @@ import {
 } from "./data-structures/DataStructureComponents";
 
 const renderElement = (element: VisualElement, index: number) => {
-  if (element.type === "text" || element.type === "keyword") {
-    return <MotionText key={index} content={element.content} animation={element.animation} index={index} keyword={element.type === "keyword"} />;
-  }
+  if (element.type === "text" || element.type === "keyword") return <MotionText key={index} content={element.content} animation={element.animation} index={index} keyword={element.type === "keyword"} />;
   if (element.type === "card") return <ConceptCard key={index} content={element.content} animation={element.animation} index={index} />;
   if (element.type === "icon") return <IconBubble key={index} name={element.name} animation={element.animation} index={index} />;
   if (element.type === "arrow") return <ArrowFlow key={index} label={element.label} animation={element.animation} index={index} />;
@@ -45,93 +44,70 @@ const renderElement = (element: VisualElement, index: number) => {
   return null;
 };
 
-const dataStructureTypes = new Set<VisualElement["type"]>([
-  "hash_table_buckets",
-  "hash_function_panel",
-  "collision_chain",
-  "array_cells",
-  "linked_list_nodes",
-  "stack_blocks",
-  "queue_line",
-  "tree_node_graph",
-  "code_trace_panel",
-  "pointer_arrow",
-  "memory_box",
-  "complexity_chart",
-]);
+const domainTypes = new Set<VisualElement["type"]>(["hash_table_buckets", "hash_function_panel", "collision_chain", "array_cells", "linked_list_nodes", "stack_blocks", "queue_line", "tree_node_graph", "code_trace_panel", "pointer_arrow", "memory_box", "complexity_chart"]);
 
-const isDataStructureElement = (element: VisualElement) => dataStructureTypes.has(element.type);
-
-const SceneVisual: React.FC<{ scene: VideoLessonScene }> = ({ scene }) => {
-  const elements = scene.visualPlan.elements;
-  if (scene.visualPlan.layout === "comparison") {
+const SceneVisual: React.FC<{ visualPlan: VisualPlan }> = ({ visualPlan }) => {
+  const elements = visualPlan.elements;
+  if (visualPlan.layout === "comparison") {
     const splitAt = Math.ceil(elements.length / 2);
     return <ComparisonPanel left={elements.slice(0, splitAt).map(renderElement)} right={elements.slice(splitAt).map(renderElement)} />;
   }
-  if (scene.visualPlan.layout === "grid_focus") {
-    const gridElements = elements.filter((element) => element.type === "grid" || isDataStructureElement(element));
-    const supportElements = elements.filter((element) => element.type !== "grid" && !isDataStructureElement(element));
+  if (visualPlan.layout === "grid_focus") {
+    const anchors = elements.filter((element) => element.type === "grid" || domainTypes.has(element.type));
+    const supporting = elements.filter((element) => element.type !== "grid" && !domainTypes.has(element.type));
     return (
-      <div style={{ display: "grid", gridTemplateColumns: gridElements.length ? "minmax(460px, 1.2fr) minmax(320px, 0.8fr)" : "1fr", alignItems: "center", gap: 56, width: "100%" }}>
-        <div style={{ display: "grid", placeItems: "center", transform: "scale(1.18)" }}>
-          {(gridElements.length ? gridElements : elements).map(renderElement)}
-        </div>
-        {gridElements.length ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-            {supportElements.map(renderElement)}
-          </div>
-        ) : null}
+      <div style={{ display: "grid", gridTemplateColumns: anchors.length && supporting.length ? "minmax(640px,1.25fr) minmax(300px,.75fr)" : "1fr", alignItems: "center", gap: 64, width: "100%" }}>
+        <div style={{ display: "grid", placeItems: "center" }}>{(anchors.length ? anchors : elements).slice(0, 1).map(renderElement)}</div>
+        {supporting.length ? <div style={{ display: "grid", placeItems: "center" }}>{supporting.slice(0, 1).map(renderElement)}</div> : null}
       </div>
     );
   }
-  if (scene.visualPlan.layout === "summary_cards") {
-    return <SummaryCards elements={elements.filter((element): element is Extract<VisualElement, { type: "card" }> => element.type === "card")} />;
-  }
-  if (scene.visualPlan.layout === "timeline") {
-    return <>{elements.map(renderElement)}</>;
-  }
-  const direction = scene.visualPlan.layout === "pipeline" || scene.visualPlan.layout === "left_right" ? "row" : "column";
-  return <div style={{ display: "flex", flexDirection: direction, alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 28, width: "100%" }}>{elements.map(renderElement)}</div>;
+  if (visualPlan.layout === "summary_cards") return <SummaryCards elements={elements.filter((element): element is Extract<VisualElement, { type: "card" }> => element.type === "card")} />;
+  if (visualPlan.layout === "timeline") return <>{elements.slice(0, 2).map(renderElement)}</>;
+  const direction = visualPlan.layout === "pipeline" || visualPlan.layout === "left_right" ? "row" : "column";
+  return <div style={{ display: "flex", flexDirection: direction, alignItems: "center", justifyContent: "center", gap: 36, width: "100%" }}>{elements.slice(0, 2).map(renderElement)}</div>;
 };
 
 export const UniversalExplainerVideoRenderer: React.FC<{
-  lessonTitle: string;
   scene: VideoLessonScene;
-  sceneIndex: number;
-  sceneCount: number;
-  sceneDurationInFrames: number;
-}> = ({ lessonTitle, scene, sceneIndex, sceneCount, sceneDurationInFrames }) => {
+  beat: VideoNarrationBeat;
+  theme: VideoTheme;
+  subtitleEnabled: boolean;
+  beatDurationInFrames: number;
+}> = ({ scene, beat, theme, subtitleEnabled, beatDurationInFrames }) => {
   const frame = useCurrentFrame();
-  const cameraScale = interpolate(frame, [0, sceneDurationInFrames], [1, 1.035], { extrapolateRight: "clamp" });
-  const progress = Math.min(100, ((sceneIndex + frame / sceneDurationInFrames) / Math.max(1, sceneCount)) * 100);
+  const { fps } = useVideoConfig();
+  const tokens = VIDEO_THEMES[theme];
+  const reveal = spring({ frame, fps, config: { damping: 24, stiffness: 92, mass: 0.8 } });
+  const settle = interpolate(frame, [0, Math.min(24, beatDurationInFrames)], [18, 0], { extrapolateRight: "clamp" });
   return (
-    <AbsoluteFill style={{ overflow: "hidden", padding: "62px 78px 48px", boxSizing: "border-box", background: palette.background, color: palette.text, fontFamily: "Arial, 'Microsoft YaHei', sans-serif" }}>
-      <div style={{ position: "absolute", width: 660, height: 660, left: -160 + Math.sin(frame / 50) * 24, top: -220, borderRadius: "50%", background: "radial-gradient(circle, rgba(51,214,197,0.16), transparent 68%)" }} />
-      <div style={{ position: "absolute", width: 760, height: 760, right: -260 + Math.cos(frame / 60) * 20, bottom: -320, borderRadius: "50%", background: "radial-gradient(circle, rgba(94,161,255,0.18), transparent 70%)" }} />
-
-      <header style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <div style={{ color: palette.cyan, fontSize: 20, letterSpacing: 4 }}>NODELEARN AI / EXPLAINER</div>
-          <div style={{ marginTop: 12, color: palette.muted, fontSize: 24 }}>{lessonTitle}</div>
-        </div>
-        <div style={{ display: "flex", gap: 14, alignItems: "center", color: palette.muted, fontSize: 22 }}>
-          <span style={{ padding: "8px 16px", border: `1px solid ${palette.border}`, borderRadius: 999 }}>{scene.sceneType}</span>
-          <span>{sceneIndex + 1} / {sceneCount}</span>
-        </div>
-      </header>
-
-      <main style={{ position: "relative", zIndex: 2, display: "grid", gridTemplateRows: "auto 1fr", gap: 28, minHeight: 0, height: 820, transform: `scale(${cameraScale})`, transformOrigin: "center" }}>
-        <h1 style={{ margin: "30px 0 0", color: palette.amber, fontSize: 52, lineHeight: 1.2 }}>{scene.title}</h1>
-        <section style={{ display: "flex", minHeight: 0, width: "100%", alignItems: "center", justifyContent: "center" }}>
-          <SceneVisual scene={scene} />
+    <AbsoluteFill
+      style={{
+        ...themeCssVariables(theme),
+        boxSizing: "border-box",
+        overflow: "hidden",
+        padding: "78px 96px 86px",
+        backgroundColor: tokens.background,
+        backgroundImage: `linear-gradient(${tokens.grid} 1px, transparent 1px),linear-gradient(90deg,${tokens.grid} 1px,transparent 1px)`,
+        backgroundSize: theme === "warm_academic" ? "64px 64px" : "48px 48px",
+        color: tokens.text,
+        fontFamily: tokens.fontFamily,
+      }}
+    >
+      <main style={{ display: "grid", gridTemplateRows: "auto auto 1fr", gap: 22, height: subtitleEnabled ? 826 : 900, opacity: reveal, transform: `translateY(${settle}px)` }}>
+        <div style={{ color: tokens.muted, fontSize: 25, fontWeight: 700, letterSpacing: 3 }}>{scene.title}</div>
+        <h1 style={{ margin: 0, maxWidth: 1420, color: tokens.primary, fontSize: 70, lineHeight: 1.12, letterSpacing: -1.5 }}>{beat.screenText[0]}</h1>
+        <section style={{ display: "flex", minHeight: 0, alignItems: "center", justifyContent: "center" }}>
+          <SceneVisual visualPlan={beat.visualPlan} />
         </section>
       </main>
-
-      <footer style={{ position: "absolute", zIndex: 2, right: 78, bottom: 44, left: 78 }}>
-        <div style={{ height: 7, overflow: "hidden", borderRadius: 999, background: "rgba(94,161,255,0.2)" }}>
-          <div style={{ width: `${progress}%`, height: "100%", borderRadius: 999, background: `linear-gradient(90deg, ${palette.cyan}, ${palette.blue})` }} />
+      {subtitleEnabled ? (
+        <div style={{ position: "absolute", right: 180, bottom: 38, left: 180, display: "grid", placeItems: "center" }}>
+          <div style={{ maxWidth: 1420, padding: "14px 24px", background: tokens.surface, border: `1px solid ${tokens.border}`, color: tokens.text, fontSize: 31, lineHeight: 1.45, textAlign: "center", boxShadow: "0 12px 36px rgba(0,0,0,.12)" }}>
+            {beat.narration}
+          </div>
         </div>
-      </footer>
+      ) : null}
     </AbsoluteFill>
   );
 };

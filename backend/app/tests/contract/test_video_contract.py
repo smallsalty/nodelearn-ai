@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.resource import ResourceGenerateRequest, ResourceGenerateResult, ResourceStreamEvent, VideoGenerateOptions
+from app.schemas.multimodal import MultimodalVideoGenerateRequest
 from app.schemas.video import AnimationScriptContent, VideoLessonScene
 
 
@@ -159,9 +160,87 @@ def test_video_lesson_scene_uses_motion_graphics_contract_fields():
         "auditChecklist",
         "visualPlan",
         "audioUrl",
+        "beats",
     }
     assert scene["sceneType"] == "definition"
     assert scene["visualPlan"]["layout"] == "center_focus"
+
+
+def test_multimodal_video_theme_and_legacy_style_mapping():
+    request = MultimodalVideoGenerateRequest(
+        userId="user_001",
+        courseId="course_ds_001",
+        nodeId="node_stack_001",
+        style="classroom_board",
+        useRag=True,
+    )
+    assert request.theme == "chalk_classroom"
+
+    explicit_theme = MultimodalVideoGenerateRequest(
+        userId="user_001",
+        courseId="course_ds_001",
+        nodeId="node_stack_001",
+        theme="technical_blueprint",
+        style="unknown_style",
+        useRag=True,
+    )
+    assert explicit_theme.theme == "technical_blueprint"
+
+    with pytest.raises(ValidationError, match="unsupported legacy video style"):
+        MultimodalVideoGenerateRequest(
+            userId="user_001",
+            courseId="course_ds_001",
+            nodeId="node_stack_001",
+            style="unknown_style",
+            useRag=True,
+        )
+
+
+def test_v2_animation_script_uses_grounded_narration_beats():
+    scene_types = ["hook", "definition", "mechanism", "example", "summary"]
+    scenes = []
+    for index, scene_type in enumerate(scene_types, start=1):
+        scenes.append(
+            {
+                "sceneId": f"scene_{index:03d}",
+                "sceneType": scene_type,
+                "title": scene_type,
+                "teachingPurpose": "讲清对象、规则和状态变化",
+                "misconceptionFix": "不要只背结论",
+                "beats": [
+                    {
+                        "beatId": f"beat_{index:03d}",
+                        "narration": "观察结构如何变化。",
+                        "durationSeconds": 5,
+                        "screenText": ["观察状态"],
+                        "claims": ["结构会发生状态变化"],
+                        "sourceIds": ["doc_001"],
+                        "visualPlan": {
+                            "layout": "grid_focus",
+                            "elements": [
+                                {"type": "array_cells", "items": ["A", "B"], "activeIndices": [1], "animation": "highlight"}
+                            ],
+                        },
+                        "audioUrl": "",
+                    }
+                ],
+            }
+        )
+    lesson = AnimationScriptContent.model_validate(
+        {
+            "schemaVersion": "2.0",
+            "title": "栈",
+            "style": "clean_motion_graphics",
+            "theme": "warm_academic",
+            "durationSeconds": 25,
+            "sources": [{"id": "doc_001", "title": "课程材料"}],
+            "scenes": scenes,
+            "output": {"videoUrl": "", "audioUrls": []},
+        }
+    )
+    assert lesson.schema_version == "2.0"
+    assert lesson.theme == "warm_academic"
+    assert lesson.scenes[0].beats[0].source_ids == ["doc_001"]
 
 
 def test_animation_script_rejects_legacy_stack_animation_shape():
@@ -306,11 +385,19 @@ def test_video_environment_variables_are_registered_in_contract_and_example():
         "VIDEO_RENDER_TIMEOUT_SECONDS", "FFMPEG_BINARY", "FFPROBE_BINARY", "AUDIT_API_BASE_URL",
         "AUDIT_TIMEOUT_SECONDS", "RUN_REAL_VIDEO_TESTS",
         "IFLYTEK_APP_ID", "IFLYTEK_API_KEY", "IFLYTEK_API_SECRET", "IFLYTEK_BASE_URL",
-        "IFLYTEK_SPARK_MODEL", "IFLYTEK_TTS_VOICE", "IFLYTEK_DIGITAL_HUMAN_BASE_URL",
+        "IFLYTEK_TTS_VOICE", "IFLYTEK_DIGITAL_HUMAN_URL", "IFLYTEK_DIGITAL_HUMAN_CHAT_URL",
+        "IFLYTEK_DIGITAL_HUMAN_SERVICE_ID",
         "IFLYTEK_DIGITAL_HUMAN_AVATAR_ID", "IFLYTEK_DIGITAL_HUMAN_VOICE_ID",
         "IFLYTEK_DIGITAL_HUMAN_CALLBACK_URL", "IFLYTEK_CALLBACK_TOKEN",
-        "IFLYTEK_REQUEST_TIMEOUT_SECONDS", "IFLYTEK_ENABLE_MOCK",
+        "IFLYTEK_REQUEST_TIMEOUT_SECONDS", "IFLYTEK_DIGITAL_HUMAN_HEARTBEAT_SECONDS",
+        "IFLYTEK_DIGITAL_HUMAN_IDLE_TIMEOUT_SECONDS", "IFLYTEK_DIGITAL_HUMAN_STREAM_READY_TIMEOUT_SECONDS",
+        "IFLYTEK_ENABLE_MOCK",
     }
 
     assert all(f"{name}=" in contract for name in names)
     assert all(f"{name}=" in env_example for name in names)
+    assert "IFLYTEK_DIGITAL_HUMAN_AVATAR_ID=201165002" in env_example
+    assert "IFLYTEK_DIGITAL_HUMAN_VOICE_ID=x4_lingxiaoxuan_oral" in env_example
+    assert "IFLYTEK_DIGITAL_HUMAN_URL=wss://avatar.cn-huadong-1.xf-yun.com/v1/interact" in env_example
+    assert "IFLYTEK_DIGITAL_HUMAN_HEARTBEAT_SECONDS=5" in env_example
+    assert "IFLYTEK_DIGITAL_HUMAN_BASE_URL" not in env_example

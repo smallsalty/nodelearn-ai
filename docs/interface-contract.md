@@ -1272,6 +1272,7 @@ interface GeneratedResource {
 
 ```ts
 type VideoStyle = "clean_motion_graphics";
+type VideoTheme = "warm_academic" | "chalk_classroom" | "technical_blueprint";
 type VideoAspect = "16:9" | "9:16" | "1:1";
 type VideoQualityPreset = "standard" | "high" | "ultra";
 type VideoGenerationStage =
@@ -1507,6 +1508,23 @@ interface VisualPlan {
   elements: VisualElement[];
 }
 
+interface VideoSourceReference {
+  id: string;
+  title: string;
+  sourceId?: string;
+}
+
+interface VideoNarrationBeat {
+  beatId: string;
+  narration: string;
+  durationSeconds: number;
+  screenText: string[];
+  claims: string[];
+  sourceIds: string[];
+  visualPlan: VisualPlan;
+  audioUrl: string;
+}
+
 interface AnimationStep {
   startState: string;
   endState: string;
@@ -1519,18 +1537,12 @@ interface VideoLessonScene {
   sceneId: string;
   sceneType: SceneType;
   title: string;
-  narration: string;
   durationSeconds: number;
   teachingPurpose: string;
-  concreteObjects: string[];
-  animationSteps: AnimationStep[];
-  stateChanges: string[];
-  screenText: string[];
   misconceptionFix: string;
-  componentHints: string[];
-  auditChecklist: string[];
-  visualPlan: VisualPlan;
-  audioUrl: string;
+  componentHints?: string[];
+  auditChecklist?: string[];
+  beats: VideoNarrationBeat[];
 }
 
 interface VideoLessonOutput {
@@ -1539,14 +1551,19 @@ interface VideoLessonOutput {
 }
 
 interface AnimationScriptContent {
+  schemaVersion: "2.0";
   title: string;
   style: VideoStyle;
+  theme: VideoTheme;
   durationSeconds: number;
+  targetDurationSeconds?: number;
   aspectRatio: VideoAspect;
   courseId?: string;
   nodeId?: string;
   learnerProfileSummary?: string;
   qualityScore?: number;
+  subtitleEnabled: boolean;
+  sources: VideoSourceReference[];
   scenes: VideoLessonScene[];
   output: VideoLessonOutput;
 }
@@ -1555,16 +1572,16 @@ interface AnimationScriptContent {
 约束：
 
 ```text
-1. hook 场景时长不得超过 15 秒。
-2. definition 场景必须包含 1-3 个 keyword 元素。
-3. summary 场景必须包含 3 个 card 元素。
-4. 每个 scene.visualPlan.elements 必须非空，且每个元素必须指定 animation。
-5. 每屏可见文字总量不得超过 80 个中文字；不得将整段 narration 直接复制进画面元素。
-6. image.imageUrl 只允许使用 HTTPS URL。
-7. 每个 scene.audioUrl 必须指向真实 TTS 音频文件，不允许使用占位音频。
-8. output.videoUrl 必须指向真实 MP4 文件，不允许使用占位视频。
-9. 视频输出前必须调用 POST /api/v1/audit/check；只有 auditStatus=passed 时才能设置 status=success。
-10. 历史 stack_animation 和 text_slide JSON 不再兼容，旧资源需要重新生成。
+1. 新生成内容固定写入 schemaVersion="2.0"；前端仅为历史查看兼容 v1，渲染器的新任务只接受 v2。
+2. scene 必须按内容需要包含 hook、definition、mechanism、example、summary，且顺序固定；analogy、comparison、process 可选。
+3. hook 总时长不得超过 8 秒；每个 beat 为 3-10 秒且只承载一个口播观点。
+4. 每个事实 claims 必须引用 sources 中存在的 sourceIds；无来源事实不得进入 TTS 和渲染。
+5. 每个 beat.screenText 为 1-3 条短句，画面正文总量不得超过 40 个中文字；字幕不计入正文限制。
+6. 非 hook/summary beat 必须包含至少一个非文本教学演示元素；每个元素必须指定 animation。
+7. image.imageUrl 只允许使用 HTTPS URL；不得使用假数据、无关图片、emoji 或占位媒体伪装成功。
+8. 每个 beat.audioUrl 必须指向真实 TTS 音频；output.audioUrls 必须按 beat 顺序完全一致。
+9. output.videoUrl 必须指向经 ffprobe 验证同时包含音频流和视频流的真实 MP4。
+10. 脚本/分镜必须先通过质量与安全预审，最终资源再次通过 audit；只有 auditStatus=passed 时才能设置 status=success。
 ```
 
 数据库表：
@@ -1618,6 +1635,7 @@ interface VideoGenerateOptions {
   subtitleEnabled?: boolean;
   bgmEnabled?: boolean;
   bgmVolume?: number;
+  theme?: VideoTheme;
 }
 ```
 
@@ -1674,6 +1692,7 @@ interface MultimodalVideoGenerateRequest {
   learningGoal?: string;
   difficulty?: DifficultyLevel;
   durationSeconds?: number;
+  theme?: VideoTheme;
   style?: string;
   useDigitalHuman?: boolean;
   useRag: boolean;
@@ -1763,6 +1782,16 @@ interface DigitalHumanChatResult {
   providerTaskId?: string;
   usedDocuments?: RetrievedDocument[];
   status: TaskStatus;
+  liveSession?: DigitalHumanLiveSessionResult;
+}
+
+interface DigitalHumanLiveSessionResult {
+  sessionId: string;
+  status: TaskStatus;
+  videoUrl?: string;
+  errorMessage?: string;
+  startedAt: string;
+  updatedAt: string;
 }
 
 interface DigitalHumanCallbackRequest {
@@ -1826,6 +1855,8 @@ created_at
 | POST | `/api/v1/multimodal/digital-human/explain` | 生成数字人讲解 | `DigitalHumanExplainRequest` | `ApiResponse<DigitalHumanExplainResult>` |
 | POST | `/api/v1/multimodal/digital-human/chat` | 数字人对话 | `DigitalHumanChatRequest` | `ApiResponse<DigitalHumanChatResult>` |
 | GET | `/api/v1/multimodal/digital-human/sessions/{sessionId}/messages` | 获取数字人对话历史 | 无 | `ApiResponse<ChatMessage[]>` |
+| GET | `/api/v1/multimodal/digital-human/sessions/{sessionId}/live` | 获取数字人直播会话状态 | 无 | `ApiResponse<DigitalHumanLiveSessionResult>` |
+| POST | `/api/v1/multimodal/digital-human/sessions/{sessionId}/stop` | 停止数字人直播会话 | 无 | `ApiResponse<DigitalHumanLiveSessionResult>` |
 | POST | `/api/v1/multimodal/digital-human/callback` | 接收讯飞异步任务回调 | `DigitalHumanCallbackRequest` | `ApiResponse<MultimodalTaskResult>` |
 
 兼容规则：
@@ -1834,7 +1865,16 @@ created_at
 1. `POST /api/v1/resources/generate` 收到 `knowledge_video` 或 `digital_human_video` 时，内部转交多模态 workflow。
 2. 旧 `video_script` 和 `animation_script` 资源行为保持兼容。
 3. 生成内容必须经过 audit/safety；未通过时不得将 GeneratedResource.status 标记为 success。
-4. 真实讯飞字段只允许出现在 provider adapter 和 provider DTO 中，业务 service 使用统一结构。
+4. `DigitalHumanChatResult.status` 表示回答结果；`liveSession.status` 表示直播会话状态，顶层 `videoUrl` 为兼容字段。
+5. provider session、原始 RTMP 地址、完整讯飞 sid 和签名 URL 仅允许保留在后端，不得返回浏览器。
+6. 数字人对话固定先调用同一虚拟人接口服务授权的“大模型对话”能力，回答通过 audit/safety 后才允许启动或驱动在线虚拟人；模型失败或审核拒绝不得创建虚拟人会话。
+7. 大模型对话使用虚拟人接口服务的 `wss://apigateway.xfyousheng.com/nlp/v1/interact_nlp`（控制台专属地址可通过环境变量覆盖）；`header.scene_id` 必须取 `IFLYTEK_DIGITAL_HUMAN_SERVICE_ID`，`header.ctrl="text_interact"`，多轮对话复用服务端返回的 `header.session`。不得回退 Spark Lite、DeepSeek 或 mock。
+8. 在线虚拟人驱动使用 `IFLYTEK_DIGITAL_HUMAN_URL=wss://avatar.cn-huadong-1.xf-yun.com/v1/interact`，同一直播会话复用一条 WebSocket，并在该连接发送 `start / text_driver / ping / stop`；不得调用旧 `vms2d_*` REST 协议。
+9. 在线驱动 start 使用 `scene_id`、已授权 avatar/voice 和 RTMP；文本驱动发送审核后明文且不超过 2000 字符；应用层心跳默认 5 秒。
+10. 真实讯飞字段只允许出现在 provider adapter 和 provider DTO 中，业务 service 使用统一结构。
+11. `theme` 优先于旧 `style`；旧值映射为 `clean_motion_graphics -> warm_academic`、`classroom_board -> chalk_classroom`、`case_demo -> technical_blueprint`，其他旧值返回 422。
+12. `knowledge_video`、`video_script` 和 `animation_script` 复用同一真实 v2 生成核心；mock 模式不得发布固定视频 URL 或成功媒体状态。
+13. `digital_human_video` 复用 v2 教学规划、事实引用、口播和安全校验，再将审核后的 beat 口播合并后提交数字人 provider；实时数字人对话协议不变。
 ```
 
 # 12. 个性化资源推荐接口
@@ -2581,7 +2621,7 @@ interface HealthCheckResult {
   vectorStore?: "ok" | "error";
   graphDb?: "ok" | "error";
   llmService?: "ok" | "error";
-  iflytekSpark?: "mock" | "ok" | "error";
+  iflytekDigitalHumanChat?: "ok" | "error";
   iflytekTts?: "mock" | "ok" | "error";
   iflytekDigitalHuman?: "mock" | "ok" | "error";
 }
@@ -2849,14 +2889,18 @@ IFLYTEK_APP_ID=
 IFLYTEK_API_KEY=
 IFLYTEK_API_SECRET=
 IFLYTEK_BASE_URL=
-IFLYTEK_SPARK_MODEL=
 IFLYTEK_TTS_VOICE=
-IFLYTEK_DIGITAL_HUMAN_BASE_URL=
-IFLYTEK_DIGITAL_HUMAN_AVATAR_ID=
-IFLYTEK_DIGITAL_HUMAN_VOICE_ID=
+IFLYTEK_DIGITAL_HUMAN_URL=wss://avatar.cn-huadong-1.xf-yun.com/v1/interact
+IFLYTEK_DIGITAL_HUMAN_CHAT_URL=wss://apigateway.xfyousheng.com/nlp/v1/interact_nlp
+IFLYTEK_DIGITAL_HUMAN_SERVICE_ID=
+IFLYTEK_DIGITAL_HUMAN_AVATAR_ID=201165002
+IFLYTEK_DIGITAL_HUMAN_VOICE_ID=x4_lingxiaoxuan_oral
 IFLYTEK_DIGITAL_HUMAN_CALLBACK_URL=
 IFLYTEK_CALLBACK_TOKEN=
 IFLYTEK_REQUEST_TIMEOUT_SECONDS=60
+IFLYTEK_DIGITAL_HUMAN_HEARTBEAT_SECONDS=5
+IFLYTEK_DIGITAL_HUMAN_IDLE_TIMEOUT_SECONDS=300
+IFLYTEK_DIGITAL_HUMAN_STREAM_READY_TIMEOUT_SECONDS=20
 IFLYTEK_ENABLE_MOCK=false
 
 VIDEO_RENDER_PROVIDER=remotion

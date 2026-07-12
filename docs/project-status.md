@@ -1,5 +1,6 @@
 # NodeLearn AI 项目状态
 
+最后更新：2026-07-12
 最后更新：2026-07-11
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
@@ -30,6 +31,30 @@
 ## 当前进度
 
 ### 已完成
+
+- 2026-07-12 完成知识科普视频 v2 质量升级：新增 `VideoTheme` 三主题与 `schemaVersion="2.0"` beat 契约，口播、TTS、字幕和 Remotion Sequence 统一按 beat 驱动；新生成内容保留事实 claims、来源 sourceIds、短屏幕文本和确定性视觉计划。
+- 2026-07-12 将 `AnimationSpecSkill` 改为确定性 Visual Director：LLM 只负责教学事实、口播和高层视觉意图，Visual Director 为数组、哈希表、链表、栈、队列和树组件补齐严格字段，解除 DeepSeek storyboard 缺少 `items/inputKey/outputIndex/activeIndex` 导致的 schema 阻塞。
+- 2026-07-12 知识点视频新接口与旧 `video_script/animation_script` 统一复用真实 TTS、Remotion、媒体审计和安全审核链路；移除固定 `/mock/knowledge-video.mp4` 成功结果，mock 模式不再发布假媒体。数字人讲解复用 v2 教学规划、事实引用和口播审核，实时数字人对话协议未修改。
+- 2026-07-12 Remotion 导出升级为暖白学院、黑板讲解和技术蓝图三套 token 主题，移除常驻页眉、页脚、场景编号、进度条、蓝紫光晕和持续呼吸动画；前端资源页只保留正式知识点视频入口，并继续兼容查看历史 v1 视频资源。
+- 2026-07-12 科普视频升级回归结果：后端完整测试 `149 passed, 1 skipped`，Python `compileall`、前端生产构建和 `video-renderer` TypeScript 检查通过；页面/组件未发现直接 `fetch(` 或 `axios`，`git diff --check` 通过。付费真实 DeepSeek、豆包 TTS 与 Remotion 视频测试未自动执行，继续由 `RUN_REAL_VIDEO_TESTS=true` 显式开启。
+
+- 2026-07-12 将在线虚拟人授权音色切换为 `x4_lingxiaoxuan_oral`，本地配置、示例配置、接口契约和协议测试保持一致；start 与每次 `text_driver` 均使用该 voice，公共 chat/live/stop HTTP 契约与前端类型未改变。
+- 2026-07-12 独立新协议 start/stop smoke 真实成功：使用 avatar `201165002` 和 voice `x4_lingxiaoxuan_oral` 获得非空直播流后在 `finally` stop；该门禁没有调用模型、启动 FFmpeg 或发送 `text_driver`，旧 voice 的 `11200: vcn authentication failed` 阻塞已解除。
+- 2026-07-12 完成两轮真实数字人播放验收：隔离 PostgreSQL 5432、后端 8011、前端 5176 均以 mock=false 运行；两轮接口服务模型回答均带课程 RAG 引用，同一业务 session 只创建一次 WebSocket/HLS/FFmpeg 并执行两次 `text_driver`，5 秒心跳已推进 live `updatedAt`，HLS 持续产生分片，`ffprobe` 确认 H.264/AAC，浏览器无静音自动播放成功并保存截图。
+- 2026-07-12 主动结束会话后状态为 `cancelled`，重复 stop 保持幂等，WebSocket 与 FFmpeg 已释放；浏览器、8011、5176、PostgreSQL 隔离容器均已停止且无残留。最终验证为授权音色针对性测试 `37 passed`、完整后端测试 `146 passed, 1 skipped`、Python `compileall` 和前端生产构建通过，脱敏验收记录位于 `output/playwright/digital-human-live-verification-2026-07-11.md`。
+- 2026-07-12 完成在线虚拟人驱动新协议迁移：新增 `IFLYTEK_DIGITAL_HUMAN_URL=wss://avatar.cn-huadong-1.xf-yun.com/v1/interact`，移除实时聊天链路的旧 `vms2d_*` REST 调用；每个业务直播会话持有一条 WebSocket，并在同一连接执行 `start / text_driver / ping / stop`，文本使用明文、`interactive_mode=0`，RTMP/HLS 和公共 HTTP 契约保持不变。
+- 2026-07-12 完成新协议会话加固：应用层心跳调整为 5 秒，增加 WebSocket 异常退出主动失败、连续心跳失败、2000 字符口播前置校验、幂等 stop、应用 shutdown 和 FFmpeg/HLS 统一清理；数字人聊天运行时不再生成 mock provider session。
+- 2026-07-12 新协议验证结果：协议/直播/API 针对性测试 `41 passed`，后端完整测试 `146 passed, 1 skipped`，前端构建通过；独立接口服务大模型 smoke 真实成功。随后新协议 start 已通过 WebSocket/HMAC/avatar 校验，但返回 `11200: vcn authentication failed`，按门禁未启动 FFmpeg、未发送 text_driver、未运行完整两轮链路。
+- 2026-07-12 将本地与示例配置的数字人形象切换为接口服务已授权的 `201165002（昭昭-4.0）`，补充独立 start/stop smoke 和安全日志测试；smoke 明确不调用大模型、ctrl 或 ffmpeg，只有 start 返回 provider session 后才在 `finally` stop。
+- 2026-07-12 真实隔离 start smoke 仍返回 `HTTP 500: input avatarId is invalid`，因此按门禁未运行完整链路。控制台只读核对确认本地凭据 APPID 前缀、service ID、已发布接口服务和截图页面一致，`201165002` 确实已授权；根因定位为当前 provider 错用了旧 AI 虚拟人 REST `vms2d_start`，而该接口服务的在线驱动官方入口是 `wss://avatar.cn-huadong-1.xf-yun.com/v1/interact` WebSocket `ctrl=start` 协议。
+- 2026-07-12 回归验证：avatar/start/logging 针对性测试 `31 passed`；后端完整测试 `143 passed, 1 skipped`；前端 `npm run build` 通过；公共 HTTP API 与前端类型未因形象切换发生变化。
+- 2026-07-11 完成讯飞实时数字人对话链路实现与加固：虚拟人接口服务自带的大模型对话使用 WebSocket HMAC 签名并聚合流式响应，AI 虚拟人实现 `vms2d_start / vms2d_ctrl / vms2d_ping / vms2d_stop`，回答经现有 audit/safety 后才驱动；同一 `sessionId` 复用模型 `header.session` 与直播会话，心跳、空闲超时、主动停止和应用关闭均释放 provider 与 ffmpeg。
+- 2026-07-11 完成 RTMP 到低延迟 HLS 会话管理：1 秒分片、最近 5 分钟滚动窗口、停止后 10 分钟延迟清理、H.264 copy 优先与单次低延迟转码回退、20 秒就绪超时、ffmpeg 异常退出主动回收；原始 provider session、完整 sid 和 RTMP 地址不返回浏览器。
+- 2026-07-11 完成前端单一数字人直播舞台：`DigitalHumanChatResult.liveSession` 返回直播状态，`hls.js` 播放 HLS，展示带声音播放提示、连接/失败状态、引用材料和结束按钮；组件卸载、页面离开及 `pagehide` 经 API client keepalive 停止会话。
+- 2026-07-11 回归验证：后端完整测试 `142 passed, 1 skipped`；前端 `npm run build` 通过；页面和组件无直接 `fetch(` 或 `axios`；`git diff --check` 通过，仅有既有 Windows 行尾提示。
+- 2026-07-11 执行一次受控真实讯飞验收：隔离 PostgreSQL、8011 后端和 5176 前端均以 mock=false 运行，健康检查配置状态正常；第一条真实 Spark Lite 请求返回 `11200 AppIdNoAuthError`，按约定未重试、未回退其他模型，虚拟人 start 和 ffmpeg 尚未发生；Playwright 控制台错误为 0，脱敏报告和截图保存于 `output/playwright/`，隔离端口及进程已清理。
+- 2026-07-11 移除数字人链路的独立 Spark Lite provider，改为虚拟人平台接口服务大模型协议：`wss://apigateway.xfyousheng.com/nlp/v1/interact_nlp`、`header.ctrl=text_interact`、`header.scene_id=IFLYTEK_DIGITAL_HUMAN_SERVICE_ID`，同一业务会话复用返回的 `header.session`；缺配置、业务错误和空响应均直接失败，不回退 Spark Lite、DeepSeek 或 mock。
+- 2026-07-11 受控真实复验：独立接口服务大模型 smoke 已返回非空文本，证明同一 APPID/APIKey/APISecret 与接口服务 ID 的鉴权和对话能力有效；随后完整链路在 audit 通过后才调用 `vms2d_start`，讯飞返回 `input avatarId is invalid`，未启动 ffmpeg、未产生 HLS、未继续第二轮或心跳，8011 后端与残留进程已清理。
 
 - 仓库级规则已写入 `AGENTS.md`。
 - 上下文路由已写入 `docs/context-index.md`。
@@ -111,6 +136,24 @@
 - 2026-07-11 编程题判题改为 Docker Compose 自建 Judge0 CE，使用官方 server/worker 镜像及独立 PostgreSQL、Redis，不再依赖付费云端判题 API。
 - 2026-07-11 分离资源与题目边界：资源生成不再创建或返回 `practice_question` 资源，普通题目使用独立 `practice_question`、`practice_record`、`wrong_question_record` ORM 表模型。
 - 2026-06-24 真实视频生成链路本次未通过：`python -m app.smoke.real_agent_flow` 在完整 `resource_generate` 工作流的视频资源阶段失败；直接调用 `POST /api/v1/resources/generate` 生成 `video_script` 和 `animation_script` 时，任务 `resource_task_c0f904bbb57e` 在 `AnimationScriptContent` 结构校验阶段失败，缺少 `array_cells.items`、`hash_function_panel.inputKey/expression/outputIndex`、`hash_table_buckets.activeIndex` 等必填字段，未产出新的 MP4。
+- 2026-07-08 完成前端浅绿色学习平台 UI 重构：`frontend/src/styles/tokens.css` 统一改为浅绿、白色和浅灰绿主题；应用壳改为可折叠左侧项目栏、顶部轻量状态栏、宽主内容区和按需 `DetailDrawer`，固定右侧栏已删除。
+- 2026-07-08 重排首页、对话、画像、学习路径、资源生成、知识图谱、练习、报告和知识库管理页面；原右侧栏承载的课程/节点上下文、画像摘要、薄弱节点、快捷入口、推荐资源和学习进度入口迁移到顶部摘要卡、页面卡片、Tabs 或详情抽屉，未新增接口、字段或数据结构。
+- 2026-07-08 前端验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `rg "fetch\\(|axios" frontend/src/pages frontend/src/components` 无匹配；检查固定右侧栏和旧三栏样式引用无残留；Browser 插件不可用，使用 Playwright CLI 回退验证 `/home`、`/chat`、`/profile`、`/learning-path`、`/resources`、`/knowledge-graph`、`/practice`、`/reports`、`/admin/knowledge-base`，375px 与桌面视口无横向溢出，右侧固定栏数量为 0，控制台无新增错误。
+- 2026-07-08 完成黄白学院风工作台优化：主题升级为白色应用壳、浅灰工作区、黄色主交互、浅绿状态色和深墨重点卡片；左侧学习工作台取消桌面 hover 自动展开，改为点击式真实收缩，收起时主内容区从 `1082px` 拉伸到 `1294px`，展开后恢复。
+- 2026-07-08 黄白学院风验证结果：运行 `cd frontend && npm run build` 通过；静态检查页面/组件无直接 `fetch(` 或 `axios`；旧右栏、旧三栏和 `is-peeking` 残留检查无匹配；Browser 插件不可用，使用 Playwright CLI 验证 `/home`、`/resources`、`/knowledge-graph`、`/practice`、`/reports`，1440px、1024px、768px、375px 无横向溢出，右侧固定栏数量为 0，控制台无新增错误。
+- 2026-07-08 完成工作台层级与满屏布局优化：应用壳外层留白收紧到小边距，`.app-layout` 接近满屏铺开，顶部栏、内容区和卡片间距同步收紧；左侧工作台展开态区分一级入口与二级目录，二级目录增加缩进并使用黄色强选中，所属一级只保留浅黄弱提示。
+- 2026-07-08 收起态侧栏优化为只显示一级入口图标，当前二级所属一级通过小点/短线保留状态；hover、focus 或点击一级入口会通过 Element Plus Popover 弹出二级目录，知识节点入口在有节点数据时按大节点/子节点逐级展开，当前后端返回空节点时显示空状态。
+- 2026-07-08 工作台层级验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `rg "fetch\\(|axios" frontend/src/pages frontend/src/components` 无匹配；旧结构残留检查 `rg "is-peeking|ContextPanel|AcademicSidebar|side-stack|two-column-page|chat-workspace" frontend/src` 无匹配；Browser 插件不可用，使用 Playwright CLI 回退验证 `/home`、`/chat`、`/knowledge-graph` 以及 1440px、1024px、768px、375px 视口，展开态二级缩进约 `18px`、父级弱选中与二级强选中同时成立，收起态仅显示一级入口并可弹出二级目录，无横向溢出，右侧固定栏数量为 0，控制台无新增错误。
+- 2026-07-08 完成 Knowledge MindMap JSON 重构：继续复用 `POST /api/v1/resources/generate`、`ResourceType="mind_map"` 和 `GeneratedResource.content` 字符串字段，后端为 `mind_map` 拆出 DeepSeek JSON 模式生成分支，新增 `MindMapValidator`、章节/节点范围上下文组装和一次校验错误重试；重试仍失败时保存失败资源并保留错误与原始输出，仍经过 audit 边界；前端新增 `MindMapViewer` 和内部 `KnowledgeMindMap` 类型，资源页与 `/dev/agent-flow-test` 改为 JSON 导图渲染，旧 Mermaid 内容显示“思维导图数据异常”并保留原始内容入口；本次未新增接口路径、公开枚举、数据库字段或公开响应字段。
+- 2026-07-08 Knowledge MindMap JSON 验证结果：运行 `python -m pytest backend/app/tests/contract -q` 通过，结果为 `23 passed`；运行 `python -m pytest backend/app/tests -q` 通过，结果为 `119 passed, 1 skipped`；运行 `cd frontend && npm run build` 通过；静态检查 `rg "fetch\\(|axios" frontend/src/pages frontend/src/components` 无匹配；使用 Playwright + 系统 Chrome 验证 `/resources` 新生成 JSON 导图的展开、收起、重置、搜索、聚焦当前节点和旧 Mermaid 异常原始内容入口，并验证 375px、768px、1024px、1440px 视口 `scrollWidth` 与 `clientWidth` 一致、无横向溢出、控制台无新增错误。
+- 2026-07-08 完成实联数据库 MindMap 生成与截图验证：启动 Docker PostgreSQL 并确认真实 Hello Algo 数据已存在，数据量为 1 门课程、105 个知识节点、85 条知识关系；使用隔离后端 `8011` 和隔离前端 `5176`，后端 `ENABLE_MOCK=false` 且 `/api/v1/system/config` 返回 `enableMock=false`，课程、节点和资源生成均走真实 PostgreSQL 链路。
+- 2026-07-08 真实 DeepSeek 生成验证结果：选择数据结构课程节点 `node_docs_chapter_array_and_linkedlist_array_md_ddee4c9f1f0c`（数组）调用 `POST /api/v1/resources/generate` 生成 `mind_map`；第一次真实输出暴露 `importance` 数字字符串和宽泛“其他”标题校验问题，已将内部 `MindMapValidator` 收敛为数字字符串归一化和禁用标题精确匹配；第二次生成任务 `resource_task_77142f29324b` 成功，资源 `resource_mind_map_8db3b22ab054` 持久化为 `status=success`、`auditStatus=passed`、`scope=chapter`，包含 7 个一级分支、38 个节点和 6 条关系，`content` 可解析为 `KnowledgeMindMap` JSON。
+- 2026-07-08 实联截图与回归验证结果：Playwright 打开 `/resources` 登录 demo 账号、选中新生成的“数组思维导图”、执行“全部展开”后截图保存为 `artifacts/mind-map-real-db-2026-07-08.png`；桌面视口 `1440x1000` 下无横向溢出、控制台无新增错误；隔离后端和前端进程已停止，`8011/5176` 无监听残留；运行 `python -m pytest backend/app/tests/contract -q` 通过，结果为 `23 passed`；运行 `python -m pytest backend/app/tests -q` 通过，结果为 `121 passed, 1 skipped`；运行 `cd frontend && npm run build` 通过；静态检查 `rg "fetch\\(|axios" frontend/src/pages frontend/src/components` 无匹配。
+- 2026-07-09 完成 MindMapViewer 中心辐射式 XMind 布局调整：仅修改前端导图展示形态，未修改后端接口、`ResourceType`、`AgentType`、`GeneratedResource` 字段或 `KnowledgeMindMap` JSON 结构；桌面端改为组件内部坐标布局、SVG 曲线连线和绝对定位节点，中心主题固定在画布视觉中心，一级分支左右均衡分布，默认只展示中心主题与一级分支；点击分支逐级展开子节点，点击节点显示旁侧 description 浮层，聚焦模式只保留父级路径、当前节点和直接子节点；375px 移动端退化为纵向树。
+- 2026-07-09 MindMapViewer 布局验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `rg "fetch\\(|axios" frontend/src/pages frontend/src/components` 无匹配；`git diff --check` 仅输出既有 Windows 行尾提示；使用 Playwright MCP 在 `/resources` 验证默认折叠、中心主题居中、一级分支左右分布、单分支展开、节点说明浮层、聚焦当前节点，以及 1440px、1024px、768px、375px 视口无横向溢出；当前 MCP 工具未提供文本输入能力，搜索交互通过保留原有 `searchKeyword -> revealNode -> selectFirstMatch` 代码路径和构建检查覆盖。
+- 2026-07-10 完成实联数据库 MindMap 生成与截图验证：启动 Docker PostgreSQL 并确认真实 Hello Algo 数据已存在，数据量为 1 门课程、20 个章节、105 个知识节点、85 条知识关系和 532 条既有生成资源；使用隔离后端 `8011` 和隔离前端 `5176`，后端 `ENABLE_MOCK=false` 且 `/api/v1/system/config` 返回 `enableMock=false`，不影响既有 `8000/5173`。
+- 2026-07-10 真实 DeepSeek 生成验证结果：选择真实节点 `node_docs_chapter_array_and_linkedlist_array_md_ddee4c9f1f0c`（数组）调用既有 `POST /api/v1/resources/generate` 生成 `mind_map`，任务 `resource_task_1cb5784dfa09` 成功，资源 `resource_mind_map_691f38e554ae` 持久化为 `status=success`、`auditStatus=passed`、`modelName=deepseek-v4-pro`、`scope=chapter`，包含 8 个一级分支、45 个树节点和 7 条关系，`content` 可解析为 `KnowledgeMindMap` JSON。
+- 2026-07-10 实联截图与前端验证结果：运行 `cd frontend && npm run build` 通过；静态检查 `rg "fetch\\(|axios" frontend/src/pages frontend/src/components` 无匹配；Playwright MCP 登录 demo 账号并打开 `/resources`，选中新生成的“数组思维导图”，验证默认折叠态仅显示 8 个一级分支且二级/三级节点为 0，展开“数组定义”后显示 4 个二级节点，中心主题“数组”位于画布中心，一级分支左右 4/4 分布；1440px、1024px、768px、375px 视口无横向溢出，控制台错误为 0，截图保存为 `artifacts/mind-map-real-db-2026-07-10.png`；隔离后端和前端进程已停止，`8011/5176` 无监听残留。
 
 ### 进行中
 
@@ -135,7 +178,7 @@
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
 - 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
-- 当前真实视频生成存在 schema 对齐阻塞：DeepSeek 生成的 storyboard 可能不满足 `AnimationScriptContent` / `VisualElement` 严格字段要求，导致链路在 TTS 与 Remotion 之前失败。后续需要约束 `StoryboardSkill` 输出或在 `AnimationSpecSkill` 中补齐视觉元素必填字段后再回归真实视频任务。
+- 真实视频的 storyboard schema 对齐阻塞已由 v2 Visual Director 解除；仍需在真实 DeepSeek、豆包 TTS 与 Remotion 环境显式运行付费视频回归，确认实际口播时长和三主题画面质量。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 - 本机 Docker Desktop 已在 2026-06-04 手动启动并验证 PostgreSQL、Hello Algo 导入、`ENABLE_MOCK=false` 后端健康检查和真实视频生成链路；若后续桌面重启或 Docker 停止，需要重新启动 `docker compose -f docker/docker-compose.yml up -d postgres`。
 

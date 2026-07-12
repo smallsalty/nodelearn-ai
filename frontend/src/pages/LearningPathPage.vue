@@ -85,7 +85,7 @@ async function updateTask(task: LearningTask, status: TaskStatus) {
 </script>
 
 <template>
-  <section class="learning-path-page two-column-page">
+  <section class="learning-path-page">
     <section class="panel-card">
       <header class="panel-header">
         <div>
@@ -123,7 +123,7 @@ async function updateTask(task: LearningTask, status: TaskStatus) {
       </StateBlock>
     </section>
 
-    <aside class="panel-card">
+    <section class="panel-card">
       <header class="panel-header">
         <div>
           <h2>路径任务</h2>
@@ -146,6 +146,6 @@ async function updateTask(task: LearningTask, status: TaskStatus) {
           </article>
         </el-timeline-item>
       </el-timeline>
-    </aside>
+    </section>
   </section>
 </template>

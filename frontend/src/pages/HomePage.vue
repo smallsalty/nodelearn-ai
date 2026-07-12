@@ -150,7 +150,10 @@ function clearErrors() {
           当前课程：{{ currentCourse?.name ?? "数据结构" }}。工作台结合画像、知识图谱、课程材料和练习结果给出下一步建议。
         </p>
       </div>
-      <el-button type="primary" :loading="loading" @click="loadDashboard">刷新总览</el-button>
+      <div class="button-row">
+        <RouterLink class="primary-link-button" to="/learning-path">继续学习</RouterLink>
+        <el-button :loading="loading" @click="loadDashboard">刷新总览</el-button>
+      </div>
     </header>
 
     <section class="metric-grid">

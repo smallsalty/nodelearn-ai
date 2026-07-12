@@ -1,0 +1,5 @@
+INFO:     Started server process [3328]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+iflytek_provider_call provider=iflytek model=iflytek-virtual-human-start success=False latencyMs=3900 error=Iflytek request failed with HTTP 500: input avatarId is invalid.

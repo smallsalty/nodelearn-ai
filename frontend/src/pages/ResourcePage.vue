@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import DigitalHumanChatPanel from "@/components/DigitalHumanChatPanel.vue";
 import MarkdownContent from "@/components/MarkdownContent.vue";
+import MindMapViewer from "@/components/mind-map/MindMapViewer.vue";
 import MultimodalTaskProgress from "@/components/MultimodalTaskProgress.vue";
 import ResourceTypeCard from "@/components/resource/ResourceTypeCard.vue";
 import StateBlock from "@/components/StateBlock.vue";
@@ -14,7 +15,7 @@ import { recommendationsApi } from "@/api/modules/recommendations";
 import { getErrorMessage } from "@/api/client";
 import { appState } from "@/stores";
 import type { KnowledgeNode } from "@/types/course";
-import type { ResourceType } from "@/types/contracts";
+import type { ResourceType, VideoTheme } from "@/types/contracts";
 import type { MultimodalTaskResult } from "@/types/multimodal";
 import type { AnimationScriptContent, GeneratedResource, ResourceGenerateResult, ResourceRecommendation } from "@/types/resource";
 import {
@@ -36,13 +37,13 @@ const recommendations = ref<ResourceRecommendation[]>([]);
 const selectedNodeId = ref("node_stack_001");
 const selectedResourceId = ref<string | null>(null);
 const selectedResource = ref<GeneratedResource | null>(null);
+const activeResourceTab = ref("detail");
 const resourceTypes = ref<ResourceType[]>(["lecture_doc", "mind_map"]);
 const generatorMode = ref<"standard" | "knowledge_video" | "digital_human_video" | "digital_human_chat">("standard");
 const learningGoal = ref("通过讲解、导图和练习掌握当前知识点");
 const customRequirement = ref("");
 const durationSeconds = ref(120);
-const videoStyle = ref("clean_motion_graphics");
-const useDigitalHuman = ref(false);
+const videoTheme = ref<VideoTheme>("warm_academic");
 const generationResult = ref<ResourceGenerateResult | null>(null);
 const multimodalTask = ref<MultimodalTaskResult | null>(null);
 const loading = ref(false);
@@ -58,10 +59,11 @@ const generatorModes = [
 
 const resourceTypeOptions: Array<{ value: ResourceType; title: string; description: string }> = [
   { value: "lecture_doc", title: "讲解文档", description: "结构化概念说明" },
+  { value: "mind_map", title: "思维导图", description: "结构化知识导图" },
+  { value: "practice_question", title: "练习题", description: "选择、简答和代码题" },
+  { value: "reading_material", title: "拓展阅读", description: "补充材料和延伸理解" },
   { value: "mind_map", title: "思维导图", description: "Mermaid 知识结构" },
   { value: "code_case", title: "代码案例", description: "数据结构实现片段" },
-  { value: "video_script", title: "视频脚本", description: "旧链路旁白脚本" },
-  { value: "animation_script", title: "动画脚本", description: "旧链路分镜 JSON" },
   { value: "summary_note", title: "总结笔记", description: "可复习的要点记录" }
 ];
 
@@ -178,8 +180,7 @@ async function generateKnowledgeVideo() {
       learningGoal: learningGoal.value,
       difficulty: "medium",
       durationSeconds: durationSeconds.value,
-      style: videoStyle.value,
-      useDigitalHuman: useDigitalHuman.value,
+      theme: videoTheme.value,
       useRag: true,
       customRequirement: customRequirement.value || undefined
     });
@@ -223,14 +224,9 @@ async function generateDigitalHumanExplain() {
   }
 }
 
-async function generateVideoLesson() {
-  resourceTypes.value = ["video_script", "animation_script"];
-  learningGoal.value = "通过动态讲解掌握当前知识点";
-  await generateResources();
-}
-
 async function openResource(resourceId: string) {
   selectedResourceId.value = resourceId;
+  activeResourceTab.value = "detail";
   appState.selectedResourceId = resourceId;
   errorMessage.value = "";
   try {
@@ -274,7 +270,11 @@ function sleep(duration: number) {
 }
 
 function isMarkdownResource(resource: GeneratedResource) {
-  return resource.resourceType === "lecture_doc" || resource.resourceType === "summary_note" || resource.resourceType === "mind_map";
+  return (
+    resource.resourceType === "lecture_doc" ||
+    resource.resourceType === "summary_note" ||
+    resource.resourceType === "reading_material"
+  );
 }
 
 function toggleResourceType(resourceType: ResourceType) {
@@ -287,7 +287,7 @@ function toggleResourceType(resourceType: ResourceType) {
 </script>
 
 <template>
-  <section class="resource-page two-column-page wide-left">
+  <section class="resource-page">
     <section class="panel-card">
       <header class="panel-header">
         <div>
@@ -345,19 +345,16 @@ function toggleResourceType(resourceType: ResourceType) {
             <el-form-item label="补充要求">
               <el-input v-model="customRequirement" type="textarea" :rows="2" placeholder="可填写讲解风格、薄弱点、例子要求" />
             </el-form-item>
-            <div class="option-grid">
+            <div v-if="generatorMode === 'knowledge_video'" class="option-grid">
               <el-form-item label="时长">
                 <el-input-number v-model="durationSeconds" :min="30" :max="1200" :step="30" />
               </el-form-item>
-              <el-form-item label="讲解风格">
-                <el-select v-model="videoStyle">
-                  <el-option label="清爽动态图解" value="clean_motion_graphics" />
-                  <el-option label="课堂板书" value="classroom_board" />
-                  <el-option label="案例演示" value="case_demo" />
+              <el-form-item label="科普主题">
+                <el-select v-model="videoTheme">
+                  <el-option label="暖白学院" value="warm_academic" />
+                  <el-option label="黑板讲解" value="chalk_classroom" />
+                  <el-option label="技术蓝图" value="technical_blueprint" />
                 </el-select>
-              </el-form-item>
-              <el-form-item label="使用数字人">
-                <el-switch v-model="useDigitalHuman" />
               </el-form-item>
             </div>
           </template>
@@ -371,7 +368,6 @@ function toggleResourceType(resourceType: ResourceType) {
             >
               生成资源
             </el-button>
-            <el-button :loading="generating" @click="generateVideoLesson">旧链路动态讲解视频</el-button>
           </div>
         </el-form>
         <section v-if="generationResult" class="generation-progress">
@@ -421,9 +417,8 @@ function toggleResourceType(resourceType: ResourceType) {
       </StateBlock>
     </section>
 
-    <aside class="side-stack">
-      <el-card shadow="never">
-        <template #header>资源详情</template>
+    <el-tabs v-model="activeResourceTab" class="page-tabs">
+      <el-tab-pane label="资源详情" name="detail">
         <el-empty v-if="!selectedResource" description="选择一个资源查看详情" />
         <article v-else class="resource-detail">
           <header class="detail-title">
@@ -453,21 +448,23 @@ function toggleResourceType(resourceType: ResourceType) {
             />
             <el-alert v-else title="视频资源 JSON 无法解析或尚未生成媒体文件" type="warning" show-icon :closable="false" />
           </template>
+          <MindMapViewer v-else-if="selectedResource.resourceType === 'mind_map'" :content="selectedResource.content" />
           <MarkdownContent v-else-if="isMarkdownResource(selectedResource)" :content="selectedResource.content" />
           <pre v-else class="resource-content">{{ selectedResource.content }}</pre>
         </article>
-      </el-card>
+      </el-tab-pane>
 
-      <el-card shadow="never">
-        <template #header>推荐资源</template>
+      <el-tab-pane label="推荐资源" name="recommendations">
         <el-empty v-if="!recommendations.length" description="暂无推荐" />
-        <article v-for="item in recommendations" :key="item.id" class="mini-list-item">
-          <strong>{{ item.title }}</strong>
-          <span>{{ resourceTypeLabel(item.resourceType) }} · {{ Math.round(item.score * 100) }}%</span>
-          <p>{{ item.reason }}</p>
-        </article>
-      </el-card>
-    </aside>
+        <section v-else class="soft-card-grid">
+          <article v-for="item in recommendations" :key="item.id" class="mini-list-item">
+            <strong>{{ item.title }}</strong>
+            <span>{{ resourceTypeLabel(item.resourceType) }} · {{ Math.round(item.score * 100) }}%</span>
+            <p>{{ item.reason }}</p>
+          </article>
+        </section>
+      </el-tab-pane>
+    </el-tabs>
   </section>
 </template>
 

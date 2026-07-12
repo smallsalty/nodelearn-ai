@@ -135,7 +135,7 @@ async function createNode() {
 </script>
 
 <template>
-  <section class="admin-page two-column-page">
+  <section class="admin-page">
     <section class="panel-card">
       <header class="panel-header">
         <div>
@@ -189,25 +189,25 @@ async function createNode() {
       </el-card>
     </section>
 
-    <aside class="side-stack">
-      <el-card shadow="never">
-        <template #header>知识节点</template>
+    <el-tabs class="page-tabs">
+      <el-tab-pane label="知识节点" name="nodes">
         <el-empty v-if="!nodes.length" description="暂无节点" />
-        <button
-          v-for="node in nodes.slice(0, 30)"
-          :key="node.id"
-          type="button"
-          class="list-button"
-          @click="appState.selectedNodeId = node.id"
-        >
-          <strong>{{ node.name }}</strong>
-          <span>{{ node.nodeType }} · {{ difficultyLabel(node.difficulty) }}</span>
-        </button>
-      </el-card>
+        <section v-else class="soft-card-grid">
+          <button
+            v-for="node in nodes.slice(0, 30)"
+            :key="node.id"
+            type="button"
+            class="list-button"
+            @click="appState.selectedNodeId = node.id"
+          >
+            <strong>{{ node.name }}</strong>
+            <span>{{ node.nodeType }} · {{ difficultyLabel(node.difficulty) }}</span>
+          </button>
+        </section>
+      </el-tab-pane>
 
-      <el-card shadow="never">
-        <template #header>新增节点占位</template>
-        <el-form label-position="top">
+      <el-tab-pane label="新增节点占位" name="create">
+        <el-form label-position="top" class="compact-form">
           <el-form-item label="名称">
             <el-input v-model="nodeForm.name" />
           </el-form-item>
@@ -219,7 +219,7 @@ async function createNode() {
           </el-form-item>
           <el-button type="primary" plain @click="createNode">创建节点</el-button>
         </el-form>
-      </el-card>
-    </aside>
+      </el-tab-pane>
+    </el-tabs>
   </section>
 </template>

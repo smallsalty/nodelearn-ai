@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import type { AnimationScriptContent, VideoLessonScene, VisualElement } from "@/types/resource";
+import type { AnimationScriptContent, VideoLessonScene, VideoNarrationBeat, VisualElement, VisualPlan } from "@/types/resource";
 
 const props = defineProps<{ content: string }>();
 const currentSceneIndex = ref(0);
@@ -18,9 +18,30 @@ const lesson = computed<AnimationScriptContent | null>(() => {
   }
 });
 
-const currentScene = computed<VideoLessonScene | null>(() => lesson.value?.scenes[currentSceneIndex.value] ?? null);
+interface PlayerStep { scene: VideoLessonScene; beat: VideoNarrationBeat }
+const steps = computed<PlayerStep[]>(() => (lesson.value?.scenes ?? []).flatMap((scene) => {
+  if (scene.beats?.length) return scene.beats.map((beat) => ({ scene, beat }));
+  if (!scene.visualPlan) return [];
+  return [{
+    scene,
+    beat: {
+      beatId: `${scene.sceneId}_legacy`,
+      narration: scene.narration ?? "",
+      durationSeconds: scene.durationSeconds,
+      screenText: scene.screenText?.length ? scene.screenText : [scene.title],
+      claims: [],
+      sourceIds: [],
+      visualPlan: scene.visualPlan,
+      audioUrl: scene.audioUrl ?? ""
+    }
+  }];
+}));
+const currentStep = computed<PlayerStep | null>(() => steps.value[currentSceneIndex.value] ?? null);
+const currentScene = computed<VideoLessonScene | null>(() => currentStep.value?.scene ?? null);
+const currentBeat = computed<VideoNarrationBeat | null>(() => currentStep.value?.beat ?? null);
+const currentVisualPlan = computed<VisualPlan | null>(() => currentBeat.value?.visualPlan ?? null);
 const totalProgress = computed(() => {
-  const sceneCount = lesson.value?.scenes.length ?? 0;
+  const sceneCount = steps.value.length;
   return sceneCount ? ((currentSceneIndex.value + sceneProgress.value / 100) / sceneCount) * 100 : 0;
 });
 
@@ -41,7 +62,7 @@ function previousScene() {
 }
 
 function nextScene() {
-  const scenes = lesson.value?.scenes ?? [];
+  const scenes = steps.value;
   if (currentSceneIndex.value < scenes.length - 1) {
     currentSceneIndex.value += 1;
     void restartAudio();
@@ -80,20 +101,20 @@ async function restartAudio() {
 </script>
 
 <template>
-  <section v-if="lesson && currentScene" class="video-lesson-player">
+  <section v-if="lesson && currentScene && currentBeat && currentVisualPlan" class="video-lesson-player">
     <div class="lesson-stage">
       <header class="stage-header">
         <div>
           <p>课程讲解</p>
           <h2>{{ lesson.title }}</h2>
         </div>
-        <div class="scene-meta"><span>{{ currentScene.sceneType }}</span>{{ currentSceneIndex + 1 }} / {{ lesson.scenes.length }}</div>
+        <div class="scene-meta"><span>{{ currentScene.sceneType }}</span>{{ currentSceneIndex + 1 }} / {{ steps.length }}</div>
       </header>
 
       <main class="motion-stage">
-        <h3>{{ currentScene.title }}</h3>
-        <section class="visual-plan" :class="`layout-${currentScene.visualPlan.layout}`">
-          <template v-for="(element, index) in currentScene.visualPlan.elements" :key="`${element.type}-${index}`">
+        <h3>{{ currentBeat.screenText[0] }}</h3>
+        <section class="visual-plan" :class="`layout-${currentVisualPlan.layout}`">
+          <template v-for="(element, index) in currentVisualPlan.elements" :key="`${element.type}-${index}`">
             <div v-if="element.type === 'text' || element.type === 'keyword'" class="motion-text" :class="[animationClass(element), { keyword: element.type === 'keyword' }]" :style="animationDelay(index)">
               {{ element.content }}
             </div>
@@ -153,7 +174,7 @@ async function restartAudio() {
       <div class="stage-progress"><span :style="{ width: `${totalProgress}%` }"></span></div>
     </div>
 
-    <section class="subtitle"><strong>旁白字幕</strong><p>{{ currentScene.narration }}</p></section>
+    <section class="subtitle"><strong>旁白字幕</strong><p>{{ currentBeat.narration }}</p></section>
     <section class="scene-audit">
       <div v-if="currentScene.teachingPurpose"><strong>Purpose</strong><span>{{ currentScene.teachingPurpose }}</span></div>
       <div v-if="currentScene.concreteObjects?.length"><strong>Objects</strong><span>{{ currentScene.concreteObjects.join(" / ") }}</span></div>
@@ -165,11 +186,11 @@ async function restartAudio() {
         </li>
       </ol>
     </section>
-    <audio ref="audioElement" :src="currentScene.audioUrl" @timeupdate="updateProgress" @ended="handleEnded" @play="playing = true" @pause="playing = false" />
+    <audio ref="audioElement" :src="currentBeat.audioUrl" @timeupdate="updateProgress" @ended="handleEnded" @play="playing = true" @pause="playing = false" />
     <footer class="player-controls">
       <el-button :disabled="currentSceneIndex === 0" @click="previousScene">上一步</el-button>
       <el-button type="primary" @click="togglePlay">{{ playing ? "暂停" : "播放旁白" }}</el-button>
-      <el-button :disabled="currentSceneIndex === lesson.scenes.length - 1" @click="nextScene">下一步</el-button>
+      <el-button :disabled="currentSceneIndex === steps.length - 1" @click="nextScene">下一步</el-button>
       <el-checkbox v-model="autoPlay">自动播放</el-checkbox>
     </footer>
   </section>
@@ -230,4 +251,5 @@ async function restartAudio() {
 @keyframes enter-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
 @keyframes draw { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
 @media (max-width: 760px) { .lesson-stage { aspect-ratio: auto; min-height: 420px; }.layout-summary_cards { grid-template-columns: 1fr; }.timeline-steps { flex-wrap: wrap; } }
+@media (prefers-reduced-motion: reduce) { .visual-plan * { animation-duration: 1ms !important; animation-iteration-count: 1 !important; } }
 </style>

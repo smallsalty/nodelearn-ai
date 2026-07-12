@@ -18,4 +18,6 @@ def test_contract_route_prefixes_are_api_v1():
     paths = [route.path for route in app.routes if hasattr(route, "path")]
     contract_paths = [path for path in paths if path.startswith("/api/v1")]
     assert "/api/v1/system/health" in contract_paths
+    assert "/api/v1/multimodal/digital-human/sessions/{sessionId}/live" in contract_paths
+    assert "/api/v1/multimodal/digital-human/sessions/{sessionId}/stop" in contract_paths
     # TODO: compare every route against docs/interface-contract.md.

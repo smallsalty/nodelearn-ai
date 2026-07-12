@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
@@ -17,6 +18,7 @@ from app.schemas.multimodal import (
     DigitalHumanChatResult,
     DigitalHumanExplainRequest,
     DigitalHumanExplainResult,
+    DigitalHumanLiveSessionResult,
     MultimodalStreamEvent,
     MultimodalTaskEvent,
     MultimodalTaskResult,
@@ -24,11 +26,12 @@ from app.schemas.multimodal import (
 )
 from app.schemas.resource import GeneratedResource, ResourceGenerateResult, RetrievedDocument, VideoGenerateOptions
 from app.services.audit_service import AuditService
+from app.services.digital_human_live_service import DigitalHumanLiveService
 from app.services.providers.iflytek import (
     IflytekChatRequest,
     IflytekDigitalHumanProvider,
     IflytekDigitalHumanRequest,
-    IflytekSparkProvider,
+    IflytekInterfaceServiceChatProvider,
     IflytekTtsProvider,
 )
 from app.services.resource_service import ResourceService
@@ -111,7 +114,12 @@ class MultimodalRepository:
         return [event.model_copy(deep=True) for event in self._events.get(task_id, [])]
 
     def ensure_session(self, session_id: str | None, *, user_id: str, course_id: str | None, node_id: str | None) -> str:
+        if session_id is not None and re.fullmatch(r"[A-Za-z0-9_-]{1,128}", session_id) is None:
+            raise RuntimeError("invalid digital human chat session id")
         actual_id = session_id or (f"digital_human_session_mock_{len(self._sessions) + 1:03d}" if settings.enable_mock else f"digital_human_session_{uuid4().hex[:12]}")
+        existing = self._sessions.get(actual_id)
+        if existing is not None and existing.get("userId") != user_id:
+            raise RuntimeError("digital human chat session belongs to another user")
         self._sessions.setdefault(
             actual_id,
             {
@@ -140,18 +148,20 @@ class MultimodalService:
         profile_repository: ProfileRepository | None = None,
         learning_path_repository: LearningPathRepository | None = None,
         audit_service: AuditService | None = None,
-        spark_provider: IflytekSparkProvider | None = None,
+        interface_chat_provider: IflytekInterfaceServiceChatProvider | None = None,
         tts_provider: IflytekTtsProvider | None = None,
         digital_human_provider: IflytekDigitalHumanProvider | None = None,
+        live_service: DigitalHumanLiveService | None = None,
     ) -> None:
         self.repository = repository or default_multimodal_repository
         self.resource_service = resource_service or ResourceService()
         self.profile_repository = profile_repository or default_profile_repository
         self.learning_path_repository = learning_path_repository or default_learning_path_repository
         self.audit_service = audit_service or AuditService()
-        self.spark_provider = spark_provider or IflytekSparkProvider()
+        self.interface_chat_provider = interface_chat_provider or IflytekInterfaceServiceChatProvider()
         self.tts_provider = tts_provider or IflytekTtsProvider()
         self.digital_human_provider = digital_human_provider or IflytekDigitalHumanProvider()
+        self.live_service = live_service or DigitalHumanLiveService(self.digital_human_provider)
 
     def create_video_task(self, payload: MultimodalVideoGenerateRequest, task_id: str | None = None) -> MultimodalTaskResult:
         timestamp = DEMO_TIME if settings.enable_mock else now_iso()
@@ -254,9 +264,10 @@ class MultimodalService:
                 created_at=timestamp,
             )
         )
-        spark_result = await self.spark_provider.chat(
+        chat_result = await self.interface_chat_provider.chat(
             IflytekChatRequest(
                 user_id=payload.user_id,
+                session_id=session_id,
                 course_id=course_id,
                 node_id=payload.node_id,
                 message=payload.message,
@@ -267,35 +278,30 @@ class MultimodalService:
             )
         )
         audit = await self.audit_service.check_content(
-            content=spark_result.text or "",
+            content=chat_result.text or "",
             target_type="answer",
-            target_id=spark_result.provider_task_id or session_id,
+            target_id=chat_result.provider_task_id or session_id,
         )
         if audit.audit_status != AuditStatus.passed:
             answer = audit.reason or "回答未通过安全校验"
             status = TaskStatus.failed
             audio_url = None
             video_url = None
-            provider_task_id = spark_result.provider_task_id
+            provider_task_id = chat_result.provider_task_id
+            live_session = None
         else:
-            answer = spark_result.text or ""
+            answer = chat_result.text or ""
             status = TaskStatus.success
-            tts_result = await self.tts_provider.synthesize(answer, user_id=payload.user_id, voice_id=payload.voice_id)
-            video_result = await self.digital_human_provider.create_explanation(
-                IflytekDigitalHumanRequest(
-                    user_id=payload.user_id,
-                    course_id=course_id,
-                    node_id=payload.node_id,
-                    title="数字人对话回答",
-                    script=answer,
-                    avatar_id=payload.avatar_id,
-                    voice_id=payload.voice_id,
-                    callback_url=settings.iflytek_digital_human_callback_url,
-                )
+            live_session = await self.live_service.speak(
+                session_id,
+                user_id=payload.user_id,
+                text=answer,
+                avatar_id=payload.avatar_id or settings.iflytek_digital_human_avatar_id,
+                voice_id=payload.voice_id or settings.iflytek_digital_human_voice_id,
             )
-            audio_url = tts_result.audio_url
-            video_url = video_result.video_url
-            provider_task_id = video_result.provider_task_id or spark_result.provider_task_id
+            audio_url = None
+            video_url = live_session.video_url
+            provider_task_id = chat_result.provider_task_id
         message_id = self.repository.next_message_id()
         self.repository.add_message(
             ChatMessage(
@@ -322,10 +328,20 @@ class MultimodalService:
             provider_task_id=provider_task_id,
             used_documents=documents or None,
             status=status,
+            live_session=live_session,
         )
 
     def list_digital_human_messages(self, session_id: str) -> list[ChatMessage]:
         return self.repository.list_messages(session_id)
+
+    async def get_digital_human_live_session(self, session_id: str) -> DigitalHumanLiveSessionResult:
+        return await self.live_service.get_session(session_id)
+
+    async def stop_digital_human_live_session(self, session_id: str) -> DigitalHumanLiveSessionResult:
+        return await self.live_service.stop_session(session_id)
+
+    async def shutdown(self) -> None:
+        await self.live_service.shutdown()
 
     def apply_callback(self, payload: DigitalHumanCallbackRequest) -> MultimodalTaskResult:
         if settings.iflytek_callback_token and payload.token != settings.iflytek_callback_token:
@@ -408,31 +424,48 @@ class MultimodalService:
         documents = self._load_documents(payload.course_id, payload.node_id, payload.custom_requirement or node_name, payload.use_rag)
 
         self._step(task_id, "load_context", 10, "已读取知识点、学生画像和参考材料")
-        teaching_plan = f"面向{profile.profile_summary or '当前学习者'}，用分步骤方式讲解{node_name}。"
-        self._step(task_id, "generate_teaching_plan", 20, "已生成教学目标和讲解结构")
-        script = self._build_script(node_name, payload.learning_goal or teaching_plan, documents, profile.profile_summary)
-        self._step(task_id, "generate_script", 35, "已生成结构化讲解脚本", {"script": script})
-        storyboard = self._build_storyboard(node_name, script, payload.duration_seconds)
-        self._step(task_id, "generate_storyboard", 50, "已生成分镜结构", {"storyboard": storyboard})
-        self._step(task_id, "validate_script", 60, "脚本与分镜已通过基础校验")
-        subtitle_text = "\n".join(item["narration"] for item in storyboard)
-        content_payload = {
-            "title": payload.title or f"{node_name}教学视频",
-            "script": script,
-            "storyboard": storyboard,
-            "narrationText": subtitle_text,
-            "subtitleText": subtitle_text,
-            "provider": "iflytek" if resource_type == ResourceType.digital_human_video else "nodelearn-video-workflow",
-            "mock": self._is_mock_provider(),
-        }
-        audit = await self.audit_service.check_content(
-            content=json.dumps(content_payload, ensure_ascii=False),
-            target_type="resource",
-            target_id=task_id,
-        )
-        if audit.audit_status != AuditStatus.passed:
-            raise RuntimeError(audit.reason or "multimodal content audit failed")
+        video_options = VideoGenerateOptions(theme=payload.theme)
+
+        def progress(stage: VideoGenerationStage, value: float, error_message: str | None) -> None:
+            step_names = {
+                VideoGenerationStage.script: "generate_script",
+                VideoGenerationStage.storyboard: "generate_storyboard",
+                VideoGenerationStage.quality_audit: "audit_storyboard",
+                VideoGenerationStage.tts: "synthesize_audio",
+                VideoGenerationStage.render: "render_video",
+                VideoGenerationStage.audit: "audit_resource",
+                VideoGenerationStage.error: "error",
+            }
+            step_name = step_names.get(stage, stage.value)
+            message = error_message or f"视频任务正在执行：{step_name}"
+            self._step(task_id, step_name, min(96, value), message)
+
+        teaching_plan = payload.learning_goal or f"面向{profile.profile_summary or '当前学习者'}讲清{node_name}。"
+        self._step(task_id, "plan_content", 18, "已生成教学目标、事实来源和讲解节拍")
         if resource_type == ResourceType.digital_human_video:
+            lesson = await self.resource_service.video_generation_service.prepare_lesson(
+                target_id=task_id,
+                user_id=payload.user_id,
+                course_id=payload.course_id,
+                node=node,
+                target_goal=teaching_plan,
+                documents=documents,
+                video_options=video_options,
+                learner_profile_summary=profile.profile_summary,
+                target_duration_seconds=payload.duration_seconds,
+                run_safety_audit=False,
+                progress_callback=progress,
+            )
+            lesson_audit = await self.audit_service.check_content(
+                content=json.dumps(lesson.model_dump(by_alias=True, mode="json"), ensure_ascii=False),
+                target_type="resource",
+                target_id=task_id,
+            )
+            if lesson_audit.audit_status != AuditStatus.passed:
+                raise RuntimeError(lesson_audit.reason or "digital human lesson audit failed")
+            script = "\n".join(beat.narration for scene in lesson.scenes for beat in scene.beats)
+            storyboard = [scene.model_dump(by_alias=True, mode="json") for scene in lesson.scenes]
+            subtitle_text = script
             provider_result = await self.digital_human_provider.create_explanation(
                 IflytekDigitalHumanRequest(
                     user_id=payload.user_id,
@@ -447,12 +480,37 @@ class MultimodalService:
             )
             self._step(task_id, "synthesize_audio", 70, "已创建数字人口播任务", {"providerTaskId": provider_result.provider_task_id})
             video_url = provider_result.video_url
+            content_payload = {
+                "lesson": lesson.model_dump(by_alias=True, mode="json"),
+                "script": script,
+                "storyboard": storyboard,
+                "subtitleText": subtitle_text,
+                "provider": "iflytek",
+            }
         else:
-            self._step(task_id, "synthesize_audio", 70, "mock 模式已生成字幕和脚本；真实模式复用 Remotion 链路")
-            self._step(task_id, "render_video", 82, "已生成教学视频任务结果")
-            video_url = f"{settings.file_storage_public_base_url.rstrip('/')}/mock/knowledge-video.mp4"
-        content_payload["videoUrl"] = video_url
-        content_payload["fileUrl"] = video_url
+            lesson = await self.resource_service.video_generation_service.generate(
+                task_id=task_id,
+                target_id=task_id,
+                user_id=payload.user_id,
+                course_id=payload.course_id,
+                node=node,
+                target_goal=teaching_plan,
+                documents=documents,
+                video_options=video_options,
+                learner_profile_summary=profile.profile_summary,
+                target_duration_seconds=payload.duration_seconds,
+                progress_callback=progress,
+            )
+            video_url = lesson.output.video_url
+            script = "\n".join(beat.narration for scene in lesson.scenes for beat in scene.beats)
+            storyboard = [scene.model_dump(by_alias=True, mode="json") for scene in lesson.scenes]
+            subtitle_text = script
+            content_payload = lesson.model_dump(by_alias=True, mode="json")
+        if not video_url:
+            raise RuntimeError("video provider did not return a playable video URL")
+        if resource_type == ResourceType.digital_human_video:
+            content_payload["videoUrl"] = video_url
+            content_payload["fileUrl"] = video_url
         resource = self._save_resource(
             payload=payload,
             resource_type=resource_type,

@@ -21,7 +21,7 @@ def health_check():
         vector_store="ok",
         graph_db="ok",
         llm_service=llm_status,
-        iflytek_spark=_iflytek_status("spark"),
+        iflytek_digital_human_chat=_iflytek_status("digital_human_chat"),
         iflytek_tts=_iflytek_status("tts"),
         iflytek_digital_human=_iflytek_status("digital_human"),
     )
@@ -42,17 +42,31 @@ def _database_status() -> str:
 
 
 def _iflytek_status(kind: str) -> str:
+    if kind == "digital_human_chat":
+        has_common_config = bool(settings.iflytek_app_id and settings.iflytek_api_key and settings.iflytek_api_secret)
+        return (
+            "ok"
+            if has_common_config
+            and settings.iflytek_digital_human_chat_url
+            and settings.iflytek_digital_human_service_id
+            else "error"
+        )
     if settings.enable_mock or settings.iflytek_enable_mock:
         return "mock"
     has_common_config = bool(settings.iflytek_app_id and settings.iflytek_api_key and settings.iflytek_api_secret)
     if not has_common_config:
         return "mock"
-    if kind == "spark":
-        return "ok" if settings.iflytek_base_url and settings.iflytek_spark_model else "error"
     if kind == "tts":
         return "ok" if settings.iflytek_base_url and settings.iflytek_tts_voice else "error"
     if kind == "digital_human":
-        return "ok" if settings.iflytek_digital_human_base_url else "error"
+        return (
+            "ok"
+            if settings.iflytek_digital_human_url.startswith(("ws://", "wss://"))
+            and settings.iflytek_digital_human_avatar_id
+            and settings.iflytek_digital_human_voice_id
+            and settings.iflytek_digital_human_service_id
+            else "error"
+        )
     return "error"
 
 

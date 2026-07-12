@@ -105,7 +105,7 @@ function selectQuestion(question: PracticeQuestion) {
 </script>
 
 <template>
-  <section class="practice-page two-column-page">
+  <section class="practice-page">
     <section class="panel-card">
       <header class="panel-header">
         <div>
@@ -131,7 +131,7 @@ function selectQuestion(question: PracticeQuestion) {
           <p>{{ selectedQuestion.content }}</p>
 
           <el-radio-group v-if="selectedQuestion.options?.length" v-model="userAnswer" class="option-list">
-            <el-radio v-for="option in selectedQuestion.options" :key="option" :label="option">
+            <el-radio v-for="option in selectedQuestion.options" :key="option" :value="option">
               {{ option }}
             </el-radio>
           </el-radio-group>
@@ -162,30 +162,32 @@ function selectQuestion(question: PracticeQuestion) {
       </StateBlock>
     </section>
 
-    <aside class="side-stack">
-      <el-card shadow="never">
-        <template #header>题目列表</template>
-        <button
-          v-for="question in questions"
-          :key="question.id"
-          type="button"
-          class="list-button"
-          :class="{ active: question.id === selectedQuestion?.id }"
-          @click="selectQuestion(question)"
-        >
-          <strong>{{ question.title }}</strong>
-          <span>{{ questionTypeLabel(question.questionType) }} · {{ difficultyLabel(question.difficulty) }}</span>
-        </button>
-      </el-card>
+    <el-tabs class="page-tabs">
+      <el-tab-pane label="题目列表" name="questions">
+        <section class="soft-card-grid">
+          <button
+            v-for="question in questions"
+            :key="question.id"
+            type="button"
+            class="list-button"
+            :class="{ active: question.id === selectedQuestion?.id }"
+            @click="selectQuestion(question)"
+          >
+            <strong>{{ question.title }}</strong>
+            <span>{{ questionTypeLabel(question.questionType) }} · {{ difficultyLabel(question.difficulty) }}</span>
+          </button>
+        </section>
+      </el-tab-pane>
 
-      <el-card shadow="never">
-        <template #header>错题本</template>
+      <el-tab-pane label="错题本" name="wrong">
         <el-empty v-if="!wrongQuestions.length" description="暂无错题" />
-        <article v-for="question in wrongQuestions" :key="question.id" class="mini-list-item">
-          <strong>{{ question.title }}</strong>
-          <span>{{ question.nodeId ?? "未关联节点" }}</span>
-        </article>
-      </el-card>
-    </aside>
+        <section v-else class="soft-card-grid">
+          <article v-for="question in wrongQuestions" :key="question.id" class="mini-list-item">
+            <strong>{{ question.title }}</strong>
+            <span>{{ question.nodeId ?? "未关联节点" }}</span>
+          </article>
+        </section>
+      </el-tab-pane>
+    </el-tabs>
   </section>
 </template>

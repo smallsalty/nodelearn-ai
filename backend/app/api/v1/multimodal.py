@@ -55,6 +55,22 @@ def list_digital_human_messages(session_id: str = Path(alias="sessionId")):
     return success_response(default_multimodal_service.list_digital_human_messages(session_id))
 
 
+@router.get("/multimodal/digital-human/sessions/{sessionId}/live")
+async def get_digital_human_live_session(session_id: str = Path(alias="sessionId")):
+    try:
+        return success_response(await default_multimodal_service.get_digital_human_live_session(session_id))
+    except KeyError as exc:
+        return error_response(str(exc), code=404)
+
+
+@router.post("/multimodal/digital-human/sessions/{sessionId}/stop")
+async def stop_digital_human_live_session(session_id: str = Path(alias="sessionId")):
+    try:
+        return success_response(await default_multimodal_service.stop_digital_human_live_session(session_id))
+    except KeyError as exc:
+        return error_response(str(exc), code=404)
+
+
 @router.post("/multimodal/digital-human/callback")
 def digital_human_callback(payload: DigitalHumanCallbackRequest):
     try:
