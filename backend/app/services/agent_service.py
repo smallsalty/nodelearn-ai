@@ -3,6 +3,7 @@ from app.agents.multimodal_agent import MultimodalAgent
 from app.agents.planner_agent import PlannerAgent
 from app.agents.practice_agent import PracticeAgent
 from app.agents.profile_agent import ProfileAgent
+from app.agents.programming_agent import ProgrammingAgent
 from app.agents.qa_agent import QaAgent
 from app.agents.resource_agent import ResourceAgent
 from app.agents.safety_agent import SafetyAgent
@@ -21,6 +22,7 @@ class AgentService:
             AgentType.practice_agent: PracticeAgent(),
             AgentType.multimodal_agent: MultimodalAgent(),
             AgentType.safety_agent: SafetyAgent(),
+            AgentType.programming_agent: ProgrammingAgent(),
         }
 
     async def run_agent(self, request: AgentRunRequest) -> AgentRunResult:

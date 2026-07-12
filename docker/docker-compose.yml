@@ -19,6 +19,8 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql+psycopg://nodelearn:nodelearn@postgres:5432/nodelearn
+      JUDGE0_BASE_URL: http://judge0-server:2358
+      JUDGE0_AUTH_TOKEN: ""
     ports:
       - "8000:8000"
     volumes:
@@ -28,6 +30,7 @@ services:
       - redis
       - neo4j
       - chroma
+      - judge0-server
 
   postgres:
     image: postgres:16-alpine
@@ -62,6 +65,38 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
 
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    depends_on:
+      - judge0-postgres
+      - judge0-redis
+
+  judge0-worker:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    depends_on:
+      - judge0-postgres
+      - judge0-redis
+
+  judge0-postgres:
+    image: postgres:16.2
+    env_file:
+      - judge0.conf
+    volumes:
+      - judge0_postgres_data:/var/lib/postgresql/data
+
+  judge0-redis:
+    image: redis:7.2.4
+    command: ["bash", "-c", "docker-entrypoint.sh --appendonly no --requirepass $$REDIS_PASSWORD"]
+    env_file:
+      - judge0.conf
+
   # TODO: add MySQL profile if the project chooses MySQL instead of PostgreSQL.
   # TODO: add FAISS file-volume adapter if VECTOR_STORE_TYPE=faiss.
 
@@ -69,3 +104,4 @@ volumes:
   postgres_data:
   neo4j_data:
   chroma_data:
+  judge0_postgres_data:

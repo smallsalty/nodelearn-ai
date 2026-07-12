@@ -59,7 +59,6 @@ const generatorModes = [
 const resourceTypeOptions: Array<{ value: ResourceType; title: string; description: string }> = [
   { value: "lecture_doc", title: "讲解文档", description: "结构化概念说明" },
   { value: "mind_map", title: "思维导图", description: "Mermaid 知识结构" },
-  { value: "practice_question", title: "练习题", description: "选择、简答和代码题" },
   { value: "code_case", title: "代码案例", description: "数据结构实现片段" },
   { value: "video_script", title: "视频脚本", description: "旧链路旁白脚本" },
   { value: "animation_script", title: "动画脚本", description: "旧链路分镜 JSON" },

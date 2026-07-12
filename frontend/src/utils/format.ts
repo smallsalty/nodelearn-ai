@@ -129,7 +129,8 @@ export function agentLabel(value?: AgentType) {
     safety_agent: "安全智能体",
     knowledge_graph_agent: "图谱智能体",
     note_agent: "笔记智能体",
-    report_agent: "报告智能体"
+    report_agent: "报告智能体",
+    programming_agent: "编程题智能体"
   };
   return value ? map[value] : "智能体";
 }

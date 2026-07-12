@@ -7,7 +7,7 @@ import { courseApi } from "@/api/modules/course";
 import { graphApi } from "@/api/modules/graph";
 import { getErrorMessage } from "@/api/client";
 import { appState } from "@/stores";
-import type { KnowledgeNode } from "@/types/course";
+import type { Chapter, KnowledgeNode } from "@/types/course";
 import type { GraphNode, GraphViewState, KnowledgeGraph } from "@/types/graph";
 import { DEFAULT_COURSE_ID, DEFAULT_USER_ID, difficultyLabel, masteryLabel } from "@/utils/format";
 
@@ -16,12 +16,14 @@ const router = useRouter();
 let chart: echarts.ECharts | null = null;
 const graph = ref<KnowledgeGraph | null>(null);
 const nodes = ref<KnowledgeNode[]>([]);
+const chapters = ref<Chapter[]>([]);
 const selectedNodeId = ref<string | null>(null);
 const loading = ref(false);
 const errorMessage = ref("");
 const nodeErrorMessage = ref("");
 const viewState = reactive<GraphViewState>({
   selectedNodeId: undefined,
+  expandedChapterId: undefined,
   zoom: 1,
   centerX: 0,
   centerY: 0,
@@ -39,7 +41,7 @@ onMounted(() => {
 });
 
 watch(
-  graph,
+  [graph, nodes, chapters],
   async () => {
     await nextTick();
     renderGraph();
@@ -61,7 +63,7 @@ async function loadGraph() {
     await nextTick();
     renderGraph();
     window.setTimeout(renderGraph, 80);
-    void loadKnowledgeNodes();
+    void loadKnowledgeContext();
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
@@ -69,11 +71,15 @@ async function loadGraph() {
   }
 }
 
-async function loadKnowledgeNodes() {
+async function loadKnowledgeContext() {
   nodeErrorMessage.value = "";
   try {
-    const nodeResponse = await courseApi.getNodes(courseId.value);
+    const [nodeResponse, chapterResponse] = await Promise.all([
+      courseApi.getNodes(courseId.value),
+      courseApi.getChapters(courseId.value)
+    ]);
     nodes.value = nodeResponse.data;
+    chapters.value = chapterResponse.data;
   } catch (error) {
     nodeErrorMessage.value = getErrorMessage(error);
   }
@@ -82,12 +88,7 @@ async function loadKnowledgeNodes() {
 function renderGraph() {
   if (!chartRef.value || !graph.value) return;
   chart ??= echarts.init(chartRef.value);
-  const filteredNodes = graph.value.nodes.filter((node) => {
-    if (viewState.showWeakOnly) return node.masteryStatus === "weak" || node.masteryScore < 60;
-    if (viewState.showCompletedOnly) return node.masteryStatus === "mastered";
-    return true;
-  });
-  const visibleIds = new Set(filteredNodes.map((node) => node.id));
+  const graphView = buildGraphView();
   chart.setOption({
     backgroundColor: "#ffffff",
     tooltip: {
@@ -106,27 +107,126 @@ function renderGraph() {
         force: { repulsion: 160, edgeLength: 90 },
         label: { show: true, color: "#0f172a", fontSize: 12 },
         lineStyle: { color: "#cbd5e1", width: 1.5, curveness: 0.08 },
-        data: filteredNodes.map((node) => ({
+        data: graphView.nodes.map((node) => ({
           ...node,
           name: node.label,
-          symbolSize: Math.max(42, node.size ?? 46),
+          symbolSize: node.isChapter ? 82 : Math.max(42, node.size ?? 46),
           itemStyle: {
-            color: nodeColor(node),
+            color: node.isChapter ? "#dbeafe" : nodeColor(node),
             borderColor: node.id === selectedNodeId.value ? "#0f172a" : "#ffffff",
             borderWidth: node.id === selectedNodeId.value ? 3 : 1
           }
         })),
-        links: graph.value.edges
-          .filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
-          .map((edge) => ({ source: edge.source, target: edge.target, label: { show: false } }))
+        links: graphView.edges.map((edge) => ({ source: edge.source, target: edge.target, label: { show: false } }))
       }
     ]
   });
   chart.off("click");
   chart.on("click", (event) => {
     const data = event.data as GraphNode | undefined;
-    if (data?.id) selectNode(data.id);
+    if (!data?.id) return;
+    if (data.id.startsWith("chapter:")) {
+      selectChapter(data.id.slice("chapter:".length));
+      return;
+    }
+    selectNode(data.id);
   });
+}
+
+type GraphViewNode = GraphNode & { isChapter?: boolean };
+
+interface GraphViewData {
+  nodes: GraphViewNode[];
+  edges: Array<{ source: string; target: string }>;
+}
+
+interface ChapterGroup {
+  id: string;
+  label: string;
+  nodes: GraphNode[];
+}
+
+const chapterGroups = computed<ChapterGroup[]>(() => {
+  const graphNodes = graph.value?.nodes ?? [];
+  const nodeById = new Map(nodes.value.map((node) => [node.id, node]));
+  const chapterById = new Map(chapters.value.map((chapter) => [chapter.id, chapter]));
+  const groups = new Map<string, ChapterGroup>();
+
+  for (const node of graphNodes) {
+    const chapterId = nodeById.get(node.id)?.chapterId ?? "uncategorized";
+    const group = groups.get(chapterId) ?? {
+      id: chapterId,
+      label: chapterById.get(chapterId)?.title ?? "其他知识点",
+      nodes: []
+    };
+    group.nodes.push(node);
+    groups.set(chapterId, group);
+  }
+
+  const order = new Map(chapters.value.map((chapter, index) => [chapter.id, index]));
+  return [...groups.values()].sort((left, right) => (order.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (order.get(right.id) ?? Number.MAX_SAFE_INTEGER));
+});
+
+function buildGraphView(): GraphViewData {
+  const groups = chapterGroups.value;
+  const expandedGroup = groups.find((group) => group.id === viewState.expandedChapterId);
+  if (!expandedGroup) {
+    return buildChapterOverview(groups);
+  }
+  return buildExpandedChapterView(expandedGroup);
+}
+
+function buildChapterOverview(groups: ChapterGroup[]): GraphViewData {
+  const chapterIdByNodeId = new Map<string, string>();
+  for (const group of groups) {
+    for (const node of group.nodes) chapterIdByNodeId.set(node.id, group.id);
+  }
+  const edges = new Map<string, { source: string; target: string }>();
+  for (const edge of graph.value?.edges ?? []) {
+    const sourceChapterId = chapterIdByNodeId.get(edge.source);
+    const targetChapterId = chapterIdByNodeId.get(edge.target);
+    if (!sourceChapterId || !targetChapterId || sourceChapterId === targetChapterId) continue;
+    const source = `chapter:${sourceChapterId}`;
+    const target = `chapter:${targetChapterId}`;
+    edges.set(`${source}:${target}`, { source, target });
+  }
+  return {
+    nodes: groups.map((group) => chapterNode(group)),
+    edges: [...edges.values()]
+  };
+}
+
+function buildExpandedChapterView(group: ChapterGroup): GraphViewData {
+  const visibleNodes = group.nodes.filter(matchesActiveFilters);
+  const visibleNodeIds = new Set(visibleNodes.map((node) => node.id));
+  const chapterId = `chapter:${group.id}`;
+  return {
+    nodes: [chapterNode(group), ...visibleNodes],
+    edges: [
+      ...visibleNodes.map((node) => ({ source: chapterId, target: node.id })),
+      ...(graph.value?.edges ?? [])
+        .filter((edge) => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target))
+        .map((edge) => ({ source: edge.source, target: edge.target }))
+    ]
+  };
+}
+
+function chapterNode(group: ChapterGroup): GraphViewNode {
+  return {
+    id: `chapter:${group.id}`,
+    label: group.label,
+    nodeType: "concept",
+    difficulty: "easy",
+    masteryStatus: "not_started",
+    masteryScore: 0,
+    isChapter: true
+  };
+}
+
+function matchesActiveFilters(node: GraphNode): boolean {
+  if (viewState.showWeakOnly) return node.masteryStatus === "weak" || node.masteryScore < 60;
+  if (viewState.showCompletedOnly) return node.masteryStatus === "mastered";
+  return true;
 }
 
 function nodeColor(node: GraphNode) {
@@ -140,6 +240,13 @@ function selectNode(nodeId: string): void {
   selectedNodeId.value = nodeId;
   viewState.selectedNodeId = nodeId;
   appState.selectedNodeId = nodeId;
+  renderGraph();
+}
+
+function selectChapter(chapterId: string): void {
+  viewState.expandedChapterId = viewState.expandedChapterId === chapterId ? undefined : chapterId;
+  selectedNodeId.value = null;
+  viewState.selectedNodeId = undefined;
   renderGraph();
 }
 
@@ -157,12 +264,17 @@ function resetGraphView(): void {
   viewState.zoom = 1;
   viewState.centerX = 0;
   viewState.centerY = 0;
+  viewState.expandedChapterId = undefined;
   viewState.showWeakOnly = false;
   viewState.showCompletedOnly = false;
+  selectedNodeId.value = null;
+  viewState.selectedNodeId = undefined;
   renderGraph();
 }
 
 function jumpToNode(nodeId: string): void {
+  const node = nodes.value.find((item) => item.id === nodeId);
+  if (node?.chapterId) viewState.expandedChapterId = node.chapterId;
   selectNode(nodeId);
   renderGraph();
 }
@@ -183,7 +295,7 @@ function openResourceAction(action: "knowledge_video" | "digital_human_video" | 
       <header class="panel-header">
         <div>
           <h2>知识图谱</h2>
-          <p>节点和边来自后端 `KnowledgeGraph`，掌握状态用于个性化视图。</p>
+          <p>默认显示课程主题；点击主题可展开查看其中的知识节点。</p>
         </div>
         <div class="button-row">
           <el-button @click="zoomIn">放大</el-button>
@@ -196,6 +308,7 @@ function openResourceAction(action: "knowledge_video" | "digital_human_video" | 
       <div class="graph-filters">
         <el-switch v-model="viewState.showWeakOnly" active-text="只看薄弱" @change="renderGraph" />
         <el-switch v-model="viewState.showCompletedOnly" active-text="只看掌握" @change="renderGraph" />
+        <span class="graph-hint">{{ viewState.expandedChapterId ? "再次点击主题可收起" : "点击主题展开节点" }}</span>
       </div>
 
       <StateBlock :loading="loading" :error="errorMessage" :empty="!graph?.nodes.length" empty-text="暂无图谱数据" @retry="loadGraph">
@@ -205,9 +318,9 @@ function openResourceAction(action: "knowledge_video" | "digital_human_video" | 
 
     <aside class="side-stack">
       <el-card shadow="never">
-        <template #header>节点跳转</template>
-        <el-select filterable placeholder="选择节点" :model-value="selectedNodeId" @change="jumpToNode">
-          <el-option v-for="node in graph?.nodes ?? []" :key="node.id" :label="node.label" :value="node.id" />
+        <template #header>主题跳转</template>
+        <el-select filterable placeholder="选择主题" :model-value="viewState.expandedChapterId" @change="selectChapter">
+          <el-option v-for="group in chapterGroups" :key="group.id" :label="group.label" :value="group.id" />
         </el-select>
       </el-card>
 
@@ -244,6 +357,11 @@ function openResourceAction(action: "knowledge_video" | "digital_human_video" | 
 </template>
 
 <style scoped>
+.graph-hint {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
 .node-actions {
   display: flex;
   flex-wrap: wrap;

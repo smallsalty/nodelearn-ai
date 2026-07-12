@@ -5,7 +5,7 @@ import {
   ChatLineRound,
   Collection,
   DataAnalysis,
-  EditPen,
+  EditPen, Monitor,
   FolderOpened,
   Guide,
   House,
@@ -38,6 +38,7 @@ const navItems = [
   { path: "/resources", label: "资源中心", description: "生成与预览", icon: Collection },
   { path: "/knowledge-graph", label: "知识图谱", description: "节点依赖", icon: Share },
   { path: "/practice", label: "练习测评", description: "题目与错因", icon: EditPen },
+  { path: "/programming", label: "编程题", description: "代码运行与判题", icon: Monitor },
   { path: "/reports", label: "学习报告", description: "评估与建议", icon: DataAnalysis },
   { path: "/admin/knowledge-base", label: "知识库管理", description: "课程材料", icon: FolderOpened }
 ];

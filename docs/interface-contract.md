@@ -304,7 +304,8 @@ type AgentType =
   | "safety_agent"
   | "knowledge_graph_agent"
   | "note_agent"
-  | "report_agent";
+  | "report_agent"
+  | "programming_agent";
 ```
 
 ## 3.9 TaskStatus
@@ -881,6 +882,7 @@ interface KnowledgeGraph {
 ```ts
 interface GraphViewState {
   selectedNodeId?: string;
+  expandedChapterId?: string;
   zoom: number;
   centerX: number;
   centerY: number;
@@ -2170,6 +2172,41 @@ updated_at
 | GET | `/api/v1/users/{userId}/practice-records` | 获取练习记录 | 无 | `ApiResponse<PracticeRecord[]>` |
 | GET | `/api/v1/users/{userId}/wrong-questions` | 获取错题本 | 无 | `ApiResponse<PracticeQuestion[]>` |
 | DELETE | `/api/v1/users/{userId}/wrong-questions/{questionId}` | 移除错题 | 无 | `ApiResponse<boolean>` |
+
+---
+
+# 14.6 编程题与判题接口
+
+```ts
+type ProgrammingLanguage = "cpp" | "c" | "python";
+type JudgeVerdict = "AC" | "WA" | "TLE" | "PE" | "CE" | "RE" | "system_error";
+
+interface ProgrammingSampleCase { input: string; output: string; }
+interface ProgrammingQuestion {
+  id: string; courseId: string; nodeId?: string; title: string; content: string;
+  inputFormat: string; outputFormat: string; constraints: string;
+  sampleCases: ProgrammingSampleCase[]; difficulty: DifficultyLevel; tags: string[];
+  timeLimitSeconds: number; createdAt: string; updatedAt: string;
+}
+interface ProgrammingGenerateRequest { userId: string; courseId: string; nodeId?: string; difficulty?: DifficultyLevel; count: number; }
+interface ProgrammingSubmissionRequest { userId: string; questionId: string; language: ProgrammingLanguage; sourceCode: string; durationSeconds?: number; }
+interface ProgrammingJudgeResult {
+  submissionId: string; questionId: string; language: ProgrammingLanguage; verdict: JudgeVerdict;
+  stdout?: string; stderr?: string; compileOutput?: string; timeSeconds?: number; memoryKb?: number;
+  failedSampleIndex?: number; createdAt: string; updatedAt: string;
+}
+```
+
+数据库表：`programming_question`、`programming_test_case`、`programming_submission`。
+隐藏测试用例、参考实现和隐藏期望输出不得出现在 `ProgrammingQuestion` HTTP 返回中。
+
+| 方法 | 路径 | 说明 | 请求体 | 返回 |
+|---|---|---|---|---|
+| POST | `/api/v1/programming/questions/generate` | 生成编程题 | `ProgrammingGenerateRequest` | `ApiResponse<ProgrammingQuestion[]>` |
+| GET | `/api/v1/programming/questions` | 获取编程题列表 | `PageRequest` | `ApiResponse<PageResult<ProgrammingQuestion>>` |
+| GET | `/api/v1/programming/questions/{questionId}` | 获取编程题详情 | 无 | `ApiResponse<ProgrammingQuestion>` |
+| POST | `/api/v1/programming/submissions` | 提交并判题 | `ProgrammingSubmissionRequest` | `ApiResponse<ProgrammingJudgeResult>` |
+| GET | `/api/v1/users/{userId}/programming-submissions` | 获取提交记录 | 无 | `ApiResponse<ProgrammingJudgeResult[]>` |
 
 ---
 

@@ -84,7 +84,11 @@ export type AgentType =
   | "safety_agent"
   | "knowledge_graph_agent"
   | "note_agent"
-  | "report_agent";
+  | "report_agent"
+  | "programming_agent";
+
+export type ProgrammingLanguage = "cpp" | "c" | "python";
+export type JudgeVerdict = "AC" | "WA" | "TLE" | "PE" | "CE" | "RE" | "system_error";
 
 export type TaskStatus =
   | "pending"

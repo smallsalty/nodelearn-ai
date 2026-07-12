@@ -122,6 +122,48 @@ class GeneratedResourceModel(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
 
 
+class PracticeQuestionModel(Base):
+    __tablename__ = "practice_question"
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    course_id: Mapped[str] = mapped_column(String(128), ForeignKey("course.id"), nullable=False)
+    node_id: Mapped[str | None] = mapped_column(String(128), ForeignKey("knowledge_node.id"), nullable=True)
+    question_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    options: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    difficulty: Mapped[str] = mapped_column(String(32), nullable=False)
+    tags: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
+
+
+class PracticeRecordModel(Base):
+    __tablename__ = "practice_record"
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    question_id: Mapped[str] = mapped_column(String(128), ForeignKey("practice_question.id"), nullable=False)
+    node_id: Mapped[str | None] = mapped_column(String(128), ForeignKey("knowledge_node.id"), nullable=True)
+    user_answer: Mapped[str] = mapped_column(Text, nullable=False)
+    correct_answer: Mapped[str] = mapped_column(Text, nullable=False)
+    is_correct: Mapped[bool] = mapped_column(nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    mistake_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
+
+
+class WrongQuestionRecordModel(Base):
+    __tablename__ = "wrong_question_record"
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    question_id: Mapped[str] = mapped_column(String(128), ForeignKey("practice_question.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
+
+
 class ChatSessionModel(Base):
     __tablename__ = "chat_session"
 

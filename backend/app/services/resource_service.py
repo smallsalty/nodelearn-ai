@@ -238,8 +238,8 @@ class ResourceService:
             return in_memory_resources[start : start + page_size], total
 
         with session_context() as session:
-            query = select(GeneratedResourceModel).where(GeneratedResourceModel.user_id == user_id)
-            count_query = select(func.count()).select_from(GeneratedResourceModel).where(GeneratedResourceModel.user_id == user_id)
+            query = select(GeneratedResourceModel).where(GeneratedResourceModel.user_id == user_id, GeneratedResourceModel.resource_type != ResourceType.practice_question.value)
+            count_query = select(func.count()).select_from(GeneratedResourceModel).where(GeneratedResourceModel.user_id == user_id, GeneratedResourceModel.resource_type != ResourceType.practice_question.value)
             if keyword:
                 pattern = f"%{keyword}%"
                 filter_expr = or_(GeneratedResourceModel.title.like(pattern), GeneratedResourceModel.content.like(pattern))
@@ -257,7 +257,7 @@ class ResourceService:
         with session_context() as session:
             query = (
                 select(GeneratedResourceModel)
-                .where(GeneratedResourceModel.node_id == node_id)
+                .where(GeneratedResourceModel.node_id == node_id, GeneratedResourceModel.resource_type != ResourceType.practice_question.value)
                 .order_by(GeneratedResourceModel.created_at.desc())
             )
             return [generated_resource_from_model(model) for model in session.scalars(query).all()]
@@ -289,6 +289,8 @@ class ResourceService:
             if not retrieved_documents:
                 raise RuntimeError("Hello Algo knowledge base returned no source documents for resource generation")
         resource_types = self._select_resource_types(payload.resource_types, profile, profile_analysis, node, target_goal)
+        # Questions belong to the practice and programming modules, never to generated_resource.
+        resource_types = [resource_type for resource_type in resource_types if resource_type != ResourceType.practice_question]
         video_requested = any(resource_type in VIDEO_RESOURCE_TYPES for resource_type in payload.resource_types)
         resource_types = [resource_type for resource_type in resource_types if resource_type not in VIDEO_RESOURCE_TYPES]
 
@@ -727,19 +729,19 @@ class ResourceService:
         selected.extend(self._parse_resource_types(profile_analysis.get("preferredResourceTypes") or []))
 
         if profile.knowledge_base_level == DifficultyLevel.easy:
-            selected.extend([ResourceType.lecture_doc, ResourceType.mind_map, ResourceType.practice_question])
+            selected.extend([ResourceType.lecture_doc, ResourceType.mind_map])
         if profile.cognitive_style == CognitiveStyle.diagram:
             selected.extend([ResourceType.mind_map, ResourceType.video_script, ResourceType.animation_script])
         if profile.practice_preference == PracticePreference.coding:
-            selected.extend([ResourceType.code_case, ResourceType.practice_question, ResourceType.project_task])
+            selected.extend([ResourceType.code_case, ResourceType.project_task])
         if "考试" in target_goal or "复习" in target_goal:
-            selected.extend([ResourceType.summary_note, ResourceType.practice_question, ResourceType.lecture_doc])
+            selected.extend([ResourceType.summary_note, ResourceType.lecture_doc])
         if "项目" in target_goal or "应用" in target_goal:
             selected.extend([ResourceType.code_case, ResourceType.project_task, ResourceType.reading_material])
 
         mastery_score = node.mastery_score if node else None
         if mastery_score is not None and mastery_score < 60:
-            selected.extend([ResourceType.lecture_doc, ResourceType.mind_map, ResourceType.practice_question, ResourceType.code_case])
+            selected.extend([ResourceType.lecture_doc, ResourceType.mind_map, ResourceType.code_case])
         if mastery_score is not None and mastery_score > 80:
             selected.extend([ResourceType.reading_material, ResourceType.project_task, ResourceType.code_case])
 
@@ -747,7 +749,6 @@ class ResourceService:
         return self._unique_resource_types(selected) or [
             ResourceType.lecture_doc,
             ResourceType.mind_map,
-            ResourceType.practice_question,
         ]
 
     def _parse_resource_types(self, values: list[Any]) -> list[ResourceType]:
