@@ -3,9 +3,17 @@ import base64
 import json
 from pathlib import Path
 
+import httpx
 import pytest
 
-from app.agents.multimodal_skills import AnimationSpecSkill, QualityAuditSkill, TtsSkill, VideoAuditError, VideoRenderSkill
+from app.agents.multimodal_skills import (
+    AnimationSpecSkill,
+    QualityAuditSkill,
+    TtsSkill,
+    VideoAuditError,
+    VideoGenerationService,
+    VideoRenderSkill,
+)
 from app.core.config import settings
 from app.repositories.learning_path_repository import LearningPathRepository
 from app.repositories.profile_repository import ProfileRepository
@@ -109,6 +117,23 @@ def test_tts_skill_rejects_doubao_business_error_after_audio_chunk():
         TtsSkill()._decode_audio_chunks(body)
 
 
+def test_tts_skill_retries_one_transient_transport_error(monkeypatch: pytest.MonkeyPatch):
+    skill = TtsSkill(client=object())
+    calls = 0
+
+    async def fake_stream_audio(client, headers, payload):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise httpx.ConnectError("transient connection failure")
+        return b"audio"
+
+    monkeypatch.setattr(skill, "_stream_audio", fake_stream_audio)
+
+    assert run(skill._request_audio({}, {})) == b"audio"
+    assert calls == 2
+
+
 def test_video_render_skill_reports_missing_remotion_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setattr(settings, "video_render_project_path", str(tmp_path / "missing-renderer"))
     lesson = render_ready_lesson()
@@ -194,6 +219,92 @@ def test_v2_visual_director_replaces_malformed_llm_visual_elements():
     payload = VideoRenderSkill()._validate_lesson_for_render(lesson)
     assert payload["theme"] == "warm_academic"
     assert payload["output"]["audioUrls"] == audio_urls
+
+
+def test_v2_visual_director_keeps_hook_beats_and_screen_text_within_limits():
+    scene_types = ["hook", "definition", "mechanism", "example", "summary"]
+    storyboard = {
+        "title": "哈希表为什么能快速查找",
+        "scenes": [
+            {
+                "sceneType": scene_type,
+                "title": f"场景 {index}",
+                "narration": (
+                    "先把钥匙交给哈希函数。它会算出桶的位置。冲突时再沿链表查找。"
+                    if scene_type == "hook"
+                    else "观察哈希函数如何把键映射到桶。"
+                ),
+                "screenText": ["哈希函数", "桶定位", "冲突链"],
+                "visualPlan": {"layout": "grid_focus", "elements": [{"type": "hash_table_buckets"}]},
+            }
+            for index, scene_type in enumerate(scene_types, start=1)
+        ],
+    }
+
+    lesson = AnimationSpecSkill().normalize(
+        None,
+        storyboard,
+        schema_version="2.0",
+        documents=[RetrievedDocument(id="doc_hash", sourceId="source_hash", title="哈希表", content="哈希表材料", score=1)],
+    )
+
+    hook = lesson.scenes[0]
+    assert len(hook.beats) == 2
+    assert sum(beat.duration_seconds for beat in hook.beats) <= 8
+    assert all(3 <= beat.duration_seconds <= 4 for beat in hook.beats)
+    assert all(len(beat.screen_text) == 1 for scene in lesson.scenes for beat in scene.beats)
+
+
+def test_video_generation_aligns_non_hook_beats_to_target_duration():
+    lesson = AnimationSpecSkill().normalize(
+        None,
+        {
+            "title": "哈希表为什么能快速查找",
+            "scenes": [
+                {
+                    "sceneType": scene_type,
+                    "title": f"场景 {index}",
+                    "narration": "观察键如何映射到桶。再比较桶内的查找过程。",
+                    "screenText": ["键到桶"],
+                }
+                for index, scene_type in enumerate(
+                    ["hook", "definition", "mechanism", "example", "summary"],
+                    start=1,
+                )
+            ],
+        },
+        schema_version="2.0",
+        documents=[RetrievedDocument(id="doc_hash", sourceId="source_hash", title="哈希表", content="哈希表材料", score=1)],
+        target_duration_seconds=120,
+    )
+
+    VideoGenerationService._align_to_target_duration(lesson, 120)
+
+    assert sum(scene.duration_seconds for scene in lesson.scenes) == pytest.approx(120)
+    assert lesson.scenes[0].duration_seconds <= 8
+    assert all(beat.duration_seconds <= 15 for scene in lesson.scenes for beat in scene.beats)
+
+
+def test_hash_visual_director_keeps_complexity_and_bucket_labels_factual():
+    director = AnimationSpecSkill()
+
+    comparison = director._domain_visual_element("comparison", "\u54c8\u5e0c\u8868")
+    mechanism = director._domain_visual_element(
+        "mechanism",
+        "\u54c8\u5e0c\u8868",
+        narration_context="\u952e12836\uff0c\u6876\u6570100\uff0c\u7d22\u5f1536\u3002",
+    )
+    example = director._domain_visual_element(
+        "example",
+        "\u54c8\u5e0c\u8868",
+        screen_label="\u7d22\u5f1550",
+        narration_context="\u67e5\u627e\u5b66\u53f716750\uff0c\u5b9a\u4f4d\u687650\u3002",
+    )
+
+    assert comparison["items"] == ["\u6570\u7ec4\u7d22\u5f15 O(1)", "\u94fe\u8868\u67e5\u627e O(n)", "\u54c8\u5e0c\u8868\u5e73\u5747 O(1)"]
+    assert mechanism["buckets"] == ["34", "35", "36", "37"]
+    assert mechanism["keyLabel"] == "12836"
+    assert example["bucketIndex"] == 50
 
 
 def test_video_request_saves_failed_resources_without_fake_file_url(monkeypatch: pytest.MonkeyPatch):

@@ -32,6 +32,9 @@
 
 ### 已完成
 
+- 2026-07-12 完成“哈希表为什么能快速查找”真实科普视频验收：基于节点 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4` 和 3 个 Hello Algo 来源，使用真实 DeepSeek、豆包 `zh_female_vv_uranus_bigtts` 与 Remotion 生成任务 `multimodal_video_task_c112e78067a0`、资源 `resource_knowledge_video_2ed8d2df1a93`；资源为 `success/passed`、v2 暖白学院主题、8 scene/22 beat/22 段音频，所有 factual beat 来源均可解析。
+- 2026-07-12 真实视频媒体与视觉验收通过：最终 MP4 为 1920×1080、30fps、H.264/AAC、120.512 秒、11,954,889 bytes，目标时长误差约 0.43%；hook、机制、对比、示例和总结抽帧确认字幕可读、无常驻进度条/场景号，并修正 `key 12836 → bucket #36`、数组/链表/哈希表复杂度和 `bucket #50` 冲突链标签。验收文件保存在 `backend/storage/generated_resources/multimodal_video_task_c112e78067a0/`。
+- 2026-07-12 为真实视频链路补齐 hook 拆分边界、单 beat 屏幕文字收敛、豆包传输异常单次重试、非 hook beat 目标时长对齐和哈希 Visual Director 事实标签测试；最终后端完整测试 `153 passed, 1 skipped`，针对性视频测试 `36 passed`，`video-renderer` `npx tsc --noEmit` 通过。
 - 2026-07-12 完成知识科普视频 v2 质量升级：新增 `VideoTheme` 三主题与 `schemaVersion="2.0"` beat 契约，口播、TTS、字幕和 Remotion Sequence 统一按 beat 驱动；新生成内容保留事实 claims、来源 sourceIds、短屏幕文本和确定性视觉计划。
 - 2026-07-12 将 `AnimationSpecSkill` 改为确定性 Visual Director：LLM 只负责教学事实、口播和高层视觉意图，Visual Director 为数组、哈希表、链表、栈、队列和树组件补齐严格字段，解除 DeepSeek storyboard 缺少 `items/inputKey/outputIndex/activeIndex` 导致的 schema 阻塞。
 - 2026-07-12 知识点视频新接口与旧 `video_script/animation_script` 统一复用真实 TTS、Remotion、媒体审计和安全审核链路；移除固定 `/mock/knowledge-video.mp4` 成功结果，mock 模式不再发布假媒体。数字人讲解复用 v2 教学规划、事实引用和口播审核，实时数字人对话协议未修改。
@@ -178,7 +181,7 @@
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
 - 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
-- 真实视频的 storyboard schema 对齐阻塞已由 v2 Visual Director 解除；仍需在真实 DeepSeek、豆包 TTS 与 Remotion 环境显式运行付费视频回归，确认实际口播时长和三主题画面质量。
+- 真实视频的 storyboard schema 对齐阻塞已由 v2 Visual Director 解除；暖白学院主题已完成真实 DeepSeek、豆包 TTS 与 Remotion 付费回归。黑板讲解和技术蓝图主题仍只完成 renderer fixture/类型与常规测试，后续凭证或主题实现变化时再显式运行付费回归。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 - 本机 Docker Desktop 已在 2026-06-04 手动启动并验证 PostgreSQL、Hello Algo 导入、`ENABLE_MOCK=false` 后端健康检查和真实视频生成链路；若后续桌面重启或 Docker 停止，需要重新启动 `docker compose -f docker/docker-compose.yml up -d postgres`。
 

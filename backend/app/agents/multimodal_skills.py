@@ -431,11 +431,13 @@ class AnimationSpecSkill:
         title = str(scene.get("title") or f"{node_name}场景 {index}")
         narration = str(scene.get("narration") or f"用具体变化理解{node_name}。")
         chunks = self._narration_chunks(narration)
+        if scene_type == "hook":
+            chunks = chunks[:2]
         beats = []
         for beat_index, chunk in enumerate(chunks, start=1):
             duration = max(3.0, min(10.0, round(len(chunk) / 4, 1)))
             if scene_type == "hook":
-                duration = min(duration, 8.0 / max(1, len(chunks)))
+                duration = min(duration, 4.0)
             screen_text = self._screen_text(scene, title, chunk, beat_index)
             beats.append(
                 {
@@ -445,7 +447,13 @@ class AnimationSpecSkill:
                     "screenText": screen_text,
                     "claims": [chunk] if source_ids else [],
                     "sourceIds": source_ids,
-                    "visualPlan": self._v2_visual_plan(scene_type, node_name, screen_text, beat_index),
+                    "visualPlan": self._v2_visual_plan(
+                        scene_type,
+                        node_name,
+                        screen_text,
+                        beat_index,
+                        narration_context=narration,
+                    ),
                     "audioUrl": "",
                 }
             )
@@ -475,9 +483,16 @@ class AnimationSpecSkill:
         result = [item[:20] for item in candidates[:3] if item[:20]]
         if not result:
             result = [narration[:20]]
-        return result if beat_index == 1 else [result[min(beat_index - 1, len(result) - 1)]]
+        return [result[min(beat_index - 1, len(result) - 1)]]
 
-    def _v2_visual_plan(self, scene_type: str, node_name: str, screen_text: list[str], beat_index: int) -> dict[str, Any]:
+    def _v2_visual_plan(
+        self,
+        scene_type: str,
+        node_name: str,
+        screen_text: list[str],
+        beat_index: int,
+        narration_context: str = "",
+    ) -> dict[str, Any]:
         if scene_type == "hook":
             return {
                 "layout": "center_focus",
@@ -494,7 +509,12 @@ class AnimationSpecSkill:
                     for label in labels
                 ],
             }
-        domain = self._domain_visual_element(scene_type, node_name)
+        domain = self._domain_visual_element(
+            scene_type,
+            node_name,
+            screen_label=screen_text[0] if screen_text else "",
+            narration_context=narration_context,
+        )
         domain["animation"] = ["draw", "highlight", "slide_in_right"][beat_index % 3]
         elements = [domain]
         label = screen_text[0][:16] if screen_text else "观察状态变化"
@@ -618,7 +638,46 @@ class AnimationSpecSkill:
             }
         return {"layout": "grid_focus", "elements": [self._domain_visual_element(scene_type, node_name)]}
 
-    def _domain_visual_element(self, scene_type: str, node_name: str) -> dict[str, Any]:
+    def _domain_visual_element(
+        self,
+        scene_type: str,
+        node_name: str,
+        screen_label: str = "",
+        narration_context: str = "",
+    ) -> dict[str, Any]:
+        is_hash_topic = "hash" in node_name.lower() or any(
+            marker in node_name for marker in ("\u54c8\u5e0c", "\u6563\u5217")
+        )
+        if is_hash_topic and scene_type == "comparison":
+            return {
+                "type": "complexity_chart",
+                "label": "\u67e5\u627e\u6210\u672c",
+                "items": ["\u6570\u7ec4\u7d22\u5f15 O(1)", "\u94fe\u8868\u67e5\u627e O(n)", "\u54c8\u5e0c\u8868\u5e73\u5747 O(1)"],
+                "activeIndex": 1,
+                "animation": "highlight",
+            }
+        if is_hash_topic and scene_type == "mechanism":
+            numbers = [int(value) for value in re.findall(r"\d+", narration_context)]
+            bucket_index = numbers[-1] if numbers else 2
+            input_key = numbers[0] if numbers else "key"
+            return {
+                "type": "hash_table_buckets",
+                "buckets": [str(bucket_index + offset) for offset in (-2, -1, 0, 1)],
+                "activeIndex": 2,
+                "keyLabel": str(input_key),
+                "collisionIndices": [],
+                "animation": "highlight",
+            }
+        if is_hash_topic and scene_type in {"process", "example"}:
+            numbers = [int(value) for value in re.findall(r"\d+", f"{screen_label} {narration_context}")]
+            bucket_index = (numbers[-1] % 100) if numbers else 2
+            return {
+                "type": "collision_chain",
+                "bucketIndex": bucket_index,
+                "nodes": ["keyA", "keyB"],
+                "activeNodeIndex": 1,
+                "animation": "stagger_in",
+            }
         if "哈希" in node_name or "hash" in node_name.lower():
             if scene_type == "definition":
                 return {"type": "hash_function_panel", "inputKey": "key", "expression": "hash(key)%m", "outputIndex": 2, "animation": "highlight"}
@@ -809,11 +868,22 @@ class TtsSkill:
         return ffprobe
 
     async def _request_audio(self, headers: dict[str, str], payload: dict[str, Any]) -> bytes:
-        if self._client is not None:
-            return await self._stream_audio(self._client, headers, payload)
-        timeout = httpx.Timeout(settings.tts_timeout_seconds)
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            return await self._stream_audio(client, headers, payload)
+        last_error: httpx.TransportError | None = None
+        for attempt in range(2):
+            try:
+                if self._client is not None:
+                    return await self._stream_audio(self._client, headers, payload)
+                timeout = httpx.Timeout(settings.tts_timeout_seconds)
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    return await self._stream_audio(client, headers, payload)
+            except httpx.TransportError as exc:
+                last_error = exc
+                if attempt == 0:
+                    await asyncio.sleep(0.5)
+        assert last_error is not None
+        raise RuntimeError(
+            f"Doubao TTS connection failed after 2 attempts: {last_error.__class__.__name__}"
+        ) from last_error
 
     async def _stream_audio(
         self,
@@ -1181,6 +1251,7 @@ class VideoGenerationService:
                 audio_urls.append(audio.url)
                 scene.duration_seconds = sum(item.duration_seconds for item in scene.beats)
                 scene.narration = "\n".join(item.narration for item in scene.beats)
+            self._align_to_target_duration(lesson, target_duration_seconds)
             lesson.duration_seconds = sum(scene.duration_seconds for scene in lesson.scenes)
             lesson.output.audio_urls = audio_urls
             emit(VideoGenerationStage.render, 78)
@@ -1196,3 +1267,36 @@ class VideoGenerationService:
             emit(VideoGenerationStage.error, 100, str(exc) or exc.__class__.__name__)
             shutil.rmtree(output_dir, ignore_errors=True)
             raise
+
+    @staticmethod
+    def _align_to_target_duration(
+        lesson: AnimationScriptContent,
+        target_duration_seconds: float | None,
+    ) -> None:
+        if not target_duration_seconds:
+            return
+        current_duration = sum(beat.duration_seconds for scene in lesson.scenes for beat in scene.beats)
+        remaining = max(0.0, target_duration_seconds - current_duration)
+        eligible = [
+            beat
+            for scene in lesson.scenes
+            if scene.scene_type != "hook"
+            for beat in scene.beats
+            if beat.duration_seconds < 15
+        ]
+        while remaining > 0.001 and eligible:
+            share = remaining / len(eligible)
+            distributed = 0.0
+            next_eligible = []
+            for beat in eligible:
+                addition = min(share, 15 - beat.duration_seconds)
+                beat.duration_seconds += addition
+                distributed += addition
+                if beat.duration_seconds < 15 - 0.001:
+                    next_eligible.append(beat)
+            if distributed <= 0.001:
+                break
+            remaining -= distributed
+            eligible = next_eligible
+        for scene in lesson.scenes:
+            scene.duration_seconds = sum(beat.duration_seconds for beat in scene.beats)
