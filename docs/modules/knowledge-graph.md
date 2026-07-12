@@ -30,6 +30,7 @@
 - API：`frontend/src/api/modules/graph.ts`
 - 类型：`frontend/src/types/graph.ts`
 - 状态变量：`selectedNodeId`
+- 图谱默认按 `Chapter` 聚合，仅展示章节级大节点；点击大节点后展示该章节内的 `KnowledgeNode`。
 
 ## 后端
 

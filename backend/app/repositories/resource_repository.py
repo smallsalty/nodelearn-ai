@@ -9,6 +9,7 @@ from app.schemas.resource import (
     ResourceRecommendation,
     ResourceStreamEvent,
 )
+from app.schemas.common import ResourceType
 
 DEMO_TIME = "2026-05-28T10:00:00Z"
 
@@ -122,14 +123,14 @@ class ResourceRepository:
         return [
             resource.model_copy(deep=True)
             for resource in self._resources.values()
-            if resource.user_id == user_id
+            if resource.user_id == user_id and resource.resource_type != ResourceType.practice_question
         ]
 
     def list_node_resources(self, node_id: str) -> list[GeneratedResource]:
         return [
             resource.model_copy(deep=True)
             for resource in self._resources.values()
-            if resource.node_id == node_id
+            if resource.node_id == node_id and resource.resource_type != ResourceType.practice_question
         ]
 
     def delete_resource(self, resource_id: str) -> bool:

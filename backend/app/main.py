@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.v1 import agents, audit, auth, course, graph, learning_path, multimodal, notes, practice, profile, reports, resources, system
+from app.api.v1 import agents, audit, auth, course, graph, learning_path, multimodal, notes, practice, profile, programming, reports, resources, system
 from app.core.config import settings
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
@@ -30,6 +30,7 @@ app.include_router(multimodal.router, prefix="/api/v1", tags=["multimodal"])
 app.include_router(audit.router, prefix="/api/v1", tags=["audit"])
 app.include_router(learning_path.router, prefix="/api/v1", tags=["learning-paths"])
 app.include_router(practice.router, prefix="/api/v1", tags=["practices"])
+app.include_router(programming.router, prefix="/api/v1", tags=["programming"])
 app.include_router(notes.router, prefix="/api/v1", tags=["notes"])
 app.include_router(reports.router, prefix="/api/v1", tags=["reports"])
 app.include_router(system.router, prefix="/api/v1", tags=["system"])

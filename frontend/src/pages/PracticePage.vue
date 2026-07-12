@@ -53,9 +53,9 @@ async function generatePractices() {
       userId: userId.value,
       courseId: courseId.value,
       nodeId: appState.selectedNodeId ?? "node_stack_001",
-      questionTypes: ["single_choice", "short_answer", "coding"] as QuestionType[],
+      questionTypes: ["single_choice", "short_answer"] as QuestionType[],
       difficulty: "medium",
-      count: 3
+      count: 2
     });
     questions.value = response.data;
     selectedQuestionId.value = questions.value[0]?.id ?? null;
@@ -114,7 +114,7 @@ function selectQuestion(question: PracticeQuestion) {
         </div>
         <div class="button-row">
           <el-button :loading="loading" @click="loadPage">刷新</el-button>
-          <el-button type="primary" :loading="generating" @click="generatePractices">生成 3 道题</el-button>
+          <el-button type="primary" :loading="generating" @click="generatePractices">生成练习题</el-button>
         </div>
       </header>
 

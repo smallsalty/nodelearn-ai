@@ -125,6 +125,7 @@ class AgentType(str, Enum):
     knowledge_graph_agent = "knowledge_graph_agent"
     note_agent = "note_agent"
     report_agent = "report_agent"
+    programming_agent = "programming_agent"
 
 
 class TaskStatus(str, Enum):
