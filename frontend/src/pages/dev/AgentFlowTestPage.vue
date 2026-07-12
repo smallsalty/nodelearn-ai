@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import { agentApi } from "@/api/modules/agent";
 import { practiceApi } from "@/api/modules/practice";
-import MermaidPreview from "@/components/MermaidPreview.vue";
+import MindMapViewer from "@/components/mind-map/MindMapViewer.vue";
 import VideoLessonPlayer from "@/components/VideoLessonPlayer.vue";
 import type { ApiResponse, AgentType, TaskStatus } from "@/types/contracts";
 import type {
@@ -430,10 +430,6 @@ function outputValue(key: string) {
   return asRecord(currentAgentResult.value?.output)[key];
 }
 
-function isMindmap(content: string) {
-  return content.trim().startsWith("mindmap");
-}
-
 function isVideoResource(resource: GeneratedResource) {
   return resource.resourceType === "video_script" || resource.resourceType === "animation_script";
 }
@@ -597,7 +593,7 @@ function isVideoResource(resource: GeneratedResource) {
                 class="resource-preview"
               >
                 <h4>{{ resource.title }} / {{ resource.resourceType }}</h4>
-                <MermaidPreview v-if="isMindmap(resource.content)" :content="resource.content" />
+                <MindMapViewer v-if="resource.resourceType === 'mind_map'" :content="resource.content" />
                 <template v-else-if="isVideoResource(resource)">
                   <video v-if="resource.fileUrl" class="mp4-player" :src="resource.fileUrl" controls />
                   <VideoLessonPlayer :content="resource.content" />
@@ -699,7 +695,7 @@ function isVideoResource(resource: GeneratedResource) {
 
             <el-card shadow="never">
               <template #header>思维导图</template>
-              <MermaidPreview v-for="resource in workflowMindMaps" :key="resource.id" :content="resource.content" />
+              <MindMapViewer v-for="resource in workflowMindMaps" :key="resource.id" :content="resource.content" />
             </el-card>
 
             <el-card shadow="never">
@@ -813,8 +809,7 @@ function isVideoResource(resource: GeneratedResource) {
 }
 
 .json-block,
-.inline-json,
-.mermaid-preview {
+.inline-json {
   margin: 0;
   padding: 12px;
   overflow: auto;
@@ -860,11 +855,6 @@ function isVideoResource(resource: GeneratedResource) {
 .resource-preview:last-child,
 .question-card:last-child {
   border-bottom: 0;
-}
-
-.mermaid-preview {
-  background: #ecfeff;
-  color: #164e63;
 }
 
 .answer-row {

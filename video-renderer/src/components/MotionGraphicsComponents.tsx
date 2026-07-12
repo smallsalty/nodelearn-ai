@@ -3,16 +3,16 @@ import { Img, interpolate, spring, useCurrentFrame, useVideoConfig } from "remot
 import type { VisualAnimationType, VisualElement } from "../types";
 
 export const palette = {
-  background: "#071426",
-  surface: "rgba(16, 35, 63, 0.88)",
-  surfaceStrong: "#173352",
-  cyan: "#33d6c5",
-  blue: "#5ea1ff",
-  amber: "#ffc857",
-  lavender: "#a78bfa",
-  text: "#f7fbff",
-  muted: "#a9bdd7",
-  border: "rgba(94, 161, 255, 0.28)",
+  background: "var(--video-background)",
+  surface: "var(--video-surface)",
+  surfaceStrong: "var(--video-surface-strong)",
+  cyan: "var(--video-secondary)",
+  blue: "var(--video-primary)",
+  amber: "var(--video-accent)",
+  lavender: "var(--video-secondary)",
+  text: "var(--video-text)",
+  muted: "var(--video-muted)",
+  border: "var(--video-border)",
 };
 
 const entranceStyle = (animation: VisualAnimationType, index = 0): React.CSSProperties => {
@@ -21,13 +21,12 @@ const entranceStyle = (animation: VisualAnimationType, index = 0): React.CSSProp
   const delay = index * 6;
   const progress = spring({ frame: frame - delay, fps, config: { damping: 18, stiffness: 105, mass: 0.7 } });
   const fade = interpolate(frame - delay, [0, 14], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const floatOffset = Math.sin((frame - delay) / 15) * 10;
   const transforms: Record<VisualAnimationType, string> = {
     fade_in: `translateY(${(1 - progress) * 18}px)`,
     pop_in: `scale(${0.68 + progress * 0.32})`,
     slide_in_left: `translateX(${(1 - progress) * -150}px)`,
     slide_in_right: `translateX(${(1 - progress) * 150}px)`,
-    float: `translateY(${floatOffset}px) scale(${0.92 + progress * 0.08})`,
+    float: `translateY(${(1 - progress) * 28}px) scale(${0.92 + progress * 0.08})`,
     draw: `scaleX(${progress})`,
     highlight: `scale(${0.92 + progress * 0.08})`,
     zoom_in: `scale(${0.58 + progress * 0.42})`,
@@ -40,10 +39,9 @@ const emphasisStyle = (index = 0) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const focus = spring({ frame: frame - index * 7 - 12, fps, config: { damping: 24, stiffness: 72, mass: 0.8 } });
-  const pulse = interpolate(Math.sin((frame + index * 9) / 18), [-1, 1], [0, 1]);
   return {
-    scale: 1 + focus * 0.018 + pulse * 0.006,
-    glow: 0.18 + focus * 0.22 + pulse * 0.14,
+    scale: 1 + focus * 0.018,
+    glow: 0.18 + focus * 0.22,
     lift: -focus * 5,
   };
 };

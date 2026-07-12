@@ -48,8 +48,8 @@ class MultimodalAgent(BaseAgent):
             "resourceIds": plan.result.resource_ids,
             "generatedResources": [self.to_contract_output(resource) for resource in plan.resources],
             "renderHints": {
-                "mindMapRenderer": "mermaid",
-                "contentType": "markdown",
+                "mindMapRenderer": "knowledge_json",
+                "contentType": "json",
             },
         }
         return self.build_result(request, output, status=plan.result.status)

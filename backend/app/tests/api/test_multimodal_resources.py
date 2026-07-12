@@ -46,8 +46,12 @@ def test_generate_mind_map_resource_can_be_read_back():
     assert generated["status"] == "success"
     assert set(detail.keys()) == GENERATED_RESOURCE_FIELDS
     assert detail["resourceType"] == "mind_map"
-    assert detail["content"].startswith("mindmap")
-    assert "链表" in detail["content"]
+    content = json.loads(detail["content"])
+    assert content["centralTopic"] == "链表"
+    assert content["scope"] == "node"
+    assert len(content["branches"]) >= 5
+    assert all(branch["children"] for branch in content["branches"])
+    assert not {"易错点", "练习建议", "学习计划", "资源推荐"} & {branch["title"] for branch in content["branches"]}
     assert detail["auditStatus"] == "passed"
     assert detail["status"] == "success"
 

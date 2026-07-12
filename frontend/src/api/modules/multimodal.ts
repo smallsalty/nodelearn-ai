@@ -1,4 +1,4 @@
-import { request } from "@/api/client";
+import { postKeepalive, request } from "@/api/client";
 import type { ChatMessage } from "@/types/agent";
 import type {
   DigitalHumanCallbackRequest,
@@ -6,6 +6,7 @@ import type {
   DigitalHumanChatResult,
   DigitalHumanExplainRequest,
   DigitalHumanExplainResult,
+  DigitalHumanLiveSessionResult,
   MultimodalStreamEvent,
   MultimodalTaskEvent,
   MultimodalTaskResult,
@@ -48,6 +49,15 @@ export const multimodalApi = {
   },
   getDigitalHumanMessages(sessionId: string) {
     return request<ChatMessage[]>({ method: "GET", url: `/multimodal/digital-human/sessions/${sessionId}/messages` });
+  },
+  getDigitalHumanLiveSession(sessionId: string) {
+    return request<DigitalHumanLiveSessionResult>({ method: "GET", url: `/multimodal/digital-human/sessions/${sessionId}/live` });
+  },
+  stopDigitalHumanLiveSession(sessionId: string) {
+    return request<DigitalHumanLiveSessionResult>({ method: "POST", url: `/multimodal/digital-human/sessions/${sessionId}/stop` });
+  },
+  stopDigitalHumanLiveSessionKeepalive(sessionId: string) {
+    postKeepalive(`/multimodal/digital-human/sessions/${sessionId}/stop`);
   },
   handleDigitalHumanCallback(payload: DigitalHumanCallbackRequest) {
     return request<MultimodalTaskResult>({ method: "POST", url: "/multimodal/digital-human/callback", data: payload });

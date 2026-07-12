@@ -6,7 +6,8 @@ import type {
   VideoAspect,
   VideoGenerationStage,
   VideoMaterialSource,
-  VideoQualityPreset
+  VideoQualityPreset,
+  VideoTheme
 } from "./contracts";
 
 export interface UploadedFile {
@@ -114,22 +115,40 @@ export interface AnimationStep {
   durationSeconds?: number;
 }
 
+export interface VideoSourceReference {
+  id: string;
+  title: string;
+  sourceId?: string;
+}
+
+export interface VideoNarrationBeat {
+  beatId: string;
+  narration: string;
+  durationSeconds: number;
+  screenText: string[];
+  claims: string[];
+  sourceIds: string[];
+  visualPlan: VisualPlan;
+  audioUrl: string;
+}
+
 export interface VideoLessonScene {
   sceneId: string;
   sceneType: SceneType;
   title: string;
-  narration: string;
+  narration?: string;
   durationSeconds: number;
   teachingPurpose: string;
-  concreteObjects: string[];
-  animationSteps: AnimationStep[];
-  stateChanges: string[];
-  screenText: string[];
+  concreteObjects?: string[];
+  animationSteps?: AnimationStep[];
+  stateChanges?: string[];
+  screenText?: string[];
   misconceptionFix: string;
-  componentHints: string[];
-  auditChecklist: string[];
-  visualPlan: VisualPlan;
-  audioUrl: string;
+  componentHints?: string[];
+  auditChecklist?: string[];
+  visualPlan?: VisualPlan;
+  audioUrl?: string;
+  beats?: VideoNarrationBeat[];
 }
 
 export interface VideoLessonOutput {
@@ -138,14 +157,19 @@ export interface VideoLessonOutput {
 }
 
 export interface AnimationScriptContent {
+  schemaVersion?: "1.0" | "2.0";
   title: string;
   style: VideoStyle;
+  theme?: VideoTheme;
   durationSeconds: number;
+  targetDurationSeconds?: number;
   aspectRatio: VideoAspect;
   courseId?: string;
   nodeId?: string;
   learnerProfileSummary?: string;
   qualityScore?: number;
+  subtitleEnabled?: boolean;
+  sources?: VideoSourceReference[];
   scenes: VideoLessonScene[];
   output: VideoLessonOutput;
 }
@@ -158,6 +182,7 @@ export interface VideoGenerateOptions {
   subtitleEnabled?: boolean;
   bgmEnabled?: boolean;
   bgmVolume?: number;
+  theme?: VideoTheme;
 }
 
 export interface ResourceGenerateRequest {

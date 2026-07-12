@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import json
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
@@ -67,6 +68,10 @@ def test_resource_read_routes_return_generated_resource_with_audit_status():
     assert task == generated
     assert set(detail.keys()) == GENERATED_RESOURCE_FIELDS
     assert detail["auditStatus"] == "passed"
+    if detail["resourceType"] == "mind_map":
+        content = json.loads(detail["content"])
+        assert len(content["branches"]) >= 5
+        assert content["courseId"] == "course_ds_001"
     assert any(item["id"] == resource_id for item in user_resources["list"])
     assert any(item["id"] == resource_id for item in node_resources)
 

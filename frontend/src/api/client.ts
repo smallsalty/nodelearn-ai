@@ -73,6 +73,19 @@ export async function request<T>(config: AxiosRequestConfig): Promise<ApiRespons
   return response.data;
 }
 
+export function postKeepalive(path: string): void {
+  const url = `${API_BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+  if (typeof navigator.sendBeacon === "function") {
+    const accepted = navigator.sendBeacon(url, new Blob([], { type: "text/plain;charset=UTF-8" }));
+    if (accepted) return;
+  }
+  void fetch(url, {
+    method: "POST",
+    keepalive: true,
+    credentials: "include"
+  }).catch(() => undefined);
+}
+
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
     return error.message;

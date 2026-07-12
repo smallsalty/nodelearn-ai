@@ -47,6 +47,13 @@ from app.schemas.video import AnimationScriptContent
 from app.agents.multimodal_skills import VideoAuditError, VideoGenerationService
 from app.services.audit_service import AuditService
 from app.services.llm_service import LLMService
+from app.services.mind_map_service import (
+    MindMapGenerationContext,
+    MindMapValidator,
+    build_mind_map_prompt,
+    build_mock_mind_map,
+    validation_failure_content,
+)
 
 SOURCE_USER_ID = "system"
 VIDEO_RESOURCE_TYPES = {ResourceType.video_script, ResourceType.animation_script}
@@ -328,25 +335,35 @@ class ResourceService:
         for order_index, resource_type in enumerate(resource_types, start=1):
             resource_id = self.repository.next_resource_id(resource_type.value)
             title = self._resource_title(node, resource_type)
-            prompt = self._resource_prompt(
-                profile,
-                node,
-                resource_type,
-                target_goal,
-                payload.custom_requirement,
-                retrieved_documents,
-            )
-            template_content = self._render_template(
-                resource_type,
-                node,
-                target_goal,
-                profile,
-                retrieved_documents,
-            )
-            content = await self.llm_service.generate_text(prompt, mock_text=template_content)
-            content = self._normalize_generated_content(resource_type, content)
-            if payload.custom_requirement and resource_type != ResourceType.mind_map:
-                content = f"{content}\n\n{payload.custom_requirement}"
+            generation_error: str | None = None
+            if resource_type == ResourceType.mind_map:
+                prompt, content, generation_error = await self._generate_mind_map_content(
+                    payload=payload,
+                    node=node,
+                    target_goal=target_goal,
+                    custom_requirement=payload.custom_requirement,
+                    retrieved_documents=retrieved_documents,
+                )
+            else:
+                prompt = self._resource_prompt(
+                    profile,
+                    node,
+                    resource_type,
+                    target_goal,
+                    payload.custom_requirement,
+                    retrieved_documents,
+                )
+                template_content = self._render_template(
+                    resource_type,
+                    node,
+                    target_goal,
+                    profile,
+                    retrieved_documents,
+                )
+                content = await self.llm_service.generate_text(prompt, mock_text=template_content)
+                content = self._normalize_generated_content(resource_type, content)
+                if payload.custom_requirement:
+                    content = f"{content}\n\n{payload.custom_requirement}"
 
             audit_result = await self.audit_service.check_content(
                 content=content,
@@ -354,7 +371,9 @@ class ResourceService:
                 target_id=resource_id,
             )
             audit_status = AuditStatus(audit_result.audit_status)
-            status = TaskStatus.success if audit_status == AuditStatus.passed else TaskStatus.failed
+            status = TaskStatus.success if audit_status == AuditStatus.passed and generation_error is None else TaskStatus.failed
+            if generation_error and error_message is None:
+                error_message = generation_error
 
             resource = GeneratedResource(
                 id=resource_id,
@@ -437,6 +456,105 @@ class ResourceService:
             error_message=error_message,
         )
         return result
+
+    async def _generate_mind_map_content(
+        self,
+        *,
+        payload: ResourceGenerateRequest,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        custom_requirement: str | None,
+        retrieved_documents: list[RetrievedDocument] | None,
+    ) -> tuple[str, str, str | None]:
+        context = self._build_mind_map_context(
+            payload=payload,
+            node=node,
+            target_goal=target_goal,
+            custom_requirement=custom_requirement,
+            retrieved_documents=retrieved_documents,
+        )
+        prompt = build_mind_map_prompt(context)
+        mock_data = build_mock_mind_map(context)
+        raw_output: Any = None
+        validation_errors: list[str] = []
+
+        for attempt in range(2):
+            raw_output = await self.llm_service.generate_json(
+                prompt,
+                mock_data=mock_data,
+                temperature=0.2,
+            )
+            validation_errors = MindMapValidator.validate_errors(raw_output)
+            if not validation_errors:
+                return prompt, json.dumps(raw_output, ensure_ascii=False), None
+            prompt = build_mind_map_prompt(context, validation_errors=validation_errors)
+
+        return (
+            prompt,
+            validation_failure_content(validation_errors, raw_output),
+            "mind_map validation failed after retry",
+        )
+
+    def _build_mind_map_context(
+        self,
+        *,
+        payload: ResourceGenerateRequest,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        custom_requirement: str | None,
+        retrieved_documents: list[RetrievedDocument] | None,
+    ) -> MindMapGenerationContext:
+        course_nodes = self.learning_path_repository.list_nodes(payload.course_id)
+        course_relations = self.learning_path_repository.list_relations(payload.course_id)
+        central_topic = node.name if node else "数据结构"
+        chapter_id = node.chapter_id if node else None
+        scope = "chapter" if chapter_id else "node"
+
+        if scope == "chapter":
+            context_nodes = [item for item in course_nodes if item.chapter_id == chapter_id]
+            if node is not None and all(item.id != node.id for item in context_nodes):
+                context_nodes.insert(0, node)
+        else:
+            related_ids = {node.id} if node else set()
+            if node is not None:
+                related_ids.update(node.prerequisite_node_ids)
+                related_ids.update(node.next_node_ids)
+            context_nodes = [item for item in course_nodes if item.id in related_ids]
+            if node is not None and all(item.id != node.id for item in context_nodes):
+                context_nodes.insert(0, node)
+            if not context_nodes:
+                context_nodes = course_nodes[:8]
+
+        context_node_ids = {item.id for item in context_nodes}
+        if scope == "chapter":
+            context_relations = [
+                relation
+                for relation in course_relations
+                if relation.source_node_id in context_node_ids and relation.target_node_id in context_node_ids
+            ]
+        else:
+            focus_node_id = node.id if node else None
+            context_relations = [
+                relation
+                for relation in course_relations
+                if relation.source_node_id in context_node_ids
+                and relation.target_node_id in context_node_ids
+                and (focus_node_id is None or focus_node_id in {relation.source_node_id, relation.target_node_id})
+            ]
+
+        return MindMapGenerationContext(
+            course_id=payload.course_id,
+            node_id=node.id if node else payload.node_id,
+            node_name=node.name if node else "当前知识点",
+            chapter_id=chapter_id,
+            scope=scope,
+            central_topic=central_topic,
+            target_goal=target_goal,
+            custom_requirement=custom_requirement,
+            nodes=context_nodes,
+            relations=context_relations,
+            retrieved_documents=retrieved_documents,
+        )
 
     async def _generate_video_resources(
         self,
@@ -809,7 +927,7 @@ class ResourceService:
         source_section = self._retrieved_document_section(retrieved_documents)
         format_requirement = ""
         if resource_type == ResourceType.mind_map:
-            format_requirement = "只输出以 mindmap 开头的 Mermaid 思维导图源码，不要使用 Markdown 代码围栏。"
+            format_requirement = "只输出 KnowledgeMindMap JSON，不要使用 Markdown、Mermaid 或前端坐标。"
         return (
             f"为用户 {profile.user_id} 生成 {resource_type.value}。"
             f"知识点：{node_name}。学习目标：{target_goal}。额外要求：{requirement}。"
@@ -822,29 +940,7 @@ class ResourceService:
         normalized = content.strip()
         if resource_type != ResourceType.mind_map:
             return normalized
-
-        if normalized.startswith("```"):
-            lines = normalized.splitlines()
-            if lines and lines[0].strip() in {"```", "```mermaid"}:
-                lines = lines[1:]
-            if lines and lines[-1].strip() == "```":
-                lines = lines[:-1]
-            normalized = "\n".join(lines).strip()
-
-        if not normalized.startswith("mindmap"):
-            raise RuntimeError("LLM mind_map output must start with Mermaid mindmap syntax")
-        punctuation_map = str.maketrans({"(": "（", ")": "）", "[": "【", "]": "】", "{": "｛", "}": "｝"})
-        lines = []
-        for index, line in enumerate(normalized.splitlines()):
-            stripped = line.strip()
-            if stripped.startswith("::icon("):
-                continue
-            if index == 0 or not stripped or stripped.startswith("root("):
-                lines.append(line)
-                continue
-            indentation = line[: len(line) - len(line.lstrip())]
-            lines.append(f"{indentation}{stripped.translate(punctuation_map)}")
-        return "\n".join(lines)
+        return MindMapValidator.normalize_content(normalized)
 
     def _render_template(
         self,
@@ -880,14 +976,20 @@ class ResourceService:
                 f"{document_section}"
             ),
             ResourceType.mind_map: (
-                "mindmap\n"
-                f"  root(({node_name}))\n"
-                "    基本概念\n"
-                "    存储结构\n"
-                "    插入操作\n"
-                "    删除操作\n"
-                "    常见错误\n"
-                "    补弱提示"
+                json.dumps(
+                    {
+                        "title": f"{node_name}知识结构导图",
+                        "scope": "node",
+                        "courseId": "course_ds_001",
+                        "chapterId": None,
+                        "nodeId": node.id if node else None,
+                        "centralTopic": node_name,
+                        "summary": f"围绕{node_name}梳理知识结构。",
+                        "branches": [],
+                        "relations": [],
+                    },
+                    ensure_ascii=False,
+                )
             ),
             ResourceType.practice_question: (
                 f"# {node_name}练习题生成任务说明\n"

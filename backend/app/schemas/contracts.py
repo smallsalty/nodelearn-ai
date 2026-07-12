@@ -23,6 +23,7 @@ from app.schemas.common import (
     VideoGenerationStage,
     VideoMaterialSource,
     VideoQualityPreset,
+    VideoTheme,
 )
 from app.schemas.course import KnowledgeNode
 from app.schemas.learning_path import LearningPath
@@ -32,6 +33,7 @@ from app.schemas.multimodal import (
     DigitalHumanChatResult,
     DigitalHumanExplainRequest,
     DigitalHumanExplainResult,
+    DigitalHumanLiveSessionResult,
     MultimodalStreamEvent,
     MultimodalTaskEvent,
     MultimodalTaskResult,
@@ -69,6 +71,7 @@ __all__ = [
     "DigitalHumanChatResult",
     "DigitalHumanExplainRequest",
     "DigitalHumanExplainResult",
+    "DigitalHumanLiveSessionResult",
     "DifficultyLevel",
     "GeneratedResource",
     "KnowledgeNode",
@@ -104,5 +107,6 @@ __all__ = [
     "VideoGenerationStage",
     "VideoMaterialSource",
     "VideoQualityPreset",
+    "VideoTheme",
     "ResourceStreamEvent",
 ]

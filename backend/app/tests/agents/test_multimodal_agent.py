@@ -51,7 +51,7 @@ def make_agent(repository: ResourceRepository | None = None) -> MultimodalAgent:
     )
 
 
-def test_multimodal_agent_generates_mermaid_mind_map():
+def test_multimodal_agent_generates_json_mind_map():
     result = run(
         make_agent().run(
             AgentRunRequest(
@@ -68,9 +68,10 @@ def test_multimodal_agent_generates_mermaid_mind_map():
 
     assert result.status == "success"
     assert resource["resourceType"] == "mind_map"
-    assert resource["content"].startswith("mindmap")
-    assert "链表" in resource["content"]
-    assert result.output["renderHints"] == {"mindMapRenderer": "mermaid", "contentType": "markdown"}
+    content = json.loads(resource["content"])
+    assert content["centralTopic"] == "链表"
+    assert len(content["branches"]) >= 5
+    assert result.output["renderHints"] == {"mindMapRenderer": "knowledge_json", "contentType": "json"}
     assert set(resource.keys()) == GENERATED_RESOURCE_FIELDS
 
 

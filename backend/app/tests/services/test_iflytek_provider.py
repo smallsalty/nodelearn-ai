@@ -8,9 +8,8 @@ import httpx
 import pytest
 
 from app.core.config import settings
-from app.schemas.common import TaskStatus
 from app.services.providers.iflytek.client import IflytekClient, PROVIDER_CALL_LOGS
-from app.services.providers.iflytek.spark import IflytekSparkProvider
+from app.services.providers.iflytek.interface_service_chat import IflytekInterfaceServiceChatProvider
 from app.services.providers.iflytek.tts import IflytekTtsProvider
 from app.services.providers.iflytek.types import IflytekChatRequest
 
@@ -19,27 +18,25 @@ def run(coro):
     return asyncio.run(coro)
 
 
-def test_iflytek_spark_returns_mock_without_real_key(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(settings, "enable_mock", False)
-    monkeypatch.setattr(settings, "iflytek_enable_mock", False)
+def test_interface_service_chat_never_falls_back_to_mock_without_credentials(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(settings, "enable_mock", True)
+    monkeypatch.setattr(settings, "iflytek_enable_mock", True)
     monkeypatch.setattr(settings, "iflytek_api_key", "")
     monkeypatch.setattr(settings, "iflytek_api_secret", "")
     monkeypatch.setattr(settings, "iflytek_app_id", "")
 
-    result = run(
-        IflytekSparkProvider().chat(
-            IflytekChatRequest(
-                user_id="user_iflytek_provider_001",
-                course_id="course_ds_001",
-                node_id="node_stack_001",
-                message="解释栈",
+    with pytest.raises(RuntimeError, match="IFLYTEK_APP_ID.*IFLYTEK_API_KEY.*IFLYTEK_API_SECRET"):
+        run(
+            IflytekInterfaceServiceChatProvider().chat(
+                IflytekChatRequest(
+                    user_id="user_iflytek_provider_001",
+                    session_id="session_iflytek_provider_001",
+                    course_id="course_ds_001",
+                    node_id="node_stack_001",
+                    message="解释栈",
+                )
             )
         )
-    )
-
-    assert result.status == TaskStatus.success
-    assert result.text
-    assert result.raw_payload and result.raw_payload["mock"] is True
 
 
 def test_iflytek_tts_request_failure_is_readable_and_logged(monkeypatch: pytest.MonkeyPatch):

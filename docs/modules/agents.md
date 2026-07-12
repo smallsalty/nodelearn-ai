@@ -27,6 +27,8 @@
 - `GET /api/v1/chat/stream?sessionId={sessionId}`
 - `POST /api/v1/multimodal/digital-human/chat`
 - `GET /api/v1/multimodal/digital-human/sessions/{sessionId}/messages`
+- `GET /api/v1/multimodal/digital-human/sessions/{sessionId}/live`
+- `POST /api/v1/multimodal/digital-human/sessions/{sessionId}/stop`
 - `POST /api/v1/agents/run`
 - `POST /api/v1/agents/workflows/run`
 - `GET /api/v1/agents/tasks/{taskId}`
@@ -79,5 +81,9 @@
 
 - `ChatSession.sessionType` 支持 `digital_human`。
 - 数字人对话围绕 `userId/courseId/nodeId/sessionId/message` 工作，必须结合学生画像、RAG 结果和 audit/safety。
-- 数字人媒体输出通过 provider adapter 返回 `audioUrl`、`videoUrl`、`providerTaskId`，前端不得写死讯飞字段。
+- 数字人媒体输出通过 provider adapter 返回 `audioUrl`、`videoUrl`、`providerTaskId` 和 `liveSession`，前端不得写死讯飞字段。
+- 实时数字人对话使用虚拟人平台已发布接口服务自带的“大模型对话”能力，请求 `wss://apigateway.xfyousheng.com/nlp/v1/interact_nlp`，`header.scene_id` 取 `IFLYTEK_DIGITAL_HUMAN_SERVICE_ID`，并与在线虚拟人驱动共享同一组 APPID/APIKey/APISecret；不得调用独立 Spark Lite、DeepSeek 或 mock。
+- 调用顺序固定为接口服务大模型 → audit/safety → 在线虚拟人；模型失败、空响应或审核拒绝时不得启动或驱动虚拟人。讯飞 RTMP 只在后端保留，经 ffmpeg 转为 HLS 后通过 `videoUrl` 暴露给前端。
+- 已发布接口服务中的“在线虚拟人驱动”协议为 `wss://avatar.cn-huadong-1.xf-yun.com/v1/interact`，握手使用 GET HMAC-SHA256；同一 WebSocket 发送 `start / text_driver / ping / stop`，不再调用旧 AI 虚拟人 `vms2d_*` REST 产品。
+- 同一 `sessionId` 复用直播会话，通过 `/live` 查询状态、通过 `/stop` 主动释放；后端每 5 秒发送应用层 ping，并负责连接异常、FFmpeg 异常和 5 分钟空闲超时清理。
 - 允许根据功能新增 `AgentType`、`workflowType` 或事件值，但必须同步契约、schema、前端类型和测试。

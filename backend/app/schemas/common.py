@@ -197,6 +197,12 @@ class VideoMaterialSource(str, Enum):
     generated_motion_assets = "generated_motion_assets"
 
 
+class VideoTheme(str, Enum):
+    warm_academic = "warm_academic"
+    chalk_classroom = "chalk_classroom"
+    technical_blueprint = "technical_blueprint"
+
+
 class BehaviorType(str, Enum):
     view_resource = "view_resource"
     finish_resource = "finish_resource"
@@ -236,7 +242,7 @@ class HealthCheckResult(ContractModel):
     vector_store: Literal["ok", "error"] | None = None
     graph_db: Literal["ok", "error"] | None = None
     llm_service: Literal["ok", "error"] | None = None
-    iflytek_spark: Literal["mock", "ok", "error"] | None = None
+    iflytek_digital_human_chat: Literal["ok", "error"] | None = None
     iflytek_tts: Literal["mock", "ok", "error"] | None = None
     iflytek_digital_human: Literal["mock", "ok", "error"] | None = None
 

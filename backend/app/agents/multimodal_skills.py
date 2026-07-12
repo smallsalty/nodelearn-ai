@@ -4,6 +4,7 @@ import asyncio
 import base64
 import json
 import logging
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,7 +16,7 @@ from uuid import uuid4
 import httpx
 
 from app.core.config import settings
-from app.schemas.common import AuditStatus, VideoAspect, VideoGenerationStage, VideoQualityPreset
+from app.schemas.common import AuditStatus, VideoAspect, VideoGenerationStage, VideoQualityPreset, VideoTheme
 from app.schemas.course import KnowledgeNode
 from app.schemas.report import AuditResult
 from app.schemas.resource import RetrievedDocument, VideoGenerateOptions
@@ -218,7 +219,8 @@ class VideoScriptSkill:
             "scenes 必须严格按 hook、definition、analogy、mechanism、comparison、process、example、summary 排列；"
             "每个 scene 必须包含 sceneType、title、narration、durationSeconds、teachingPurpose、"
             "concreteObjects、stateChanges 和 misconceptionFix。"
-            "旁白要适合 TTS，语言自然、简洁，不要把定义堆成长段文字。hook 不超过 15 秒。"
+            "旁白要适合 TTS，每句尽量不超过 25 个中文字，一个句子只讲一个观点；hook 不超过 8 秒。"
+            "禁止使用大家好今天、本期视频我们将、颠覆你的认知、希望对你有帮助、感谢观看等模板化口播。"
             "必须引用参考材料中的知识点事实，必须解释为什么，不允许只说结论。"
             "画面设计要围绕具体数据结构对象，例如桶数组、链表节点、栈块、队列、树节点、代码追踪。"
             f"\n知识点：{node_name}\n学习目标：{target_goal}\n参考材料：\n{_documents_text(documents)}"
@@ -293,17 +295,13 @@ class StoryboardSkill:
             "你是 multimodal_agent 的 StoryboardSkill。"
             "请将讲解脚本改写为 clean_motion_graphics 风格的通用知识解释动画 JSON。只返回 JSON 对象。"
             "顶层必须包含 title、style、durationSeconds、aspectRatio、scenes、output。"
-            "每个 scene 必须包含 sceneId、sceneType、title、narration、durationSeconds、visualPlan、audioUrl。"
+            "每个 scene 必须包含 sceneId、sceneType、title、narration、durationSeconds 和 visualIntent。"
             "每个 scene 还必须包含 teachingPurpose、concreteObjects、animationSteps、stateChanges、screenText、"
             "misconceptionFix、componentHints 和 auditChecklist。"
             "每个 scene 至少 3 个 animationSteps；每个 animationStep 必须包含 startState、endState、visualAction、narrationSentence。"
             "scenes 必须严格按 hook、definition、analogy、mechanism、comparison、process、example、summary 排列。"
-            "visualPlan.layout 只能使用 center_focus、left_right、pipeline、comparison、timeline、grid_focus、summary_cards。"
-            "visualPlan.elements 只能使用 text、keyword、card、icon、arrow、circle、grid、timeline、image、formula、code；"
-            "优先使用 hash_table_buckets、hash_function_panel、collision_chain、array_cells、linked_list_nodes、"
-            "stack_blocks、queue_line、tree_node_graph、code_trace_panel、pointer_arrow、memory_box、complexity_chart 这些教学元素。"
-            "每个元素必须指定 animation，animation 只能使用 fade_in、pop_in、slide_in_left、slide_in_right、float、draw、highlight、zoom_in、stagger_in。"
-            "icon 元素必须使用 name 字段，不得使用 imageUrl；image 元素必须使用 HTTPS imageUrl 和 alt；arrow 元素必须包含 label，允许空字符串。"
+            "visualIntent 只描述关系类型、具体对象、状态变化和屏幕短句，不得生成 visualPlan 或具体组件字段；"
+            "后续 Visual Director 会确定性选择数据结构组件并补齐严格字段。"
             "画面必须有具体数据结构对象和状态变化，禁止纯标题页、纯图标页、纯概念卡。"
             "画面只展示关键词、短句和标签，每屏文字不超过 80 个中文字，不得复制整段 narration。"
             "definition 使用 1-3 个 keyword；summary 使用 3 个 card；imageUrl 只能使用 HTTPS。"
@@ -342,7 +340,26 @@ class StoryboardSkill:
 
 
 class AnimationSpecSkill:
-    def normalize(self, node: KnowledgeNode | None, storyboard: dict[str, Any]) -> AnimationScriptContent:
+    def normalize(
+        self,
+        node: KnowledgeNode | None,
+        storyboard: dict[str, Any],
+        *,
+        schema_version: str = "1.0",
+        documents: list[RetrievedDocument] | None = None,
+        theme: VideoTheme = VideoTheme.warm_academic,
+        target_duration_seconds: float | None = None,
+        subtitle_enabled: bool = True,
+    ) -> AnimationScriptContent:
+        if schema_version == "2.0":
+            return self._normalize_v2(
+                node,
+                storyboard,
+                documents=documents or [],
+                theme=theme,
+                target_duration_seconds=target_duration_seconds,
+                subtitle_enabled=subtitle_enabled,
+            )
         node_name = node.name if node else "当前知识点"
         raw_scenes = storyboard.get("scenes")
         if not isinstance(raw_scenes, list) or not raw_scenes:
@@ -361,6 +378,140 @@ class AnimationSpecSkill:
             "output": {"videoUrl": "", "audioUrls": []},
         }
         return AnimationScriptContent.model_validate(payload)
+
+    def _normalize_v2(
+        self,
+        node: KnowledgeNode | None,
+        storyboard: dict[str, Any],
+        *,
+        documents: list[RetrievedDocument],
+        theme: VideoTheme,
+        target_duration_seconds: float | None,
+        subtitle_enabled: bool,
+    ) -> AnimationScriptContent:
+        node_name = node.name if node else "当前知识点"
+        raw_scenes = storyboard.get("scenes")
+        if not isinstance(raw_scenes, list) or not raw_scenes:
+            raise RuntimeError("storyboard returned no scenes")
+        source_refs = [
+            {"id": item.id, "title": item.title, "sourceId": item.source_id}
+            for item in documents[:5]
+        ]
+        if not source_refs and node is not None:
+            source_refs = [{"id": node.id, "title": node.name, "sourceId": node.id}]
+        source_ids = [item["id"] for item in source_refs]
+        scenes = [
+            self._normalize_v2_scene(item, index, node_name, source_ids)
+            for index, item in enumerate(raw_scenes, start=1)
+            if isinstance(item, dict)
+        ]
+        payload = {
+            "schemaVersion": "2.0",
+            "title": str(storyboard.get("title") or f"什么是{node_name}"),
+            "style": "clean_motion_graphics",
+            "theme": theme.value if hasattr(theme, "value") else str(theme),
+            "durationSeconds": sum(float(item["durationSeconds"]) for item in scenes),
+            "targetDurationSeconds": target_duration_seconds,
+            "aspectRatio": "16:9",
+            "subtitleEnabled": subtitle_enabled,
+            "sources": source_refs,
+            "scenes": scenes,
+            "output": {"videoUrl": "", "audioUrls": []},
+        }
+        return AnimationScriptContent.model_validate(payload)
+
+    def _normalize_v2_scene(
+        self,
+        scene: dict[str, Any],
+        index: int,
+        node_name: str,
+        source_ids: list[str],
+    ) -> dict[str, Any]:
+        scene_type = str(scene.get("sceneType") or scene.get("scene_type") or SCENE_SEQUENCE[min(index - 1, len(SCENE_SEQUENCE) - 1)])
+        title = str(scene.get("title") or f"{node_name}场景 {index}")
+        narration = str(scene.get("narration") or f"用具体变化理解{node_name}。")
+        chunks = self._narration_chunks(narration)
+        beats = []
+        for beat_index, chunk in enumerate(chunks, start=1):
+            duration = max(3.0, min(10.0, round(len(chunk) / 4, 1)))
+            if scene_type == "hook":
+                duration = min(duration, 8.0 / max(1, len(chunks)))
+            screen_text = self._screen_text(scene, title, chunk, beat_index)
+            beats.append(
+                {
+                    "beatId": f"scene_{index:03d}_beat_{beat_index:02d}",
+                    "narration": chunk,
+                    "durationSeconds": duration,
+                    "screenText": screen_text,
+                    "claims": [chunk] if source_ids else [],
+                    "sourceIds": source_ids,
+                    "visualPlan": self._v2_visual_plan(scene_type, node_name, screen_text, beat_index),
+                    "audioUrl": "",
+                }
+            )
+        return {
+            "sceneId": str(scene.get("sceneId") or scene.get("scene_id") or f"scene_{index:03d}"),
+            "sceneType": scene_type,
+            "title": title,
+            "durationSeconds": sum(float(item["durationSeconds"]) for item in beats),
+            "teachingPurpose": str(scene.get("teachingPurpose") or f"帮助学习者理解{node_name}的{scene_type}环节"),
+            "misconceptionFix": str(scene.get("misconceptionFix") or _misconception_fix(scene_type, node_name)),
+            "componentHints": _component_hints(scene_type, node_name),
+            "auditChecklist": ["oneIdeaPerBeat", "groundedClaims", "contentDrivenVisual"],
+            "beats": beats,
+        }
+
+    def _narration_chunks(self, narration: str) -> list[str]:
+        chunks = [part.strip() for part in re.split(r"(?<=[。！？!?])", narration) if part.strip()]
+        if not chunks:
+            return [narration.strip() or "继续观察这个知识点的状态变化。"]
+        return chunks[:3]
+
+    def _screen_text(self, scene: dict[str, Any], title: str, narration: str, beat_index: int) -> list[str]:
+        raw = scene.get("screenText")
+        candidates = [str(item).strip() for item in raw if str(item).strip()] if isinstance(raw, list) else []
+        if not candidates:
+            candidates = [title]
+        result = [item[:20] for item in candidates[:3] if item[:20]]
+        if not result:
+            result = [narration[:20]]
+        return result if beat_index == 1 else [result[min(beat_index - 1, len(result) - 1)]]
+
+    def _v2_visual_plan(self, scene_type: str, node_name: str, screen_text: list[str], beat_index: int) -> dict[str, Any]:
+        if scene_type == "hook":
+            return {
+                "layout": "center_focus",
+                "elements": [{"type": "text", "content": screen_text[0], "animation": "pop_in"}],
+            }
+        if scene_type == "summary":
+            labels = (screen_text + ["理解对象", "看清规则", "跟踪变化"])[:3]
+            while len(labels) < 3:
+                labels.append(["理解对象", "看清规则", "跟踪变化"][len(labels)])
+            return {
+                "layout": "summary_cards",
+                "elements": [
+                    {"type": "card", "content": label[:12], "animation": "stagger_in"}
+                    for label in labels
+                ],
+            }
+        domain = self._domain_visual_element(scene_type, node_name)
+        domain["animation"] = ["draw", "highlight", "slide_in_right"][beat_index % 3]
+        elements = [domain]
+        label = screen_text[0][:16] if screen_text else "观察状态变化"
+        if len(self._element_visible_text(domain)) + len(label) <= 40:
+            elements.append({"type": "keyword", "content": label, "animation": "fade_in"})
+        layout = "comparison" if scene_type == "comparison" else "timeline" if scene_type == "process" else "grid_focus"
+        return {"layout": layout, "elements": elements}
+
+    def _element_visible_text(self, element: dict[str, Any]) -> str:
+        values = []
+        for key in ("content", "name", "label", "keyLabel", "expression", "operation", "address", "value"):
+            if element.get(key) is not None:
+                values.append(str(element[key]))
+        for key in ("items", "nodes", "buckets"):
+            if isinstance(element.get(key), list):
+                values.extend(str(item) for item in element[key])
+        return "".join(values)
 
     def _normalize_scene(self, scene: dict[str, Any], index: int, node_name: str) -> dict[str, Any]:
         normalized = {**scene, "audioUrl": ""}
@@ -541,6 +692,8 @@ class QualityAuditSkill:
     }
 
     def audit(self, lesson: AnimationScriptContent) -> float:
+        if lesson.schema_version == "2.0":
+            return self._audit_v2(lesson)
         issues: list[str] = []
         expected = ["hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"]
         actual = [scene.scene_type for scene in lesson.scenes]
@@ -567,6 +720,39 @@ class QualityAuditSkill:
         if issues:
             raise RuntimeError("video quality audit failed: " + "; ".join(issues[:6]))
         score = min(1.0, 0.72 + 0.02 * len(lesson.scenes))
+        lesson.quality_score = score
+        return score
+
+    def _audit_v2(self, lesson: AnimationScriptContent) -> float:
+        issues: list[str] = []
+        forbidden_phrases = ("大家好今天", "本期视频我们将", "颠覆你的认知", "希望对你有帮助", "感谢观看")
+        source_ids = {source.id for source in lesson.sources}
+        motion_types: list[str] = []
+        for scene in lesson.scenes:
+            if not scene.beats:
+                issues.append(f"{scene.scene_id} missing beats")
+                continue
+            for beat in scene.beats:
+                label = f"{scene.scene_id}:{beat.beat_id}"
+                if any(phrase in beat.narration.replace(" ", "") for phrase in forbidden_phrases):
+                    issues.append(f"{label} contains formulaic narration")
+                if beat.claims and (not beat.source_ids or not set(beat.source_ids) <= source_ids):
+                    issues.append(f"{label} contains ungrounded claims")
+                if not 1 <= len(beat.screen_text) <= 3:
+                    issues.append(f"{label} must show 1-3 short texts")
+                if len("".join(beat.screen_text)) > 40:
+                    issues.append(f"{label} visual text is too long")
+                if scene.scene_type not in {"hook", "summary"} and not any(
+                    element.type in self._domain_element_types for element in beat.visual_plan.elements
+                ):
+                    issues.append(f"{label} missing teaching visual")
+                motion_types.extend(element.animation for element in beat.visual_plan.elements[:2])
+        if len(set(motion_types)) < 2:
+            issues.append("video must use varied content-driven motion")
+        if issues:
+            raise RuntimeError("video quality audit failed: " + "; ".join(issues[:6]))
+        passed_beats = sum(len(scene.beats) for scene in lesson.scenes)
+        score = min(1.0, 0.78 + min(0.18, passed_beats * 0.01))
         lesson.quality_score = score
         return score
 
@@ -768,9 +954,13 @@ class VideoRenderSkill:
         validated = AnimationScriptContent.model_validate(lesson.model_dump(by_alias=True, mode="json"))
         if not validated.scenes:
             raise RuntimeError("AnimationScriptContent must contain scenes before render")
-        scene_audio_urls = [scene.audio_url for scene in validated.scenes]
+        scene_audio_urls = (
+            [beat.audio_url for scene in validated.scenes for beat in scene.beats]
+            if validated.schema_version == "2.0"
+            else [scene.audio_url for scene in validated.scenes]
+        )
         if any(not audio_url.startswith(("http://", "https://")) for audio_url in scene_audio_urls):
-            raise RuntimeError("each scene audioUrl must be an HTTP(S) storage URL before render")
+            raise RuntimeError("each narration beat audioUrl must be an HTTP(S) storage URL before render")
         if validated.output.audio_urls != scene_audio_urls:
             raise RuntimeError("output.audioUrls must match scene audioUrl list before render")
         return validated.model_dump(by_alias=True, mode="json")
@@ -878,6 +1068,68 @@ class VideoGenerationService:
         self.video_render_skill = video_render_skill or VideoRenderSkill()
         self.safety_audit_skill = safety_audit_skill or SafetyAuditSkill()
 
+    async def prepare_lesson(
+        self,
+        *,
+        target_id: str,
+        user_id: str,
+        course_id: str,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        documents: list[RetrievedDocument],
+        video_options: VideoGenerateOptions | None = None,
+        learner_profile_summary: str | None = None,
+        target_duration_seconds: float | None = None,
+        run_safety_audit: bool = True,
+        progress_callback: Callable[[VideoGenerationStage, float, str | None], None] | None = None,
+    ) -> AnimationScriptContent:
+        options = video_options or VideoGenerateOptions()
+
+        def emit(stage: VideoGenerationStage, progress: float) -> None:
+            if progress_callback is not None:
+                progress_callback(stage, progress, None)
+
+        def build_lesson(storyboard: dict[str, Any]) -> AnimationScriptContent:
+            lesson = self.animation_spec_skill.normalize(
+                node,
+                storyboard,
+                schema_version="2.0",
+                documents=documents,
+                theme=options.theme or VideoTheme.warm_academic,
+                target_duration_seconds=target_duration_seconds,
+                subtitle_enabled=options.subtitle_enabled is not False,
+            )
+            lesson.course_id = course_id
+            lesson.node_id = node.id if node else None
+            lesson.learner_profile_summary = learner_profile_summary
+            lesson.aspect_ratio = options.aspect_ratio or VideoAspect.landscape
+            return lesson
+
+        emit(VideoGenerationStage.script, 12)
+        duration_requirement = f"目标总时长约 {int(target_duration_seconds)} 秒；" if target_duration_seconds else ""
+        script = await self.video_script_skill.generate(node, duration_requirement + target_goal, documents)
+        emit(VideoGenerationStage.storyboard, 28)
+        storyboard = await self.storyboard_skill.generate(node, script)
+        lesson = build_lesson(storyboard)
+        emit(VideoGenerationStage.quality_audit, 42)
+        try:
+            self.quality_audit_skill.audit(lesson)
+        except RuntimeError as first_error:
+            rewrite_script = {
+                **script,
+                "qualityAuditError": str(first_error),
+                "rewriteRequirement": "Use grounded short narration beats and concrete data-structure visual intent.",
+            }
+            storyboard = await self.storyboard_skill.generate(node, rewrite_script)
+            lesson = build_lesson(storyboard)
+            self.quality_audit_skill.audit(lesson)
+        if run_safety_audit:
+            preflight_content = json.dumps(lesson.model_dump(by_alias=True, mode="json"), ensure_ascii=False)
+            preflight_audit = await self.safety_audit_skill.check(preflight_content, target_id, user_id, course_id)
+            if preflight_audit.audit_status != AuditStatus.passed:
+                raise VideoAuditError(AuditStatus(preflight_audit.audit_status))
+        return lesson
+
     async def generate(
         self,
         task_id: str,
@@ -889,6 +1141,7 @@ class VideoGenerationService:
         documents: list[RetrievedDocument],
         video_options: VideoGenerateOptions | None = None,
         learner_profile_summary: str | None = None,
+        target_duration_seconds: float | None = None,
         progress_callback: Callable[[VideoGenerationStage, float, str | None], None] | None = None,
     ) -> AnimationScriptContent:
         if settings.enable_mock:
@@ -897,44 +1150,37 @@ class VideoGenerationService:
         output_dir = storage_root / "generated_resources" / task_id
         options = video_options or VideoGenerateOptions()
         quality_preset = options.quality_preset or VideoQualityPreset.high
-        aspect_ratio = options.aspect_ratio or VideoAspect.landscape
 
         def emit(stage: VideoGenerationStage, progress: float, error_message: str | None = None) -> None:
             if progress_callback is not None:
                 progress_callback(stage, progress, error_message)
 
-        def annotate_lesson(lesson: AnimationScriptContent) -> AnimationScriptContent:
-            lesson.course_id = course_id
-            lesson.node_id = node.id if node else None
-            lesson.learner_profile_summary = learner_profile_summary
-            lesson.aspect_ratio = aspect_ratio
-            return lesson
-
         try:
-            emit(VideoGenerationStage.script, 12)
-            script = await self.video_script_skill.generate(node, target_goal, documents)
-            emit(VideoGenerationStage.storyboard, 28)
-            storyboard = await self.storyboard_skill.generate(node, script)
-            lesson = annotate_lesson(self.animation_spec_skill.normalize(node, storyboard))
-            emit(VideoGenerationStage.quality_audit, 42)
-            try:
-                self.quality_audit_skill.audit(lesson)
-            except RuntimeError as first_error:
-                rewrite_script = {
-                    **script,
-                    "qualityAuditError": str(first_error),
-                    "rewriteRequirement": "Add concrete data-structure visual components and at least three animation steps per scene.",
-                }
-                storyboard = await self.storyboard_skill.generate(node, rewrite_script)
-                lesson = annotate_lesson(self.animation_spec_skill.normalize(node, storyboard))
-                self.quality_audit_skill.audit(lesson)
+            lesson = await self.prepare_lesson(
+                target_id=target_id,
+                user_id=user_id,
+                course_id=course_id,
+                node=node,
+                target_goal=target_goal,
+                documents=documents,
+                video_options=options,
+                learner_profile_summary=learner_profile_summary,
+                target_duration_seconds=target_duration_seconds,
+                progress_callback=progress_callback,
+            )
             audio_urls: list[str] = []
-            for index, scene in enumerate(lesson.scenes):
-                emit(VideoGenerationStage.tts, 48 + index * 3)
-                audio = await self.tts_skill.synthesize(scene.narration, scene.scene_id, output_dir / "audio")
-                scene.audio_url = audio.url
-                scene.duration_seconds = max(scene.duration_seconds, audio.duration_seconds + 0.4)
+            beats = [(scene, beat) for scene in lesson.scenes for beat in scene.beats]
+            for index, (scene, beat) in enumerate(beats):
+                emit(VideoGenerationStage.tts, 48 + (index / max(1, len(beats))) * 26)
+                audio = await self.tts_skill.synthesize(beat.narration, beat.beat_id, output_dir / "audio")
+                beat.audio_url = audio.url
+                actual_beat_duration = audio.duration_seconds + 0.4
+                if actual_beat_duration > 15:
+                    raise RuntimeError(f"narration beat is too long for video pacing: {beat.beat_id}")
+                beat.duration_seconds = max(beat.duration_seconds, actual_beat_duration)
                 audio_urls.append(audio.url)
+                scene.duration_seconds = sum(item.duration_seconds for item in scene.beats)
+                scene.narration = "\n".join(item.narration for item in scene.beats)
             lesson.duration_seconds = sum(scene.duration_seconds for scene in lesson.scenes)
             lesson.output.audio_urls = audio_urls
             emit(VideoGenerationStage.render, 78)

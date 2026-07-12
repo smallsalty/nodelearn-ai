@@ -12,6 +12,7 @@ from app.schemas.common import (
     VideoGenerationStage,
     VideoMaterialSource,
     VideoQualityPreset,
+    VideoTheme,
 )
 
 
@@ -86,6 +87,7 @@ class VideoGenerateOptions(ContractModel):
     subtitle_enabled: bool | None = True
     bgm_enabled: bool | None = False
     bgm_volume: float | None = Field(default=0.0, ge=0, le=1)
+    theme: VideoTheme | None = VideoTheme.warm_academic
 
 
 class ResourceGenerateRequest(ContractModel):

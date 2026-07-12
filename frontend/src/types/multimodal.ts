@@ -1,4 +1,4 @@
-import type { DifficultyLevel, TaskStatus } from "@/types/contracts";
+import type { DifficultyLevel, TaskStatus, VideoTheme } from "@/types/contracts";
 import type { ChatMessage } from "@/types/agent";
 import type { RetrievedDocument } from "@/types/resource";
 
@@ -11,6 +11,7 @@ export interface MultimodalVideoGenerateRequest {
   difficulty?: DifficultyLevel;
   durationSeconds?: number;
   style?: string;
+  theme?: VideoTheme;
   useDigitalHuman?: boolean;
   useRag: boolean;
   customRequirement?: string;
@@ -91,6 +92,16 @@ export interface DigitalHumanChatResult {
   providerTaskId?: string;
   usedDocuments?: RetrievedDocument[];
   status: TaskStatus;
+  liveSession?: DigitalHumanLiveSessionResult;
+}
+
+export interface DigitalHumanLiveSessionResult {
+  sessionId: string;
+  status: TaskStatus;
+  videoUrl?: string;
+  errorMessage?: string;
+  startedAt: string;
+  updatedAt: string;
 }
 
 export interface DigitalHumanCallbackRequest {

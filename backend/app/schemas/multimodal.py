@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from typing import Any, Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.schemas.agent import ChatMessage
-from app.schemas.common import ContractModel, DifficultyLevel, TaskStatus
+from app.schemas.common import ContractModel, DifficultyLevel, TaskStatus, VideoTheme
 from app.schemas.resource import RetrievedDocument
 
 
@@ -16,9 +18,24 @@ class MultimodalVideoGenerateRequest(ContractModel):
     difficulty: DifficultyLevel | None = None
     duration_seconds: int | None = Field(default=None, ge=30, le=1200)
     style: str | None = None
+    theme: VideoTheme | None = None
     use_digital_human: bool | None = False
     use_rag: bool = True
     custom_requirement: str | None = None
+
+    @model_validator(mode="after")
+    def resolve_legacy_style(self):
+        aliases = {
+            "clean_motion_graphics": VideoTheme.warm_academic,
+            "classroom_board": VideoTheme.chalk_classroom,
+            "case_demo": VideoTheme.technical_blueprint,
+        }
+        if self.theme is not None:
+            return self
+        if self.style is not None and self.style not in aliases:
+            raise ValueError("unsupported legacy video style")
+        self.theme = aliases.get(self.style, VideoTheme.warm_academic)
+        return self
 
 
 class MultimodalTaskResult(ContractModel):
@@ -96,6 +113,16 @@ class DigitalHumanChatResult(ContractModel):
     provider_task_id: str | None = None
     used_documents: list[RetrievedDocument] | None = None
     status: TaskStatus
+    live_session: DigitalHumanLiveSessionResult | None = None
+
+
+class DigitalHumanLiveSessionResult(ContractModel):
+    session_id: str
+    status: TaskStatus
+    video_url: str | None = None
+    error_message: str | None = None
+    started_at: str
+    updated_at: str
 
 
 class DigitalHumanCallbackRequest(ContractModel):

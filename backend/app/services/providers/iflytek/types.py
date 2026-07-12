@@ -16,6 +16,17 @@ class IflytekProviderResult(ContractModel):
     raw_payload: dict[str, Any] | None = None
 
 
+class IflytekVirtualHumanSession(ContractModel):
+    provider_session: str
+    stream_url: str
+    sid: str | None = None
+
+
+class IflytekVirtualHumanCommandResult(ContractModel):
+    provider_session: str
+    sid: str | None = None
+
+
 class IflytekDigitalHumanRequest(ContractModel):
     user_id: str
     course_id: str
@@ -29,6 +40,7 @@ class IflytekDigitalHumanRequest(ContractModel):
 
 class IflytekChatRequest(ContractModel):
     user_id: str
+    session_id: str
     course_id: str | None = None
     node_id: str | None = None
     message: str

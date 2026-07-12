@@ -10,10 +10,10 @@ const props = defineProps<{
 
 const steps = [
   { key: "load_context", label: "读取知识点" },
-  { key: "generate_teaching_plan", label: "生成教学计划" },
-  { key: "generate_script", label: "生成脚本" },
-  { key: "generate_storyboard", label: "生成分镜" },
-  { key: "validate_script", label: "校验脚本" },
+  { key: "plan_content", label: "规划事实与节拍" },
+  { key: "generate_script", label: "生成科普口播" },
+  { key: "generate_storyboard", label: "生成视觉意图" },
+  { key: "audit_storyboard", label: "事实与分镜校验" },
   { key: "synthesize_audio", label: "语音合成" },
   { key: "render_video", label: "视频渲染" },
   { key: "audit_resource", label: "安全校验" },
