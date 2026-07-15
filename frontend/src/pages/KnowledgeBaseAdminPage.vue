@@ -23,6 +23,7 @@ const uploading = ref(false);
 const building = ref(false);
 const searching = ref(false);
 const errorMessage = ref("");
+const activeTab = ref("nodes");
 const nodeForm = reactive({
   name: "哈希表开放寻址",
   description: "用于演示知识库管理入口的契约节点",
@@ -189,7 +190,7 @@ async function createNode() {
       </el-card>
     </section>
 
-    <el-tabs class="page-tabs">
+    <el-tabs v-model="activeTab" class="page-tabs">
       <el-tab-pane label="知识节点" name="nodes">
         <el-empty v-if="!nodes.length" description="暂无节点" />
         <section v-else class="soft-card-grid">

@@ -1,0 +1,63 @@
+{
+  "lesson": {
+    "schemaVersion": "2.0",
+    "title": "哈希表版式与信息密度验收",
+    "style": "clean_motion_graphics",
+    "theme": "warm_academic",
+    "durationSeconds": 24,
+    "aspectRatio": "16:9",
+    "subtitleEnabled": true,
+    "scenes": [
+      {
+        "sceneId": "fixture-hook",
+        "sceneType": "hook",
+        "title": "为什么能快速查找",
+        "beats": [{"beatId":"fixture-hook-01","narration":"为什么哈希表能快速找到目标，而不必逐项遍历？","durationSeconds":3,"screenText":["为什么不用逐项查找？","键直接决定桶位置"],"claims":[],"sourceIds":[],"visualPlan":{"layout":"center_focus","elements":[{"type":"icon","name":"hash","animation":"zoom_in"},{"type":"keyword","content":"平均 O(1)","animation":"pop_in"}]},"audioUrl":"http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_c112e78067a0/audio/scene_001_beat_01.mp3"}]
+      },
+      {
+        "sceneId": "fixture-definition",
+        "sceneType": "definition",
+        "title": "哈希表的定义",
+        "beats": [{"beatId":"fixture-definition-01","narration":"哈希表用哈希函数把键转换成数组中的桶索引。","durationSeconds":3,"screenText":["键映射到桶索引","哈希函数负责计算","桶数组负责存储"],"claims":[],"sourceIds":[],"visualPlan":{"layout":"left_right","elements":[{"type":"hash_function_panel","inputKey":"12836","expression":"12836 % 100","outputIndex":36,"animation":"highlight"},{"type":"keyword","content":"键 → 索引","animation":"fade_in"}]},"audioUrl":"http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_c112e78067a0/audio/scene_002_beat_01.mp3"}]
+      },
+      {
+        "sceneId": "fixture-analogy",
+        "sceneType": "analogy",
+        "title": "像字典分区",
+        "beats": [{"beatId":"fixture-analogy-01","narration":"它像按拼音分区查字典，先进入正确分区，再找具体条目。","durationSeconds":3,"screenText":["先分区，再找条目","桶就是数据分区"],"claims":[],"sourceIds":[],"visualPlan":{"layout":"pipeline","elements":[{"type":"hash_table_buckets","buckets":["34","35","36","37"],"activeIndex":2,"keyLabel":"12836","collisionIndices":[],"animation":"slide_in_left"},{"type":"arrow","label":"映射","animation":"draw"}]},"audioUrl":"http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_c112e78067a0/audio/scene_003_beat_01.mp3"}]
+      },
+      {
+        "sceneId": "fixture-mechanism",
+        "sceneType": "mechanism",
+        "title": "桶定位机制",
+        "beats": [{"beatId":"fixture-mechanism-01","narration":"键一二八三六模一百得到三十六，因此直接定位到三十六号桶。","durationSeconds":3,"screenText":["12836 % 100 = 36","直接定位 36 号桶","无需扫描其他桶"],"claims":[],"sourceIds":[],"visualPlan":{"layout":"grid_focus","elements":[{"type":"hash_table_buckets","buckets":["34","35","36","37"],"activeIndex":2,"keyLabel":"12836","collisionIndices":[],"animation":"highlight"},{"type":"keyword","content":"直达 bucket #36","animation":"fade_in"}]},"audioUrl":"http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_c112e78067a0/audio/scene_004_beat_03.mp3"}]
+      },
+      {
+        "sceneId": "fixture-comparison",
+        "sceneType": "comparison",
+        "title": "查找成本对比",
+        "beats": [{"beatId":"fixture-comparison-01","narration":"链表需要从头遍历，而哈希表在分布良好时平均只需常数次定位。","durationSeconds":3,"screenText":["遍历 vs 直接定位","链表 O(n)","哈希表平均 O(1)"],"claims":[],"sourceIds":[],"visualPlan":{"layout":"comparison","elements":[{"type":"complexity_chart","label":"查找成本","items":["数组索引 O(1)","链表查找 O(n)","哈希表平均 O(1)"],"activeIndex":2,"animation":"highlight"},{"type":"card","content":"键直接生成索引","animation":"slide_in_right"}]},"audioUrl":"http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_c112e78067a0/audio/scene_005_beat_03.mp3"}]
+      },
+      {
+        "sceneId": "fixture-process",
+        "sceneType": "process",
+        "title": "冲突处理过程",
+        "beats": [{"beatId":"fixture-process-01","narration":"发生冲突时，先定位桶，再进入冲突链，最后逐个比较键。","durationSeconds":3,"screenText":["冲突不等于覆盖","定位桶 → 查链 → 匹配"],"claims":[],"sourceIds":[],"visualPlan":{"layout":"timeline","elements":[{"type":"collision_chain","bucketIndex":50,"nodes":["16750","20950"],"activeNodeIndex":0,"animation":"stagger_in"},{"type":"timeline","items":["算桶","查链","匹配"],"animation":"stagger_in"}]},"audioUrl":"http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_c112e78067a0/audio/scene_006_beat_03.mp3"}]
+      },
+      {
+        "sceneId": "fixture-example",
+        "sceneType": "example",
+        "title": "查找学号 16750",
+        "beats": [{"beatId":"fixture-example-01","narration":"查找一六七五零时先到五十号桶，再在两节点中匹配到目标。","durationSeconds":3,"screenText":["查找 key 16750","定位 bucket #50","命中第一个节点"],"claims":[],"sourceIds":[],"visualPlan":{"layout":"left_right","elements":[{"type":"collision_chain","bucketIndex":50,"nodes":["16750","20950"],"activeNodeIndex":0,"animation":"highlight"},{"type":"keyword","content":"匹配成功","animation":"fade_in"}]},"audioUrl":"http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_c112e78067a0/audio/scene_007_beat_01.mp3"}]
+      },
+      {
+        "sceneId": "fixture-summary",
+        "sceneType": "summary",
+        "title": "核心结论",
+        "beats": [{"beatId":"fixture-summary-01","narration":"记住三个要点：哈希函数负责映射，平均查找是常数级，冲突通过链处理。","durationSeconds":3,"screenText":["哈希表快在直接定位","映射、成本、冲突"],"claims":[],"sourceIds":[],"visualPlan":{"layout":"summary_cards","elements":[{"type":"card","content":"键映射到桶","animation":"stagger_in"},{"type":"card","content":"平均 O(1)","animation":"stagger_in"},{"type":"card","content":"冲突沿链处理","animation":"stagger_in"}]},"audioUrl":"http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_c112e78067a0/audio/scene_008_beat_01.mp3"}]
+      }
+    ],
+    "output": {"videoUrl":"","audioUrls":[]}
+  },
+  "qualityPreset": "standard"
+}

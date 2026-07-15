@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "render": "node render.mjs"
+    "render": "node render.mjs",
+    "render:manifest": "node scripts/render-manifest.mjs",
+    "typecheck": "tsc --noEmit",
+    "smoke:scenes": "node scripts/scene-smoke.mjs"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.470",

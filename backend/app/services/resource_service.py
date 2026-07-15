@@ -18,6 +18,7 @@ from app.repositories.learning_path_repository import (
     default_learning_path_repository,
 )
 from app.repositories.profile_repository import ProfileRepository, default_profile_repository
+from app.repositories.practice_repository import PracticeRepository, default_practice_repository
 from app.repositories.resource_repository import DEMO_TIME, ResourceRepository, default_resource_repository
 from app.schemas.common import (
     AuditStatus,
@@ -135,6 +136,7 @@ class ResourceService:
         repository: ResourceRepository | None = None,
         profile_repository: ProfileRepository | None = None,
         learning_path_repository: LearningPathRepository | None = None,
+        practice_repository: PracticeRepository | None = None,
         llm_service: LLMService | None = None,
         audit_service: AuditService | None = None,
         video_generation_service: VideoGenerationService | None = None,
@@ -142,6 +144,7 @@ class ResourceService:
         self.repository = repository or default_resource_repository
         self.profile_repository = profile_repository or default_profile_repository
         self.learning_path_repository = learning_path_repository or default_learning_path_repository
+        self.practice_repository = practice_repository or default_practice_repository
         self.llm_service = llm_service or LLMService()
         self.audit_service = audit_service or AuditService()
         self.video_generation_service = video_generation_service or VideoGenerationService(self.llm_service)
@@ -635,6 +638,10 @@ class ResourceService:
                 documents=documents,
                 video_options=payload.video_options,
                 learner_profile_summary=self._learner_profile_summary(profile, target_goal),
+                profile=profile,
+                practice_records=self.practice_repository.list_records_by_user_id(payload.user_id),
+                available_nodes=self.learning_path_repository.list_nodes(payload.course_id),
+                custom_requirement=payload.custom_requirement,
                 progress_callback=progress_callback,
             )
             content = json.dumps(lesson.model_dump(by_alias=True, mode="json"), ensure_ascii=False)

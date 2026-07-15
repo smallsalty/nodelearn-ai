@@ -170,13 +170,13 @@ export const GridHighlight: React.FC<{ label: string; items?: string[]; highligh
   animation,
 }) => {
   const frame = useCurrentFrame();
-  const pulse = 0.72 + Math.sin(frame / 8) * 0.16;
+  const highlight = interpolate(frame, [0, 14], [0.24, 0.82], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   return (
     <div style={{ ...entranceStyle(animation), display: "grid", gap: 18, justifyItems: "center" }}>
       <strong style={{ color: palette.amber, fontSize: 28 }}>{label}</strong>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 92px)", gap: 12 }}>
         {items.slice(0, 9).map((item, index) => (
-          <div key={`${item}-${index}`} style={{ display: "grid", placeItems: "center", height: 74, borderRadius: 14, border: `1px solid ${index === highlightIndex ? palette.amber : palette.border}`, background: index === highlightIndex ? `rgba(255, 200, 87, ${pulse})` : palette.surfaceStrong, color: index === highlightIndex ? palette.background : palette.text, fontSize: 24, fontWeight: 700 }}>
+          <div key={`${item}-${index}`} style={{ display: "grid", placeItems: "center", height: 74, borderRadius: 14, border: `1px solid ${index === highlightIndex ? palette.amber : palette.border}`, background: index === highlightIndex ? `rgba(255, 200, 87, ${highlight})` : palette.surfaceStrong, color: index === highlightIndex ? palette.background : palette.text, fontSize: 24, fontWeight: 700 }}>
             {item}
           </div>
         ))}
@@ -199,11 +199,11 @@ export const TimelineSteps: React.FC<{ items: string[]; animation: VisualAnimati
 export const ComparisonPanel: React.FC<{ left: React.ReactNode; right: React.ReactNode }> = ({ left, right }) => (
   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 52, width: "100%" }}>
     <div style={{ display: "grid", gap: 20, justifyItems: "center", alignContent: "center", padding: 28, border: `1px solid ${palette.border}`, borderRadius: 24, background: palette.surface }}>
-      <span style={{ color: palette.muted, fontSize: 24 }}>BASELINE</span>
+      <span style={{ color: palette.muted, fontSize: 24 }}>对照</span>
       {left}
     </div>
     <div style={{ display: "grid", gap: 20, justifyItems: "center", alignContent: "center", padding: 28, border: `1px solid ${palette.cyan}`, borderRadius: 24, background: "rgba(51, 214, 197, 0.1)" }}>
-      <span style={{ color: palette.cyan, fontSize: 24 }}>FOCUS</span>
+      <span style={{ color: palette.cyan, fontSize: 24 }}>重点</span>
       {right}
     </div>
   </div>

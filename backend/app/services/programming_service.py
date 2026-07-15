@@ -33,7 +33,10 @@ class ProgrammingService:
     async def generate_questions(self, payload: ProgrammingGenerateRequest) -> list[ProgrammingQuestion]:
         node = default_learning_path_repository.get_node(payload.node_id or "")
         node_name = node.name if node else "当前知识点"
-        difficulty = payload.difficulty or DifficultyLevel.medium
+        # ContractModel serializes enum values as strings, so request models expose
+        # ``difficulty`` as ``str`` even though the field is typed as DifficultyLevel.
+        # Normalize it before the real-mode prompt accesses ``.value``.
+        difficulty = DifficultyLevel(payload.difficulty or DifficultyLevel.medium)
         if settings.enable_mock:
             result = [self._template_question(payload.course_id, node.id if node else payload.node_id, node_name, difficulty) for _ in range(max(1, payload.count))]
         else:
@@ -88,9 +91,16 @@ class ProgrammingService:
         self._hidden_cases[question_id] = [ProgrammingSampleCase(input="-4 9\n", output="5\n"), ProgrammingSampleCase(input="0 0\n", output="0\n")]
         return question
 
-    def _result(self, payload: ProgrammingSubmissionRequest, verdict: str, execution: Any | None = None, failed_sample_index: int | None = None) -> ProgrammingJudgeResult:
+    def _result(
+        self,
+        payload: ProgrammingSubmissionRequest,
+        verdict: str,
+        execution: Any | None = None,
+        failed_sample_index: int | None = None,
+        stderr: str | None = None,
+    ) -> ProgrammingJudgeResult:
         self._submission_index += 1; created_at = now_iso()
-        result = ProgrammingJudgeResult(submission_id=f"programming_submission_{self._submission_index:03d}", question_id=payload.question_id, language=payload.language, verdict=verdict, stdout=getattr(execution, "stdout", None), stderr=getattr(execution, "stderr", None), compile_output=getattr(execution, "compile_output", None), time_seconds=getattr(execution, "time_seconds", None), memory_kb=getattr(execution, "memory_kb", None), failed_sample_index=failed_sample_index, created_at=created_at, updated_at=created_at)
+        result = ProgrammingJudgeResult(submission_id=f"programming_submission_{self._submission_index:03d}", question_id=payload.question_id, language=payload.language, verdict=verdict, stdout=getattr(execution, "stdout", None), stderr=stderr or getattr(execution, "stderr", None), compile_output=getattr(execution, "compile_output", None), time_seconds=getattr(execution, "time_seconds", None), memory_kb=getattr(execution, "memory_kb", None), failed_sample_index=failed_sample_index, created_at=created_at, updated_at=created_at)
         self._submissions.setdefault(payload.user_id, []).insert(0, result); return result
 
     def _record_feedback(self, user_id: str, question: ProgrammingQuestion, result: ProgrammingJudgeResult) -> None:

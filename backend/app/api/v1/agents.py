@@ -1,4 +1,7 @@
+from collections.abc import Iterator
+
 from fastapi import APIRouter, Path, Query
+from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
 from app.core.response import error_response, page_result, success_response
@@ -9,6 +12,7 @@ from app.schemas.agent import (
     ChatRequest,
     ChatResult,
     ChatSession,
+    ChatStreamEvent,
     MultiAgentWorkflowRequest,
     MultiAgentWorkflowResult,
 )
@@ -65,7 +69,12 @@ async def send_chat(payload: ChatRequest):
 
 @router.get("/chat/stream")
 def stream_chat(session_id: str = Query(alias="sessionId")):
-    return success_response({"sessionId": session_id, "eventType": "done"})
+    event = ChatStreamEvent(session_id=session_id, event_type="done")
+
+    def generate() -> Iterator[str]:
+        yield f"data: {event.model_dump_json(by_alias=True, exclude_none=True)}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @router.post("/agents/run")

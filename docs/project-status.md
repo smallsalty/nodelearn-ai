@@ -1,7 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-07-12
-最后更新：2026-07-11
+最后更新：2026-07-15
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -32,6 +31,24 @@
 
 ### 已完成
 
+- 2026-07-15 完成算法题真实代码执行与案例判题专项验收：固定“两数求和”题通过真实 Judge0 1.13.1 执行 C++、C、Python，11 项 API 矩阵覆盖 AC、WA、PE、CE、RE、TLE、隐藏案例失败、不存在题目和超长源码，结果 11/11 符合预期；公开 WA/PE 的实际输出与失败索引正确，隐藏输入、期望输出和索引未泄露。
+- 2026-07-15 在 `ENABLE_MOCK=false` 下对真实数组节点执行一次 DeepSeek 出题，生成“循环左移数组”；正确 Python 解法通过公开样例本地核对、真实 Judge0 API 和浏览器提交，均为 AC。Playwright CLI 验证固定题 AC/CE、编译信息、mock=false 真题 AC 和刷新恢复，浏览器业务请求全部 200、控制台 0 error，仅有 3 条 Element Plus radio 弃用 warning；证据位于 `output/playwright/programming-judge0-2026-07-15/`。
+- 2026-07-15 算法题专项回归结果：编程服务/API/Judge0 契约 `8 passed`，后端完整测试 `189 passed, 2 skipped`，前端生产构建和 `git diff --check` 通过。完整报告位于 `docs/programming-judge0-verification-2026-07-15.md`；本次未修改公开接口、类型、数据库结构或业务实现。
+
+- 2026-07-14 完成真实前后端联调与全模块验收：Docker Nginx 前端和 FastAPI 均以 mock=false 运行，连接 PostgreSQL、Redis、Neo4j、Chroma、Judge0 及现有外部 provider；契约与 FastAPI 精确对应 108 个唯一 HTTP 方法/路径，无重复、无遗漏。首次全接口扫描为 `48 PASS_REAL / 50 PASS_PLACEHOLDER / 7 BLOCKED / 3 FAIL`，修复课程关系验收数据、编程题难度枚举和生成题读取后定向复测，最终为 `51 / 50 / 7 / 0`。
+- 2026-07-14 完成全模块真实能力代表链：DeepSeek 画像 JSON、RAG 问答、资源/思维导图、练习、无视频工作流和编程题生成通过；Judge0 1.13.1 完成 AC/WA/编译错误且不返回隐藏用例；讯飞实时数字人完成两轮驱动、HLS 播放、心跳、幂等 stop 和零 FFmpeg 残留；独立数字人讲解保持阻塞且未回退 mock。
+- 2026-07-14 显式运行豆包 TTS 与 Remotion 真实视频回归，结果 `1 passed in 300.17s`；任务 `resource_task_9afaa026cbf5` 的双资源均为 `success/passed` 并共享 H.264/AAC、1920×1080、30fps、63.658667 秒 MP4。新增受控 TTS 时长归一化后，视频针对性测试 19 项通过。
+- 2026-07-14 修复知识图谱 ECharts 配置、练习答案键/多选提交、编程题生成超时/刷新恢复/AC 显示和页面 Tab 激活；增加 Nginx History API fallback、108 路由唯一性及未覆盖模块/SSE/Judge0 测试。最终后端完整测试 `189 passed, 2 skipped, 1 warning`，Python compileall、前端生产构建、Remotion 类型检查、15 场景 smoke、API 层静态检查和 `git diff --check` 均通过。
+- 2026-07-14 使用 Playwright CLI 完成 11 个页面、全局浮窗和 10 页面 × 4 视口响应式验收；40 个响应式检查均无横向溢出，浏览器无 page error。完整报告、原始/修正后接口矩阵、trace、网络、控制台和截图位于 `docs/real-flow-verification-2026-07-14.md` 与 `output/playwright/real-flow-2026-07-14/`。
+
+- 2026-07-13 完成 AI 个性化知识点教学视频十二阶段重构：新增严格内部 Context/Strategy/Narrative/Scene DSL/Timeline/Media Probe 模型，接入完整教学相关画像、同节点真实练习与错因、RAG 和前置节点；公共 HTTP、资源、画像和 `AnimationScriptContent v2` 契约保持不变。
+- 2026-07-13 新增后端/Remotion 双层 Scene Registry 和 15 个独立 renderer、确定性帧动画 primitives、逐场景豆包 TTS、phrase 字幕、动态 aspect/quality Composition、完整 H.264/AAC/尺寸/30fps/时长校验；旧 `UniversalExplainerVideoRenderer` 继续兼容历史资源。
+- 2026-07-13 哈希强制验收改为六场景 `problem_hook/direct_mapping_demo/zoom_focus/compare_race/collision_demo/summary_recall`，覆盖 12836 `% 100 = 36`、#36 定位、平均情况下接近 O(1)、16750/20950 在 #50 的链地址冲突与四步回忆；目标时长只参与规划，不再补静止画面。
+- 2026-07-13 付费真实链通过：真实 Hello Algo 节点 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4`、DeepSeek、豆包逐场景 TTS、Remotion 和双重 audit 生成任务 `resource_task_81437f4da76d`，资源 `resource_video_script_7b0433a24d53` / `resource_animation_script_0d10f53f553d` 为 `success/passed`；最终 MP4 63.296 秒、1897 帧、1920×1080、30fps、H.264/AAC、5,802,112 bytes，关键帧与完整 probe 位于 `output/real-video-verification/` 和 `output/video-debug/`。
+- 2026-07-13 视频重构回归结果：后端完整测试 `169 passed, 2 skipped`、契约测试 `25 passed`、fixture 音轨真实 MP4 E2E `1 passed`、15 模板 `renderStill` smoke、renderer TypeScript、Python compileall、十二阶段进度组件独立 SFC 解析、前端页面/组件直接 `fetch/axios` 静态检查和 `git diff --check` 均通过；付费真实测试 `1 passed in 139.83s`。前端完整构建仍仅被未修改的 `KnowledgeGraphPage.vue:136` 既有 `TS1005: ')' expected` 阻塞。
+- 2026-07-13 完成知识科普视频版式与信息密度升级：v2 Visual Director 将 beat 正文从固定单句扩展为 1-3 条短句且总计不超过 40 字，并按 hook、定义、类比、机制、对比、过程、案例和总结选择中心聚焦、左右分栏、横向映射、主视觉侧栏、双栏对照、时间线、案例板和总结卡片；三套主题 token、事实来源和审核链路保持不变。
+- 2026-07-13 Remotion 导出与前端 JSON 预览已同步多短句层级和差异化构图，数据结构组件的持续呼吸高亮改为入场后稳定停留，哈希表复杂度正确高亮平均 `O(1)`，冲突链显示真实 key/桶标签并统一中文教学标签。
+- 2026-07-13 视频密度升级验证：视频/契约针对性测试 `31 passed`，后端完整测试 `155 passed, 1 skipped`，Python `compileall`、`video-renderer` `npx tsc --noEmit`、`VideoLessonPlayer.vue` 独立 SFC 解析与 `git diff --check` 通过；使用已有本地音频渲染 24.043 秒、1920×1080、H.264/AAC 的八版式 fixture 并完成六位置抽帧检查，样片、输入和联系表保存在 `output/video-layout-*`。前端完整构建被未修改的 `KnowledgeGraphPage.vue:136` 既有 `TS1005` 语法错误阻塞。
 - 2026-07-12 完成“哈希表为什么能快速查找”真实科普视频验收：基于节点 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4` 和 3 个 Hello Algo 来源，使用真实 DeepSeek、豆包 `zh_female_vv_uranus_bigtts` 与 Remotion 生成任务 `multimodal_video_task_c112e78067a0`、资源 `resource_knowledge_video_2ed8d2df1a93`；资源为 `success/passed`、v2 暖白学院主题、8 scene/22 beat/22 段音频，所有 factual beat 来源均可解析。
 - 2026-07-12 真实视频媒体与视觉验收通过：最终 MP4 为 1920×1080、30fps、H.264/AAC、120.512 秒、11,954,889 bytes，目标时长误差约 0.43%；hook、机制、对比、示例和总结抽帧确认字幕可读、无常驻进度条/场景号，并修正 `key 12836 → bucket #36`、数组/链表/哈希表复杂度和 `bucket #50` 冲突链标签。验收文件保存在 `backend/storage/generated_resources/multimodal_video_task_c112e78067a0/`。
 - 2026-07-12 为真实视频链路补齐 hook 拆分边界、单 beat 屏幕文字收敛、豆包传输异常单次重试、非 hook beat 目标时长对齐和哈希 Visual Director 事实标签测试；最终后端完整测试 `153 passed, 1 skipped`，针对性视频测试 `36 passed`，`video-renderer` `npx tsc --noEmit` 通过。
@@ -160,7 +177,7 @@
 
 ### 进行中
 
-- 继续扩展真实演示链路之外的业务模块。
+- 继续将验收中标记为 `PASS_PLACEHOLDER` 的画像、学习路径、笔记、学习记录和报告模块推进为真实持久化业务。
 - 项目状态和 Codex 同步文档维护。
 
 ### 未开始
@@ -170,9 +187,9 @@
 - 学习路径规划的完整图搜索逻辑。
 - 资源推荐排序的真实行为数据融合。
 - 结合图谱和错题上下文的增强智能答疑。
-- 超出当前真实题目生成范围的批改、错因分析、代码运行沙箱和反馈。
+- 超出当前真实题目生成与 Judge0 客观执行范围的主观批改、错因分析和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
-- 浮窗笔记界面和笔记/错题复习流程。
+- 笔记持久化和完整笔记/错题复习业务流程。
 - 生产迁移和真实持久化发布流程。
 
 ### 阻塞
@@ -183,7 +200,10 @@
 - 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
 - 真实视频的 storyboard schema 对齐阻塞已由 v2 Visual Director 解除；暖白学院主题已完成真实 DeepSeek、豆包 TTS 与 Remotion 付费回归。黑板讲解和技术蓝图主题仍只完成 renderer fixture/类型与常规测试，后续凭证或主题实现变化时再显式运行付费回归。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
-- 本机 Docker Desktop 已在 2026-06-04 手动启动并验证 PostgreSQL、Hello Algo 导入、`ENABLE_MOCK=false` 后端健康检查和真实视频生成链路；若后续桌面重启或 Docker 停止，需要重新启动 `docker compose -f docker/docker-compose.yml up -d postgres`。
+- 文件上传/删除存储、在线知识库构建和 embedding provider 仍未配置，真实模式按契约返回明确 501/404；独立数字人讲解没有对应 provider，真实模式返回明确错误，不允许回退 mock。
+- 画像、聊天 session、学习路径、笔记、学习记录、评估和报告仍包含内存或固定占位实现；2026-07-14 验收报告均标记为 `PASS_PLACEHOLDER`，不得作为生产持久化能力宣传。
+- 编程题与提交记录当前仍保存在后端进程内存中；同一进程内刷新可以恢复，但后端重启会丢失。2026-07-15 已确认真实 DeepSeek 出题和 Judge0 执行为 `PASS_REAL`，存储能力仍为 `PASS_PLACEHOLDER`。
+- 2026-07-15 算法题真实验收结束后已停止 compose 验收容器并保留数据卷；下次真实联调需重新运行 `docker compose -f docker/docker-compose.yml up -d --build`。
 
 ## 功能待办
 

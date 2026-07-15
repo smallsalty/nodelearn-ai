@@ -423,7 +423,6 @@ class MultimodalService:
         profile = self.profile_repository.get_by_user_id(payload.user_id)
         documents = self._load_documents(payload.course_id, payload.node_id, payload.custom_requirement or node_name, payload.use_rag)
 
-        self._step(task_id, "load_context", 10, "已读取知识点、学生画像和参考材料")
         video_options = VideoGenerateOptions(theme=payload.theme)
 
         def progress(stage: VideoGenerationStage, value: float, error_message: str | None) -> None:
@@ -441,7 +440,23 @@ class MultimodalService:
             self._step(task_id, step_name, min(96, value), message)
 
         teaching_plan = payload.learning_goal or f"面向{profile.profile_summary or '当前学习者'}讲清{node_name}。"
-        self._step(task_id, "plan_content", 18, "已生成教学目标、事实来源和讲解节拍")
+        detail_messages = {
+            "context_building": "正在读取节点、完整画像、真实错因、练习和 RAG",
+            "teaching_strategy": "正在生成确定性个性化教学策略",
+            "narrative_planning": "正在规划教学叙事顺序",
+            "storyboard_generation": "正在生成严格 Scene DSL",
+            "storyboard_validation": "正在校验演员、动作、引用和安全约束",
+            "scene_template_resolution": "正在解析场景模板、槽位与连续对象",
+            "tts_generation": "正在逐场景合成讲解音频",
+            "audio_duration_analysis": "正在读取逐场景真实音频时长",
+            "animation_timing_resolution": "正在把动作比例解析为确定帧",
+            "remotion_rendering": "正在使用 Remotion 渲染视频",
+            "video_validation": "正在验证媒体参数并执行最终审核",
+            "persistence": "正在发布通过审核的视频资源",
+        }
+
+        def detail(step_name: str, value: float) -> None:
+            self._step(task_id, step_name, min(96, value), detail_messages[step_name])
         if resource_type == ResourceType.digital_human_video:
             lesson = await self.resource_service.video_generation_service.prepare_lesson(
                 target_id=task_id,
@@ -454,6 +469,11 @@ class MultimodalService:
                 learner_profile_summary=profile.profile_summary,
                 target_duration_seconds=payload.duration_seconds,
                 run_safety_audit=False,
+                profile=profile,
+                practice_records=self.resource_service.practice_repository.list_records_by_user_id(payload.user_id),
+                available_nodes=self.learning_path_repository.list_nodes(payload.course_id),
+                custom_requirement=payload.custom_requirement,
+                detail_callback=detail,
                 progress_callback=progress,
             )
             lesson_audit = await self.audit_service.check_content(
@@ -499,6 +519,11 @@ class MultimodalService:
                 video_options=video_options,
                 learner_profile_summary=profile.profile_summary,
                 target_duration_seconds=payload.duration_seconds,
+                profile=profile,
+                practice_records=self.resource_service.practice_repository.list_records_by_user_id(payload.user_id),
+                available_nodes=self.learning_path_repository.list_nodes(payload.course_id),
+                custom_requirement=payload.custom_requirement,
+                detail_callback=detail,
                 progress_callback=progress,
             )
             video_url = lesson.output.video_url

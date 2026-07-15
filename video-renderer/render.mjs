@@ -20,13 +20,14 @@ const browserExecutable =
 
 const renderInput = JSON.parse(await fs.readFile(inputPath, "utf8"));
 const lesson = renderInput.lesson ?? renderInput;
+const renderManifest = renderInput.renderManifest;
 const qualityPreset = renderInput.qualityPreset ?? "high";
 const qualitySettings = {
   standard: { crf: 23 },
   high: { crf: 18 },
   ultra: { crf: 14 },
 }[qualityPreset] ?? { crf: 18 };
-const inputProps = { lesson };
+const inputProps = { lesson, renderManifest };
 const serveUrl = await bundle({
   entryPoint: path.resolve("src/index.tsx"),
 });

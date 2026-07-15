@@ -2664,6 +2664,7 @@ const routes = [
   "/knowledge-graph",
   "/reports",
   "/practice",
+  "/programming",
   "/admin/knowledge-base"
 ];
 ```
@@ -2681,6 +2682,7 @@ const routes = [
 | 知识图谱页 | `/api/v1/courses/{courseId}/graph`, `/api/v1/users/{userId}/courses/{courseId}/graph`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain` |
 | 学习报告页 | `/api/v1/reports/generate`, `/api/v1/users/{userId}/reports` |
 | 测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit` |
+| 编程题页 | `/api/v1/programming/questions/generate`, `/api/v1/programming/submissions` |
 | 浮窗菜单 | `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
 | 知识库管理页 | `/api/v1/files/upload`, `/api/v1/knowledge-base/build`, `/api/v1/courses/{courseId}/nodes` |
 
@@ -2926,6 +2928,15 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 VITE_ENABLE_MOCK=false
 VITE_ENABLE_STREAM=true
 VITE_GRAPH_RENDERER=react-flow
+```
+
+## 24.3 Judge0 环境变量
+
+Docker Desktop 使用 cgroup v2，而当前固定的 Judge0 CE `1.13.1` 镜像内置 isolate `1.8.1` 仅能以 cgroup v1 的 `--cg` 路径工作。验收环境统一开启 isolate 的进程级 rlimit 模式，仍保留 Judge0 沙箱、CPU/墙钟时间、内存、文件大小与禁网限制。
+
+```env
+ENABLE_PER_PROCESS_AND_THREAD_TIME_LIMIT=true
+ENABLE_PER_PROCESS_AND_THREAD_MEMORY_LIMIT=true
 ```
 
 ---

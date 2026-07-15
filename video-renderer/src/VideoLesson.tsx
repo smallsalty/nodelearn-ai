@@ -1,10 +1,19 @@
 import React from "react";
 import { AbsoluteFill, Audio, Sequence, useVideoConfig } from "remotion";
 import { UniversalExplainerVideoRenderer } from "./components/UniversalExplainerVideoRenderer";
-import type { AnimationScriptContent } from "./types";
+import { RegistrySceneRenderer } from "./pipeline/SceneRendererRegistry";
+import type { VideoLessonProps } from "./types";
 
-export const VideoLesson: React.FC<{ lesson: AnimationScriptContent }> = ({ lesson }) => {
+export const VideoLesson: React.FC<VideoLessonProps> = ({ lesson, renderManifest }) => {
   const { fps } = useVideoConfig();
+  if (renderManifest) {
+    return <AbsoluteFill>
+      {renderManifest.scenes.map((scene) => <Sequence key={scene.id} from={scene.startFrame} durationInFrames={scene.durationFrames}>
+        <RegistrySceneRenderer scene={scene} theme={renderManifest.theme} subtitleEnabled={renderManifest.subtitleEnabled} />
+        {scene.audioUrl ? <Audio src={scene.audioUrl} /> : null}
+      </Sequence>)}
+    </AbsoluteFill>;
+  }
   let from = 0;
   const theme = lesson.theme ?? "warm_academic";
 

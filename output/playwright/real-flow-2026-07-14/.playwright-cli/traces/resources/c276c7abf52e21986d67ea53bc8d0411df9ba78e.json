@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"list":[{"id":"session_demo_001","userId":"user_demo_001","courseId":null,"nodeId":null,"title":"Demo Session","sessionType":"qa","createdAt":"2026-05-19T10:00:00Z","updatedAt":"2026-05-19T10:00:00Z"}],"total":1,"page":1,"pageSize":20},"traceId":"trace_9741c9ee99814716916de3b070e50dc1","timestamp":"2026-07-14T10:17:38.937699+00:00"}

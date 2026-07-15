@@ -32,3 +32,41 @@ def test_programming_submission_reports_ac_and_pe():
     question = generate(service); service._hidden_cases[question.id] = []
     presentation_error = asyncio.run(service.submit(ProgrammingSubmissionRequest(user_id="user_programming_test", question_id=question.id, language="python", source_code="print(8)")))
     assert presentation_error.verdict == "PE"
+
+
+def test_real_generation_normalizes_request_difficulty(monkeypatch):
+    service = ProgrammingService()
+
+    async def generate_json(*_args, **_kwargs):
+        return {
+            "questions": [
+                {
+                    "title": "两数求和",
+                    "content": "读取两个整数并输出和。",
+                    "inputFormat": "两个整数",
+                    "outputFormat": "一个整数",
+                    "constraints": "整数范围内",
+                    "sampleCases": [{"input": "1 2\n", "output": "3\n"}],
+                    "hiddenCases": [{"input": "-1 1\n", "output": "0\n"}],
+                    "tags": ["array"],
+                }
+            ]
+        }
+
+    monkeypatch.setattr("app.services.programming_service.settings.enable_mock", False)
+    monkeypatch.setattr(service.llm_service, "generate_json", generate_json)
+    monkeypatch.setattr(service.resource_service, "search_knowledge_base", lambda **_kwargs: [])
+
+    question = asyncio.run(
+        service.generate_questions(
+            ProgrammingGenerateRequest(
+                user_id="user_programming_real_test",
+                course_id="course_ds_001",
+                node_id="node_array_001",
+                difficulty="easy",
+                count=1,
+            )
+        )
+    )[0]
+
+    assert question.difficulty == "easy"

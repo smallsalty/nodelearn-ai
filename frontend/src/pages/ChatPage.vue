@@ -25,6 +25,7 @@ const workflowRunning = ref(false);
 const errorMessage = ref("");
 const lastResult = ref<ChatResult | null>(null);
 const workflowSteps = ref<AgentRunResult[]>([]);
+const activeTab = ref("chat");
 
 const retrievedDocuments = computed<RetrievedDocument[]>(() => lastResult.value?.retrievedDocuments ?? []);
 
@@ -138,7 +139,7 @@ function selectNode(node: KnowledgeNode) {
         <el-button :loading="loading" @click="loadSessions">刷新会话</el-button>
       </header>
 
-      <el-tabs class="page-tabs">
+      <el-tabs v-model="activeTab" class="page-tabs">
         <el-tab-pane label="对话" name="chat">
           <section class="academic-card chat-main-card">
             <StateBlock :loading="loading" :error="errorMessage" :empty="!messages.length" empty-text="暂无消息" @retry="loadSessions">

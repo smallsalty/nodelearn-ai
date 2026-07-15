@@ -1,0 +1,2286 @@
+{
+  "generatedAt": "2026-07-14T09:57:01.887985+00:00",
+  "baseUrl": "http://127.0.0.1:8000",
+  "verificationPrefix": "real_verify_20260714_b23a239e",
+  "routeCount": 108,
+  "uniqueMethodPathCount": 108,
+  "summary": {
+    "BLOCKED": 7,
+    "FAIL": 3,
+    "PASS_PLACEHOLDER": 50,
+    "PASS_REAL": 48
+  },
+  "trackedIds": {
+    "agent_task_id": "workflow_task_qa_cd1d986d6473",
+    "resource_task_id": "resource_task_c9e803529a37",
+    "video_task_id": "multimodal_video_task_3dd3e52bc542",
+    "digital_human_session_id": "digital_human_session_f1036e7b2fb5"
+  },
+  "results": [
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/auth/register",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 6,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "avatarUrl",
+          "createdAt",
+          "email",
+          "id",
+          "lastLoginAt",
+          "phone",
+          "role",
+          "status",
+          "updatedAt",
+          "username"
+        ],
+        "id": "user_demo_001",
+        "status": "active"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/auth/login",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "accessToken",
+          "expiresIn",
+          "refreshToken",
+          "tokenType"
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/auth/logout",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 1,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "bool"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/auth/refresh-token",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "accessToken",
+          "expiresIn",
+          "refreshToken",
+          "tokenType"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/me",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "avatarUrl",
+          "createdAt",
+          "email",
+          "id",
+          "lastLoginAt",
+          "phone",
+          "role",
+          "status",
+          "updatedAt",
+          "username"
+        ],
+        "id": "user_demo_001",
+        "status": "active"
+      }
+    },
+    {
+      "method": "PUT",
+      "contractPath": "/api/v1/users/me",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 1,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "avatarUrl",
+          "createdAt",
+          "email",
+          "id",
+          "lastLoginAt",
+          "phone",
+          "role",
+          "status",
+          "updatedAt",
+          "username"
+        ],
+        "id": "user_demo_001",
+        "status": "active"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/profiles/{userId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "availableStudyTime",
+          "cognitiveStyle",
+          "commonMistakes",
+          "confidenceScore",
+          "createdAt",
+          "currentCourseId",
+          "grade",
+          "id",
+          "knowledgeBaseLevel",
+          "lastUpdatedBy",
+          "learningGoal",
+          "learningProgress",
+          "major",
+          "practicePreference",
+          "profileSummary",
+          "resourcePreference",
+          "updatedAt",
+          "userId",
+          "weakNodeIds"
+        ],
+        "id": "profile_user_real_verification_20260714"
+      }
+    },
+    {
+      "method": "PUT",
+      "contractPath": "/api/v1/profiles/{userId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "availableStudyTime",
+          "cognitiveStyle",
+          "commonMistakes",
+          "confidenceScore",
+          "createdAt",
+          "currentCourseId",
+          "grade",
+          "id",
+          "knowledgeBaseLevel",
+          "lastUpdatedBy",
+          "learningGoal",
+          "learningProgress",
+          "major",
+          "practicePreference",
+          "profileSummary",
+          "resourcePreference",
+          "updatedAt",
+          "userId",
+          "weakNodeIds"
+        ],
+        "id": "profile_user_real_verification_20260714"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/profiles/extract",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 21307,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "confidenceScore",
+          "extractedFields",
+          "followUpQuestions",
+          "missingFields"
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/profiles/update-by-behavior",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "availableStudyTime",
+          "cognitiveStyle",
+          "commonMistakes",
+          "confidenceScore",
+          "createdAt",
+          "currentCourseId",
+          "grade",
+          "id",
+          "knowledgeBaseLevel",
+          "lastUpdatedBy",
+          "learningGoal",
+          "learningProgress",
+          "major",
+          "practicePreference",
+          "profileSummary",
+          "resourcePreference",
+          "updatedAt",
+          "userId",
+          "weakNodeIds"
+        ],
+        "id": "profile_user_real_verification_20260714"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/profiles/update-by-practice",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "availableStudyTime",
+          "cognitiveStyle",
+          "commonMistakes",
+          "confidenceScore",
+          "createdAt",
+          "currentCourseId",
+          "grade",
+          "id",
+          "knowledgeBaseLevel",
+          "lastUpdatedBy",
+          "learningGoal",
+          "learningProgress",
+          "major",
+          "practicePreference",
+          "profileSummary",
+          "resourcePreference",
+          "updatedAt",
+          "userId",
+          "weakNodeIds"
+        ],
+        "id": "profile_user_real_verification_20260714"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/courses",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 35,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "list",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/courses",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 8,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "code",
+          "coverUrl",
+          "createdAt",
+          "description",
+          "id",
+          "name",
+          "status",
+          "targetMajor",
+          "updatedAt"
+        ],
+        "id": "course_b6836c62630443b89052e4c54c646ec6",
+        "status": "draft"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/courses/{courseId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 6,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "code",
+          "coverUrl",
+          "createdAt",
+          "description",
+          "id",
+          "name",
+          "status",
+          "targetMajor",
+          "updatedAt"
+        ],
+        "id": "course_b6836c62630443b89052e4c54c646ec6",
+        "status": "draft"
+      }
+    },
+    {
+      "method": "PUT",
+      "contractPath": "/api/v1/courses/{courseId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 6,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "code",
+          "coverUrl",
+          "createdAt",
+          "description",
+          "id",
+          "name",
+          "status",
+          "targetMajor",
+          "updatedAt"
+        ],
+        "id": "course_b6836c62630443b89052e4c54c646ec6",
+        "status": "draft"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/courses/{courseId}/chapters",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 7,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 0
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/courses/{courseId}/chapters",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 5,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "courseId",
+          "createdAt",
+          "description",
+          "id",
+          "orderIndex",
+          "title",
+          "updatedAt"
+        ],
+        "id": "chapter_a2ae5c2a7fd54b76b943cb9523f53f1f"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/courses/{courseId}/nodes",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 9,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 0
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/courses/{courseId}/nodes",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 6,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "chapterId",
+          "commonMistakes",
+          "courseId",
+          "createdAt",
+          "description",
+          "difficulty",
+          "id",
+          "learningValue",
+          "masteryScore",
+          "masteryStatus",
+          "name",
+          "nextNodeIds",
+          "nodeType",
+          "prerequisiteNodeIds",
+          "recommendedPracticeIds",
+          "resourceIds",
+          "updatedAt",
+          "x",
+          "y"
+        ],
+        "id": "node_e8d715f9395a49f294302dc2bd3145d2"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/nodes/{nodeId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "chapterId",
+          "commonMistakes",
+          "courseId",
+          "createdAt",
+          "description",
+          "difficulty",
+          "id",
+          "learningValue",
+          "masteryScore",
+          "masteryStatus",
+          "name",
+          "nextNodeIds",
+          "nodeType",
+          "prerequisiteNodeIds",
+          "recommendedPracticeIds",
+          "resourceIds",
+          "updatedAt",
+          "x",
+          "y"
+        ],
+        "id": "node_e8d715f9395a49f294302dc2bd3145d2"
+      }
+    },
+    {
+      "method": "PUT",
+      "contractPath": "/api/v1/nodes/{nodeId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "chapterId",
+          "commonMistakes",
+          "courseId",
+          "createdAt",
+          "description",
+          "difficulty",
+          "id",
+          "learningValue",
+          "masteryScore",
+          "masteryStatus",
+          "name",
+          "nextNodeIds",
+          "nodeType",
+          "prerequisiteNodeIds",
+          "recommendedPracticeIds",
+          "resourceIds",
+          "updatedAt",
+          "x",
+          "y"
+        ],
+        "id": "node_e8d715f9395a49f294302dc2bd3145d2"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/courses/{courseId}/relations",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 0
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/courses/{courseId}/relations",
+      "httpStatus": 200,
+      "apiCode": 500,
+      "mediaType": "application/json",
+      "durationMs": 7,
+      "classification": "FAIL",
+      "message": "database write failed: (psycopg.errors.ForeignKeyViolation) insert or update on table \"knowledge_relation\" violates foreign key constraint \"knowledge_relation_target_node_id_fkey\"\nDETAIL:  Key (target",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/courses/{courseId}/graph",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "courseId",
+          "edges",
+          "nodes"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/courses/{courseId}/graph",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "courseId",
+          "edges",
+          "nodes"
+        ]
+      }
+    },
+    {
+      "method": "PUT",
+      "contractPath": "/api/v1/users/{userId}/nodes/{nodeId}/mastery",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "difficulty",
+          "disabled",
+          "id",
+          "label",
+          "masteryScore",
+          "masteryStatus",
+          "nodeType",
+          "selected",
+          "size",
+          "x",
+          "y"
+        ],
+        "id": "node_e8d715f9395a49f294302dc2bd3145d2"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/files/upload",
+      "httpStatus": 200,
+      "apiCode": 501,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "BLOCKED",
+      "message": "file upload storage is not configured for real mode",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/files/{fileId}",
+      "httpStatus": 200,
+      "apiCode": 404,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "BLOCKED",
+      "message": "file not found: real_verify_20260714_b23a239e_file_missing",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "DELETE",
+      "contractPath": "/api/v1/files/{fileId}",
+      "httpStatus": 200,
+      "apiCode": 501,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "BLOCKED",
+      "message": "file delete storage is not configured for real mode",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/knowledge-base/build",
+      "httpStatus": 200,
+      "apiCode": 501,
+      "mediaType": "application/json",
+      "durationMs": 1,
+      "classification": "BLOCKED",
+      "message": "use python -m app.importers.hello_algo --init-db --skip-git to import Hello Algo",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/knowledge-base/build-tasks/{taskId}",
+      "httpStatus": 200,
+      "apiCode": 404,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "BLOCKED",
+      "message": "knowledge build task not found: real_verify_20260714_b23a239e_build_missing",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/knowledge-base/search",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 25,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 3
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/knowledge-base/embed",
+      "httpStatus": 200,
+      "apiCode": 501,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "BLOCKED",
+      "message": "embedding provider is not configured in this phase",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/chat/sessions",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "courseId",
+          "createdAt",
+          "id",
+          "nodeId",
+          "sessionType",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "session_demo_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/chat/sessions",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "list",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/chat/sessions/{sessionId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 1,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "courseId",
+          "createdAt",
+          "id",
+          "nodeId",
+          "sessionType",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "session_demo_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/chat/sessions/{sessionId}/messages",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/chat/send",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4671,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "answer",
+          "messageId",
+          "retrievedDocuments",
+          "sessionId",
+          "usedAgentTypes"
+        ],
+        "sessionId": "session_demo_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/chat/stream?sessionId={sessionId}",
+      "httpStatus": 200,
+      "apiCode": null,
+      "mediaType": "text/event-stream",
+      "durationMs": 4,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "eventType",
+          "sessionId"
+        ],
+        "sessionId": "session_demo_001",
+        "eventType": "done"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/agents/run",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 12216,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "agentType",
+          "errorMessage",
+          "output",
+          "status",
+          "taskId"
+        ],
+        "taskId": "agent_task_profile_agent_a8d8fd3227de",
+        "status": "success"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/agents/workflows/run",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 17346,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "finalOutput",
+          "status",
+          "steps",
+          "taskId",
+          "workflowType"
+        ],
+        "taskId": "workflow_task_qa_cd1d986d6473",
+        "status": "success"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/agents/tasks/{taskId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "finalOutput",
+          "status",
+          "steps",
+          "taskId",
+          "workflowType"
+        ],
+        "taskId": "workflow_task_qa_cd1d986d6473",
+        "status": "success"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/agents/tasks/{taskId}/events",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 2
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/resources/generate",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 65874,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "currentStage",
+          "errorMessage",
+          "progress",
+          "resourceIds",
+          "status",
+          "taskId"
+        ],
+        "taskId": "resource_task_c9e803529a37",
+        "status": "success",
+        "progress": 100.0
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/resources/generation-tasks/{taskId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "currentStage",
+          "errorMessage",
+          "progress",
+          "resourceIds",
+          "status",
+          "taskId"
+        ],
+        "taskId": "resource_task_c9e803529a37",
+        "status": "success",
+        "progress": 100.0
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/resources/{resourceId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "auditStatus",
+          "content",
+          "courseId",
+          "createdAt",
+          "fileUrl",
+          "id",
+          "modelName",
+          "nodeId",
+          "prompt",
+          "resourceType",
+          "status",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "resource_mind_map_8bc6ff67daf6",
+        "status": "success",
+        "auditStatus": "passed"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/resources",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "list",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/nodes/{nodeId}/generated-resources",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 7,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 0
+      }
+    },
+    {
+      "method": "DELETE",
+      "contractPath": "/api/v1/resources/{resourceId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "bool"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/resources/generate/stream?taskId={taskId}",
+      "httpStatus": 200,
+      "apiCode": null,
+      "mediaType": "text/event-stream",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "eventType",
+          "progress",
+          "stage",
+          "taskId"
+        ],
+        "taskId": "resource_task_c9e803529a37",
+        "eventType": "done",
+        "progress": 100.0
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/multimodal/videos/generate",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 37,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "createdAt",
+          "currentStep",
+          "errorMessage",
+          "fileUrl",
+          "progress",
+          "resourceId",
+          "script",
+          "status",
+          "storyboard",
+          "subtitleText",
+          "taskId",
+          "updatedAt",
+          "videoUrl"
+        ],
+        "taskId": "multimodal_video_task_3dd3e52bc542",
+        "status": "running",
+        "progress": 0.0
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/multimodal/videos/tasks/{taskId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "createdAt",
+          "currentStep",
+          "errorMessage",
+          "fileUrl",
+          "progress",
+          "resourceId",
+          "script",
+          "status",
+          "storyboard",
+          "subtitleText",
+          "taskId",
+          "updatedAt",
+          "videoUrl"
+        ],
+        "taskId": "multimodal_video_task_3dd3e52bc542",
+        "status": "running",
+        "progress": 12.0
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/multimodal/videos/tasks/{taskId}/events",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 5
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/multimodal/videos/stream?taskId={taskId}",
+      "httpStatus": 200,
+      "apiCode": null,
+      "mediaType": "text/event-stream",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "eventType",
+          "message",
+          "progress",
+          "stepName",
+          "taskId"
+        ],
+        "taskId": "multimodal_video_task_3dd3e52bc542",
+        "eventType": "step",
+        "progress": 12.0
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/multimodal/digital-human/explain",
+      "httpStatus": 200,
+      "apiCode": 500,
+      "mediaType": "application/json",
+      "durationMs": 205805,
+      "classification": "BLOCKED",
+      "message": "digital human explain failed: AI virtual human is a real-time stream; use the digital-human chat live session API",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/multimodal/digital-human/chat",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 32327,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "answer",
+          "audioUrl",
+          "liveSession",
+          "messageId",
+          "providerTaskId",
+          "sessionId",
+          "status",
+          "usedDocuments",
+          "videoUrl"
+        ],
+        "sessionId": "digital_human_session_f1036e7b2fb5",
+        "status": "success"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/multimodal/digital-human/sessions/{sessionId}/messages",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 28,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 2
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/multimodal/digital-human/sessions/{sessionId}/live",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 9,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "errorMessage",
+          "sessionId",
+          "startedAt",
+          "status",
+          "updatedAt",
+          "videoUrl"
+        ],
+        "sessionId": "digital_human_session_f1036e7b2fb5",
+        "status": "running"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/multimodal/digital-human/sessions/{sessionId}/stop",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2309,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "errorMessage",
+          "sessionId",
+          "startedAt",
+          "status",
+          "updatedAt",
+          "videoUrl"
+        ],
+        "sessionId": "digital_human_session_f1036e7b2fb5",
+        "status": "cancelled"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/multimodal/digital-human/callback",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 8,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "createdAt",
+          "currentStep",
+          "errorMessage",
+          "fileUrl",
+          "progress",
+          "resourceId",
+          "script",
+          "status",
+          "storyboard",
+          "subtitleText",
+          "taskId",
+          "updatedAt",
+          "videoUrl"
+        ],
+        "taskId": "multimodal_video_task_3dd3e52bc542",
+        "status": "success",
+        "progress": 100
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/recommendations/resources",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 34217,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/recommendations",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/recommendations/{recommendationId}/viewed",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "bool"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/push-records",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/learning-paths/generate",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 63,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "courseId",
+          "createdAt",
+          "currentNodeId",
+          "currentStage",
+          "description",
+          "id",
+          "pathNodeIds",
+          "status",
+          "targetGoal",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "path_user_real_verification_20260714_course_ds_001_mock",
+        "status": "pending"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/learning-paths",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 8,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/learning-paths/{pathId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 15,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "courseId",
+          "createdAt",
+          "currentNodeId",
+          "currentStage",
+          "description",
+          "id",
+          "pathNodeIds",
+          "status",
+          "targetGoal",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "path_user_real_verification_20260714_course_ds_001_mock",
+        "status": "pending"
+      }
+    },
+    {
+      "method": "PUT",
+      "contractPath": "/api/v1/learning-paths/{pathId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 19,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "courseId",
+          "createdAt",
+          "currentNodeId",
+          "currentStage",
+          "description",
+          "id",
+          "pathNodeIds",
+          "status",
+          "targetGoal",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "path_user_real_verification_20260714_course_ds_001_mock",
+        "status": "pending"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/learning-paths/{pathId}/tasks",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 96,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 105
+      }
+    },
+    {
+      "method": "PUT",
+      "contractPath": "/api/v1/learning-tasks/{taskId}/status",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 17,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "completedAt",
+          "courseId",
+          "createdAt",
+          "dueAt",
+          "id",
+          "nodeId",
+          "orderIndex",
+          "pathId",
+          "resourceIds",
+          "status",
+          "taskType",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "learning_task_path_user_real_verification_20260714_course_ds_001_mock_1",
+        "status": "success"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/practices/generate",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 21723,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/practices/questions",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 10,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "list",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/practices/questions/{questionId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "answer",
+          "content",
+          "courseId",
+          "createdAt",
+          "difficulty",
+          "explanation",
+          "id",
+          "nodeId",
+          "options",
+          "questionType",
+          "tags",
+          "title",
+          "updatedAt"
+        ],
+        "id": "question_single_choice_mock_001"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/practices/submit",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 20,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "correctAnswer",
+          "createdAt",
+          "durationSeconds",
+          "id",
+          "isCorrect",
+          "mistakeReason",
+          "nodeId",
+          "questionId",
+          "score",
+          "updatedAt",
+          "userAnswer",
+          "userId"
+        ],
+        "id": "practice_record_mock_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/practice-records",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/wrong-questions",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "DELETE",
+      "contractPath": "/api/v1/users/{userId}/wrong-questions/{questionId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "bool"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/programming/questions/generate",
+      "httpStatus": null,
+      "apiCode": null,
+      "durationMs": 46,
+      "classification": "FAIL",
+      "message": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+      "dataSummary": {
+        "shape": "unavailable"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/programming/questions",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 30,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "list",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/programming/questions/{questionId}",
+      "httpStatus": 200,
+      "apiCode": 404,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "FAIL",
+      "message": "programming question not found",
+      "dataSummary": {
+        "shape": "null"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/programming/submissions",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 7,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "compileOutput",
+          "createdAt",
+          "failedSampleIndex",
+          "language",
+          "memoryKb",
+          "questionId",
+          "stderr",
+          "stdout",
+          "submissionId",
+          "timeSeconds",
+          "updatedAt",
+          "verdict"
+        ],
+        "submissionId": "programming_submission_001",
+        "verdict": "system_error"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/programming-submissions",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/notes",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 5,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "content",
+          "courseId",
+          "createdAt",
+          "id",
+          "nodeId",
+          "pinned",
+          "questionId",
+          "relationId",
+          "relationType",
+          "tags",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "note_demo_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/notes",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "list",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/notes/{noteId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "content",
+          "courseId",
+          "createdAt",
+          "id",
+          "nodeId",
+          "pinned",
+          "questionId",
+          "relationId",
+          "relationType",
+          "tags",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "note_demo_001"
+      }
+    },
+    {
+      "method": "PUT",
+      "contractPath": "/api/v1/notes/{noteId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "content",
+          "courseId",
+          "createdAt",
+          "id",
+          "nodeId",
+          "pinned",
+          "questionId",
+          "relationId",
+          "relationType",
+          "tags",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "note_demo_001"
+      }
+    },
+    {
+      "method": "DELETE",
+      "contractPath": "/api/v1/notes/{noteId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "bool"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/notes/{noteId}/pin",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "content",
+          "courseId",
+          "createdAt",
+          "id",
+          "nodeId",
+          "pinned",
+          "questionId",
+          "relationId",
+          "relationType",
+          "tags",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "note_demo_001"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/notes/{noteId}/relations",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "content",
+          "courseId",
+          "createdAt",
+          "id",
+          "nodeId",
+          "pinned",
+          "questionId",
+          "relationId",
+          "relationType",
+          "tags",
+          "title",
+          "updatedAt",
+          "userId"
+        ],
+        "id": "note_demo_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/notes",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/nodes/{nodeId}/notes",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/learning-records",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 8,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "behaviorType",
+          "courseId",
+          "createdAt",
+          "durationSeconds",
+          "extraData",
+          "id",
+          "nodeId",
+          "resourceId",
+          "userId"
+        ],
+        "id": "learning_record_demo_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/learning-records",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/courses/{courseId}/evaluation",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "advice",
+          "averageMasteryScore",
+          "completionRate",
+          "correctRate",
+          "courseId",
+          "masteredNodeIds",
+          "progressTrend",
+          "userId",
+          "weakNodeIds"
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/users/{userId}/courses/{courseId}/evaluation/refresh",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "advice",
+          "averageMasteryScore",
+          "completionRate",
+          "correctRate",
+          "courseId",
+          "masteredNodeIds",
+          "progressTrend",
+          "userId",
+          "weakNodeIds"
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/reports/generate",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 5,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "chartData",
+          "completionRate",
+          "correctRate",
+          "courseId",
+          "createdAt",
+          "id",
+          "improvementAdvice",
+          "pdfUrl",
+          "summary",
+          "title",
+          "updatedAt",
+          "userId",
+          "weakNodeSummary"
+        ],
+        "id": "report_demo_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/users/{userId}/reports",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "list",
+        "count": 1
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/reports/{reportId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "chartData",
+          "completionRate",
+          "correctRate",
+          "courseId",
+          "createdAt",
+          "id",
+          "improvementAdvice",
+          "pdfUrl",
+          "summary",
+          "title",
+          "updatedAt",
+          "userId",
+          "weakNodeSummary"
+        ],
+        "id": "report_demo_001"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/reports/{reportId}/export-pdf",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "pdfUrl"
+        ]
+      }
+    },
+    {
+      "method": "DELETE",
+      "contractPath": "/api/v1/reports/{reportId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 3,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "bool"
+      }
+    },
+    {
+      "method": "POST",
+      "contractPath": "/api/v1/audit/check",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "auditStatus",
+          "createdAt",
+          "id",
+          "reason",
+          "riskLabels",
+          "targetId",
+          "targetType"
+        ],
+        "id": "audit_result_mock_passed",
+        "auditStatus": "passed"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/audit/logs",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 2,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "list",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/model-call-logs",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 7,
+      "classification": "PASS_PLACEHOLDER",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "list",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/system/health",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 28,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "database",
+          "graphDb",
+          "iflytekDigitalHuman",
+          "iflytekDigitalHumanChat",
+          "iflytekTts",
+          "llmService",
+          "redis",
+          "status",
+          "vectorStore"
+        ],
+        "status": "ok"
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/system/config",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "appName",
+          "appVersion",
+          "enableMock",
+          "enableSafetyAudit",
+          "enableStreamOutput"
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "contractPath": "/api/v1/system/version",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 4,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "object",
+        "keys": [
+          "version"
+        ]
+      }
+    },
+    {
+      "method": "DELETE",
+      "contractPath": "/api/v1/nodes/{nodeId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 68,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "bool"
+      }
+    },
+    {
+      "method": "DELETE",
+      "contractPath": "/api/v1/courses/{courseId}",
+      "httpStatus": 200,
+      "apiCode": 200,
+      "mediaType": "application/json",
+      "durationMs": 18,
+      "classification": "PASS_REAL",
+      "message": "success",
+      "dataSummary": {
+        "shape": "bool"
+      }
+    }
+  ]
+}

@@ -35,7 +35,7 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
     assert ffmpeg, f"ffmpeg is not available: {settings.ffmpeg_binary}"
 
     timeout = settings.video_render_timeout_seconds + settings.tts_timeout_seconds * 4
-    with httpx.Client(base_url=settings.audit_api_base_url, timeout=timeout) as client:
+    with httpx.Client(base_url=settings.audit_api_base_url, timeout=timeout, trust_env=False) as client:
         generated_response = client.post(
             "/resources/generate",
             json={
@@ -65,24 +65,25 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
         assert content["style"] == "clean_motion_graphics"
         assert content["aspectRatio"] == "16:9"
         assert content["output"]["videoUrl"] == details[0]["fileUrl"]
+        assert content["schemaVersion"] == "2.0"
         assert [scene["sceneType"] for scene in content["scenes"]] == [
-            "hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"
+            "hook", "definition", "mechanism", "comparison", "example", "summary"
         ]
-        scene_audio_urls = [scene["audioUrl"] for scene in content["scenes"]]
+        assert all(len(scene["beats"]) == 1 for scene in content["scenes"])
+        scene_audio_urls = [scene["beats"][0]["audioUrl"] for scene in content["scenes"]]
         assert all(scene_audio_urls)
         assert content["output"]["audioUrls"] == scene_audio_urls
-        assert all(scene["visualPlan"]["elements"] for scene in content["scenes"])
-        assert all(all(element["animation"] for element in scene["visualPlan"]["elements"]) for scene in content["scenes"])
-        definition = next(scene for scene in content["scenes"] if scene["sceneType"] == "definition")
-        assert 1 <= sum(element["type"] == "keyword" for element in definition["visualPlan"]["elements"]) <= 3
-        summary = next(scene for scene in content["scenes"] if scene["sceneType"] == "summary")
-        assert sum(element["type"] == "card" for element in summary["visualPlan"]["elements"]) == 3
+        assert all(scene["beats"][0]["visualPlan"]["elements"] for scene in content["scenes"])
         for scene in content["scenes"]:
-            visible_text = "".join(visual_element_text(element) for element in scene["visualPlan"]["elements"])
-            assert len(visible_text) <= 80
+            beat = scene["beats"][0]
+            visible_text = "".join(visual_element_text(element) for element in beat["visualPlan"]["elements"])
+            assert len(visible_text) <= 40
+        joined = json.dumps(content, ensure_ascii=False)
+        for required in ("12836", "16750", "20950", "平均情况下接近 O(1)", "冲突 ≠ 覆盖"):
+            assert required in joined
 
         for scene in content["scenes"]:
-            audio_response = client.get(scene["audioUrl"])
+            audio_response = client.get(scene["beats"][0]["audioUrl"])
             audio_response.raise_for_status()
             assert len(audio_response.content) > 256
 
@@ -98,7 +99,7 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
             "-v",
             "error",
             "-show_entries",
-            "stream=codec_type",
+            "stream=codec_type,codec_name,width,height,avg_frame_rate:format=duration,size",
             "-of",
             "json",
             str(mp4_path),
@@ -109,6 +110,14 @@ def test_real_video_generation_produces_audio_mp4_and_passed_audit(tmp_path: Pat
     )
     codec_types = {item["codec_type"] for item in json.loads(probe.stdout)["streams"]}
     assert {"audio", "video"} <= codec_types
+    parsed_probe = json.loads(probe.stdout)
+    video_stream = next(item for item in parsed_probe["streams"] if item["codec_type"] == "video")
+    audio_stream = next(item for item in parsed_probe["streams"] if item["codec_type"] == "audio")
+    assert video_stream["codec_name"] == "h264"
+    assert audio_stream["codec_name"] == "aac"
+    assert (video_stream["width"], video_stream["height"]) == (1920, 1080)
+    assert video_stream["avg_frame_rate"] == "30/1"
+    assert abs(float(parsed_probe["format"]["duration"]) - content["durationSeconds"]) <= max(0.75, content["durationSeconds"] * 0.01)
 
     scene_start = 0.0
     for scene in content["scenes"]:

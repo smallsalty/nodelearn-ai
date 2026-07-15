@@ -1,0 +1,505 @@
+{
+  "schema_version": "1.0",
+  "title": "哈希表：高效键值映射",
+  "scenes": [
+    {
+      "id": "scene_01",
+      "narrative_role": "hook",
+      "scene_type": "problem_hook",
+      "title": "⚡ 学号查姓名，你猜要多久？",
+      "teaching_purpose": "引入快速查询问题，对比数组/链表效率",
+      "narration": "在10万学生中查找一个学号，数组需要遍历所有元素，但哈希表只需一步。它是怎么做到的？",
+      "screen_text": [
+        "数组 O(n)",
+        "哈希表 O(1)"
+      ],
+      "actors": [
+        {
+          "id": "student_list",
+          "kind": "array",
+          "slot": "center",
+          "items": [
+            "12836:小哈",
+            "15937:小啰",
+            "16750:小算",
+            "13276:小法",
+            "10583:小鸭"
+          ]
+        },
+        {
+          "id": "q_key",
+          "kind": "key",
+          "slot": "right",
+          "value": "15937"
+        },
+        {
+          "id": "q_result",
+          "kind": "data_token",
+          "slot": "right",
+          "value": "小啰"
+        },
+        {
+          "id": "q_callout",
+          "kind": "callout",
+          "slot": "top",
+          "text": "查找 15937？",
+          "tone": "neutral"
+        }
+      ],
+      "beats": [
+        {
+          "id": "b1_s1",
+          "start_ratio": 0.0,
+          "end_ratio": 0.2,
+          "action": "appear",
+          "targets": [
+            "student_list",
+            "q_key"
+          ]
+        },
+        {
+          "id": "b2_s1",
+          "start_ratio": 0.2,
+          "end_ratio": 0.6,
+          "action": "camera",
+          "targets": [
+            "student_list"
+          ],
+          "emphasis": "扫描遍历"
+        },
+        {
+          "id": "b3_s1",
+          "start_ratio": 0.6,
+          "end_ratio": 0.8,
+          "action": "appear",
+          "targets": [
+            "q_callout"
+          ]
+        },
+        {
+          "id": "b4_s1",
+          "start_ratio": 0.8,
+          "end_ratio": 1.0,
+          "action": "reveal",
+          "targets": [
+            "q_result"
+          ],
+          "emphasis": "瞬间返回"
+        }
+      ],
+      "transition_out": {
+        "type": "fade_through_background"
+      },
+      "source_ids": [
+        "https://github.com/krahets/hello-algo/blob/f82fe74d339f3b3bf6185d099eb8847e4f1a7281/docs/chapter_hashing/hash_map.md"
+      ]
+    },
+    {
+      "id": "scene_02",
+      "narrative_role": "definition",
+      "scene_type": "direct_mapping_demo",
+      "title": "📦 什么是哈希表？",
+      "teaching_purpose": "理解哈希表的定义：通过键key直接访问值value的数据结构",
+      "narration": "哈希表通过建立键与值的映射，实现快速访问。就像字典，通过单词找到释义。",
+      "screen_text": [
+        "Key → Value",
+        "学号 → 姓名"
+      ],
+      "actors": [
+        {
+          "id": "mapping_lane",
+          "kind": "comparison_lane",
+          "slot": "center",
+          "title": "哈希表",
+          "items": [
+            "12836 → 小哈",
+            "15937 → 小啰",
+            "16750 → 小算",
+            "13276 → 小法",
+            "10583 → 小鸭"
+          ]
+        },
+        {
+          "id": "def_callout",
+          "kind": "callout",
+          "slot": "top",
+          "text": "key → value 映射",
+          "tone": "neutral"
+        }
+      ],
+      "beats": [
+        {
+          "id": "b1_s2",
+          "start_ratio": 0.0,
+          "end_ratio": 0.5,
+          "action": "appear",
+          "targets": [
+            "mapping_lane"
+          ]
+        },
+        {
+          "id": "b2_s2",
+          "start_ratio": 0.5,
+          "end_ratio": 1.0,
+          "action": "appear",
+          "targets": [
+            "def_callout"
+          ]
+        }
+      ],
+      "transition_out": {
+        "type": "fade_through_background"
+      },
+      "source_ids": [
+        "https://github.com/krahets/hello-algo/blob/f82fe74d339f3b3bf6185d099eb8847e4f1a7281/docs/chapter_hashing/hash_map.md"
+      ]
+    },
+    {
+      "id": "scene_03",
+      "narrative_role": "mechanism",
+      "scene_type": "process_flow",
+      "title": "⚙️ 哈希表如何实现O(1)？",
+      "teaching_purpose": "掌握哈希函数与桶索引的原理，理解直接访问过程",
+      "narration": "哈希函数将键转换为数组索引，通过索引直接定位存储位置，无需遍历。",
+      "screen_text": [
+        "hash(key) → index",
+        "index = hash(学号) % 桶数量"
+      ],
+      "actors": [
+        {
+          "id": "input_key",
+          "kind": "key",
+          "slot": "left",
+          "value": "15937"
+        },
+        {
+          "id": "hash_formula",
+          "kind": "formula",
+          "slot": "center",
+          "expression": "15937 % 8 = 1"
+        },
+        {
+          "id": "buckets",
+          "kind": "bucket_row",
+          "slot": "center",
+          "bucket_count": 8,
+          "focus_indices": [
+            1
+          ]
+        },
+        {
+          "id": "result_val",
+          "kind": "data_token",
+          "slot": "foreground",
+          "value": "小啰"
+        },
+        {
+          "id": "arr1",
+          "kind": "arrow",
+          "slot": "stage",
+          "from_actor_id": "input_key",
+          "to_actor_id": "hash_formula"
+        },
+        {
+          "id": "arr2",
+          "kind": "arrow",
+          "slot": "stage",
+          "from_actor_id": "hash_formula",
+          "to_actor_id": "buckets"
+        },
+        {
+          "id": "arr3",
+          "kind": "arrow",
+          "slot": "stage",
+          "from_actor_id": "buckets",
+          "to_actor_id": "result_val"
+        }
+      ],
+      "beats": [
+        {
+          "id": "b1_s3",
+          "start_ratio": 0.0,
+          "end_ratio": 0.2,
+          "action": "appear",
+          "targets": [
+            "input_key"
+          ]
+        },
+        {
+          "id": "b2_s3",
+          "start_ratio": 0.2,
+          "end_ratio": 0.5,
+          "action": "appear",
+          "targets": [
+            "hash_formula",
+            "arr1"
+          ]
+        },
+        {
+          "id": "b3_s3",
+          "start_ratio": 0.5,
+          "end_ratio": 0.7,
+          "action": "appear",
+          "targets": [
+            "buckets",
+            "arr2"
+          ]
+        },
+        {
+          "id": "b4_s3",
+          "start_ratio": 0.7,
+          "end_ratio": 0.9,
+          "action": "highlight",
+          "targets": [
+            "buckets"
+          ]
+        },
+        {
+          "id": "b5_s3",
+          "start_ratio": 0.9,
+          "end_ratio": 1.0,
+          "action": "appear",
+          "targets": [
+            "result_val",
+            "arr3"
+          ]
+        }
+      ],
+      "transition_out": {
+        "type": "fade_through_background"
+      },
+      "source_ids": [
+        "https://github.com/krahets/hello-algo/blob/f82fe74d339f3b3bf6185d099eb8847e4f1a7281/docs/chapter_hashing/hash_map.md"
+      ]
+    },
+    {
+      "id": "scene_04",
+      "narrative_role": "example",
+      "scene_type": "step_by_step",
+      "title": "💻 动手实践：学生信息查询",
+      "teaching_purpose": "通过学号-姓名映射实例，演示哈希表的增查删操作",
+      "narration": "我们初始化一个空哈希表，然后插入5个学生数据。输入学号15937，立即得到姓名“小啰”。再删除学号10583。",
+      "screen_text": [
+        "插入",
+        "查询",
+        "删除"
+      ],
+      "actors": [
+        {
+          "id": "code",
+          "kind": "code_panel",
+          "slot": "left",
+          "language": "python",
+          "code_lines": [
+            "hmap: dict = {}",
+            "hmap[12836] = '小哈'",
+            "hmap[15937] = '小啰'",
+            "hmap[16750] = '小算'",
+            "hmap[13276] = '小法'",
+            "hmap[10583] = '小鸭'",
+            "name = hmap[15937]",
+            "del hmap[10583]"
+          ]
+        },
+        {
+          "id": "result_data",
+          "kind": "data_token",
+          "slot": "foreground",
+          "value": "小啰"
+        },
+        {
+          "id": "r_callout",
+          "kind": "callout",
+          "slot": "center",
+          "text": "查询结果：小啰",
+          "tone": "result"
+        },
+        {
+          "id": "del_callout",
+          "kind": "callout",
+          "slot": "center",
+          "text": "已删除 10583",
+          "tone": "warning"
+        }
+      ],
+      "beats": [
+        {
+          "id": "b01_s4",
+          "start_ratio": 0.0,
+          "end_ratio": 0.05,
+          "action": "appear",
+          "targets": [
+            "code"
+          ]
+        },
+        {
+          "id": "b02_s4",
+          "start_ratio": 0.05,
+          "end_ratio": 0.1,
+          "action": "code_highlight",
+          "targets": [
+            "code"
+          ],
+          "emphasis": "line 1"
+        },
+        {
+          "id": "b03_s4",
+          "start_ratio": 0.1,
+          "end_ratio": 0.2,
+          "action": "code_highlight",
+          "targets": [
+            "code"
+          ],
+          "emphasis": "line 2"
+        },
+        {
+          "id": "b04_s4",
+          "start_ratio": 0.2,
+          "end_ratio": 0.3,
+          "action": "code_highlight",
+          "targets": [
+            "code"
+          ],
+          "emphasis": "line 3"
+        },
+        {
+          "id": "b05_s4",
+          "start_ratio": 0.3,
+          "end_ratio": 0.4,
+          "action": "code_highlight",
+          "targets": [
+            "code"
+          ],
+          "emphasis": "line 4"
+        },
+        {
+          "id": "b06_s4",
+          "start_ratio": 0.4,
+          "end_ratio": 0.5,
+          "action": "code_highlight",
+          "targets": [
+            "code"
+          ],
+          "emphasis": "line 5"
+        },
+        {
+          "id": "b07_s4",
+          "start_ratio": 0.5,
+          "end_ratio": 0.6,
+          "action": "code_highlight",
+          "targets": [
+            "code"
+          ],
+          "emphasis": "line 6"
+        },
+        {
+          "id": "b08_s4",
+          "start_ratio": 0.6,
+          "end_ratio": 0.7,
+          "action": "code_highlight",
+          "targets": [
+            "code"
+          ],
+          "emphasis": "line 7"
+        },
+        {
+          "id": "b09_s4",
+          "start_ratio": 0.6,
+          "end_ratio": 0.7,
+          "action": "appear",
+          "targets": [
+            "result_data",
+            "r_callout"
+          ]
+        },
+        {
+          "id": "b10_s4",
+          "start_ratio": 0.8,
+          "end_ratio": 1.0,
+          "action": "code_highlight",
+          "targets": [
+            "code"
+          ],
+          "emphasis": "line 8"
+        },
+        {
+          "id": "b11_s4",
+          "start_ratio": 0.8,
+          "end_ratio": 1.0,
+          "action": "appear",
+          "targets": [
+            "del_callout"
+          ]
+        }
+      ],
+      "transition_out": {
+        "type": "fade_through_background"
+      },
+      "source_ids": [
+        "https://github.com/krahets/hello-algo/blob/f82fe74d339f3b3bf6185d099eb8847e4f1a7281/codes/cpp/chapter_hashing/hash_map.cpp"
+      ]
+    },
+    {
+      "id": "scene_05",
+      "narrative_role": "summary",
+      "scene_type": "summary_recall",
+      "title": "🎯 总结：哈希表的优势",
+      "teaching_purpose": "巩固知识点，强化O(1)高效性与适用场景",
+      "narration": "哈希表通过键值映射实现O(1)的增删查改，比数组和链表高效得多，非常适合键值存储场景。",
+      "screen_text": [
+        "哈希表 O(1)",
+        "数组/链表 O(n)"
+      ],
+      "actors": [
+        {
+          "id": "comp_hash",
+          "kind": "comparison_lane",
+          "slot": "left",
+          "title": "哈希表",
+          "items": [
+            "查找 O(1)",
+            "添加 O(1)",
+            "删除 O(1)"
+          ]
+        },
+        {
+          "id": "comp_arr",
+          "kind": "comparison_lane",
+          "slot": "right",
+          "title": "数组/链表",
+          "items": [
+            "查找 O(n)",
+            "添加 O(1)",
+            "删除 O(n)"
+          ]
+        }
+      ],
+      "beats": [
+        {
+          "id": "b1_s5",
+          "start_ratio": 0.0,
+          "end_ratio": 0.5,
+          "action": "appear",
+          "targets": [
+            "comp_hash",
+            "comp_arr"
+          ]
+        },
+        {
+          "id": "b2_s5",
+          "start_ratio": 0.5,
+          "end_ratio": 1.0,
+          "action": "highlight",
+          "targets": [
+            "comp_hash"
+          ],
+          "emphasis": "高效 O(1)"
+        }
+      ],
+      "transition_out": null,
+      "source_ids": [
+        "https://github.com/krahets/hello-algo/blob/f82fe74d339f3b3bf6185d099eb8847e4f1a7281/docs/chapter_hashing/hash_map.md"
+      ]
+    }
+  ]
+}

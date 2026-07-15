@@ -79,12 +79,14 @@
 - `knowledge_video` and `digital_human_video` use the multimodal task API and may be bridged from `POST /api/v1/resources/generate` for compatibility.
 - Default video options are `aspectRatio="16:9"`, `qualityPreset="high"`, and `materialSource="generated_motion_assets"`.
 - Video generation progress is exposed through `ResourceGenerateResult.progress/currentStage/errorMessage` and `ResourceStreamEvent.stage`.
-- Required generation stages are `script -> storyboard -> quality_audit -> tts -> render -> audit -> persist -> done`; failures use `error`.
+- 公共阶段仍为 `script -> storyboard -> quality_audit -> tts -> render -> audit -> persist -> done`；内部按十二阶段执行并投影到这些既有枚举，失败使用 `error`。
 - `AnimationScriptContent.scenes[]` must include `teachingPurpose`, `concreteObjects`, `animationSteps`, `stateChanges`, `screenText`, `misconceptionFix`, `componentHints`, and `auditChecklist`.
 - The first version uses Remotion frame-driven data-structure teaching components and local teaching presets as primary visuals. External stock media is not a default source.
-- 新生成视频写入 `schemaVersion="2.0"`，使用 beat 作为口播、TTS、字幕和 Remotion Sequence 的唯一节拍来源；历史 v1 仅保留前端查看兼容。
+- 新生成视频写入 `schemaVersion="2.0"`；一个内部 scene 投影为一个公开 scene/beat，逐场景音频 URL 写入公开 beat；历史 v1/v2 继续走兼容 renderer。
 - 主题固定为 `warm_academic`、`chalk_classroom`、`technical_blueprint`，默认暖白学院风；导出画面不包含常驻页眉、页脚、场景编号或进度条。
-- LLM 只生成教学事实、口播和高层视觉意图；`AnimationSpecSkill` 作为确定性 Visual Director 构造严格 `VisualElement`，避免模型漏填组件字段。
+- 新链路 LLM 只生成严格内部策略、Narrative 和 Scene DSL；不得输出组件名、HTML、JSX、CSS 或绝对坐标。`AnimationSpecSkill` 只保留历史兼容用途。
+- Visual Director 按 `hook/definition/analogy/mechanism/comparison/process/example/summary` 选择中心聚焦、左右分栏、横向映射、主视觉侧栏、双栏对照、时间线、案例板和总结卡片；相邻 beat 可在 `grid_focus/left_right` 间切换视觉重心，但继续共用主题 token。
+- v2 beat 的 `screenText` 使用 1-3 条短句，总计不超过 40 个中文字；主结论之外可补充条件和结果，非 hook/summary beat 必须保留至少一个非文本教学演示元素。
 - 每个 factual beat 必须引用 RAG 文档或知识节点来源，质量/安全预审未通过不得启动 TTS；最终 MP4 仍需媒体与资源审核。
 - `POST /api/v1/multimodal/videos/generate` 复用真实 Remotion 核心，mock 模式明确失败且不得返回固定 `/mock/knowledge-video.mp4`。
 
@@ -105,7 +107,9 @@
 - 讯飞 provider：`backend/app/services/providers/iflytek/*`
 - 智能体文件：`backend/app/agents/resource_agent.py`
 - 视频技能文件：`backend/app/agents/multimodal_skills.py`
+- 视频流水线：`backend/app/services/video_pipeline/*`
 - 视频渲染器：`video-renderer/`
+- 架构与扩展指南：`docs/video-generation-architecture.md`
 
 ## 知识点讲解视频
 
@@ -114,13 +118,13 @@
 - `GeneratedResource.fileUrl` 保存审核通过后的 MP4 地址。
 - 两种视频资源类型必须同时保存，并共享最终 MP4。
 - 新生成资源统一使用 `style=clean_motion_graphics` 和 `sceneType + visualPlan`，不再生成 `stack_animation` 或 `text_slide`。
-- 分镜固定覆盖问题开场、定义、类比、机制、对比、流程、例子和总结；画面只展示关键词、短句和标签。
-- Remotion 使用 `UniversalExplainerVideoRenderer` 根据布局和元素类型渲染动画，不在导出画面中显示整段旁白。
-- TTS 使用豆包 V3 HTTP Chunked，由后端聚合为真实 MP3。
-- MP4 使用 Remotion 导出；Remotion 通过后端静态服务 HTTP 地址读取音频，并在发布前通过 `ffprobe` 验证 MP4 同时包含音频流和视频流。
+- 公开 v2 必须按顺序包含 hook、definition、mechanism、example、summary；内部另用 `scene_type` 从 15 个模板中选择，哈希验收固定六场景。
+- 新任务由 `SceneRendererRegistry` 和内部 render manifest 渲染；`UniversalExplainerVideoRenderer` 只处理历史资源。
+- TTS 使用豆包 V3 HTTP Chunked，每个内部 scene 生成一段真实 MP3；最终时长由 `audioDuration + 0.35s` 决定，不用静止画面补齐目标时长。
+- MP4 发布前完整验证非空、H.264、AAC、宽高、30fps、音视频轨和 resolved timeline 时长误差。
 - 豆包 `TTS_VOICE_NAME` 必须与 `TTS_RESOURCE_ID` 匹配；`seed-tts-2.0` 可使用已验证的 `zh_female_vv_uranus_bigtts`。
 - 音频、视频和依赖失败必须明确标记 `failed`。
-- 历史旧视频 JSON 不再兼容，需要重新生成。
+- 历史视频 JSON 和前端 JSON 预览继续兼容；真实新动画只读取内部 manifest。
 
 ## 真实材料和导图
 
@@ -134,7 +138,7 @@
 ## 多模态资源增强
 
 - 新增资源类型：`knowledge_video`、`digital_human_video`、`digital_human_dialogue`、`audio_explanation`、`subtitle`、`storyboard`。
-- 稳定知识点视频链路：`load_context -> plan_content -> generate_script -> generate_storyboard -> audit_storyboard -> synthesize_audio -> render_video -> audit_resource -> persist_resource -> emit_progress`。
+- 稳定知识点视频内部链路：`context_building -> teaching_strategy -> narrative_planning -> storyboard_generation -> storyboard_validation -> scene_template_resolution -> tts_generation -> audio_duration_analysis -> animation_timing_resolution -> remotion_rendering -> video_validation -> persistence`。
 - 数字人讲解复用脚本/分镜链路，再通过讯飞数字人 provider 创建讲解任务；无真实讯飞配置时使用 mock provider，返回结构与真实 provider adapter 保持一致。
 - 数字人对话复用 RAG、学生画像和最小 audit 流程，保存 session/message；回答由虚拟人接口服务自带的大模型对话能力生成，缺少真实配置或调用失败时直接失败，不返回 mock 回答。
 - 只有大模型返回非空文本且 audit/safety 通过后，才允许启动或复用在线虚拟人会话并发送文本驱动。

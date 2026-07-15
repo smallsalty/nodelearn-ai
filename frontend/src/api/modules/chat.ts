@@ -1,4 +1,4 @@
-import { request } from "@/api/client";
+import { request, requestSseEvent } from "@/api/client";
 import type { PageRequest, PageResult } from "@/types/contracts";
 import type { ChatMessage, ChatRequest, ChatResult, ChatSession, ChatStreamEvent } from "@/types/agent";
 
@@ -19,7 +19,7 @@ export const chatApi = {
     return request<ChatResult>({ method: "POST", url: "/chat/send", data: payload, timeout: 2 * 60 * 1000 });
   },
   streamChat(sessionId: string) {
-    return request<ChatStreamEvent>({ method: "GET", url: "/chat/stream", params: { sessionId } });
+    return requestSseEvent<ChatStreamEvent>("/chat/stream", { sessionId });
   }
 };
 

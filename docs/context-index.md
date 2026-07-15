@@ -23,6 +23,10 @@
 | 知识图谱 | `docs/modules/knowledge-graph.md` |
 | 智能体或对话 | `docs/modules/agents.md` |
 | 资源、RAG、推荐 | `docs/modules/resource-generation.md` |
+| 知识点教学视频、Scene DSL、Remotion 模板 | `docs/modules/resource-generation.md`、`docs/video-generation-architecture.md`、`docs/video-generation-audit-2026-07-13.md` |
+| 2026-07-13 真实视频验收 | `docs/real-video-verification-2026-07-13.md` |
+| 2026-07-14 真实前后端联调与全模块验收 | `docs/real-flow-verification-2026-07-14.md` |
+| 2026-07-15 算法题真实 Judge0 验收 | `docs/programming-judge0-verification-2026-07-15.md` |
 | 学习路径 | `docs/modules/learning-path.md` |
 | 练习和错题 | `docs/modules/practice.md` |
 | 笔记和浮窗 | `docs/modules/note-floating.md` |

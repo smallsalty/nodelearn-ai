@@ -1,0 +1,42 @@
+﻿### Result
+Total messages: 3 (Errors: 0, Warnings: 3)
+
+[WARNING] ElementPlusError: [el-radio] [API] label act as value is about to be deprecated in version 3.0.0, please use value instead.
+For more detail, please visit: https://element-plus.org/en-US/component/radio.html
+
+    at Gt (http://127.0.0.1:5173/assets/index--LffjET7.js:18:43897)
+    at Bo.fe.immediate (http://127.0.0.1:5173/assets/index--LffjET7.js:18:57373)
+    at hu (http://127.0.0.1:5173/assets/index--LffjET7.js:14:38)
+    at uo (http://127.0.0.1:5173/assets/index--LffjET7.js:14:109)
+    at Sv.r.call (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3477)
+    at w (http://127.0.0.1:5173/assets/index--LffjET7.js:10:16666)
+    at C3 (http://127.0.0.1:5173/assets/index--LffjET7.js:10:16880)
+    at Sv (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3678)
+    at fe (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3184)
+    at Bo (http://127.0.0.1:5173/assets/index--LffjET7.js:18:57354) @ http://127.0.0.1:5173/assets/index--LffjET7.js:17
+[WARNING] ElementPlusError: [el-radio] [API] label act as value is about to be deprecated in version 3.0.0, please use value instead.
+For more detail, please visit: https://element-plus.org/en-US/component/radio.html
+
+    at Gt (http://127.0.0.1:5173/assets/index--LffjET7.js:18:43897)
+    at Bo.fe.immediate (http://127.0.0.1:5173/assets/index--LffjET7.js:18:57373)
+    at hu (http://127.0.0.1:5173/assets/index--LffjET7.js:14:38)
+    at uo (http://127.0.0.1:5173/assets/index--LffjET7.js:14:109)
+    at Sv.r.call (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3477)
+    at w (http://127.0.0.1:5173/assets/index--LffjET7.js:10:16666)
+    at C3 (http://127.0.0.1:5173/assets/index--LffjET7.js:10:16880)
+    at Sv (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3678)
+    at fe (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3184)
+    at Bo (http://127.0.0.1:5173/assets/index--LffjET7.js:18:57354) @ http://127.0.0.1:5173/assets/index--LffjET7.js:17
+[WARNING] ElementPlusError: [el-radio] [API] label act as value is about to be deprecated in version 3.0.0, please use value instead.
+For more detail, please visit: https://element-plus.org/en-US/component/radio.html
+
+    at Gt (http://127.0.0.1:5173/assets/index--LffjET7.js:18:43897)
+    at Bo.fe.immediate (http://127.0.0.1:5173/assets/index--LffjET7.js:18:57373)
+    at hu (http://127.0.0.1:5173/assets/index--LffjET7.js:14:38)
+    at uo (http://127.0.0.1:5173/assets/index--LffjET7.js:14:109)
+    at Sv.r.call (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3477)
+    at w (http://127.0.0.1:5173/assets/index--LffjET7.js:10:16666)
+    at C3 (http://127.0.0.1:5173/assets/index--LffjET7.js:10:16880)
+    at Sv (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3678)
+    at fe (http://127.0.0.1:5173/assets/index--LffjET7.js:14:3184)
+    at Bo (http://127.0.0.1:5173/assets/index--LffjET7.js:18:57354) @ http://127.0.0.1:5173/assets/index--LffjET7.js:17

@@ -18,6 +18,7 @@ const selectedReport = ref<StudyReport | null>(null);
 const loading = ref(false);
 const generating = ref(false);
 const errorMessage = ref("");
+const activeTab = ref("list");
 const chartRef = ref<HTMLDivElement | null>(null);
 let chart: echarts.ECharts | null = null;
 
@@ -151,7 +152,7 @@ function themeColor(token: string, fallback: string) {
       </StateBlock>
     </section>
 
-    <el-tabs class="page-tabs">
+    <el-tabs v-model="activeTab" class="page-tabs">
       <el-tab-pane label="报告列表" name="list">
         <el-empty v-if="!reports.length" description="暂无报告" />
         <section v-else class="soft-card-grid">

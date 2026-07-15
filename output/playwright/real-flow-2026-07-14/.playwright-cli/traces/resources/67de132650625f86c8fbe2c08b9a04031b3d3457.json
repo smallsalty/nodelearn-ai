@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"id":"user_demo_001","username":"demo_student","email":null,"phone":null,"role":"student","status":"active","avatarUrl":null,"lastLoginAt":null,"createdAt":"2026-05-19T10:00:00Z","updatedAt":"2026-05-19T10:00:00Z"},"traceId":"trace_782fd1ee001b4994a65b3436d1501913","timestamp":"2026-07-14T10:48:56.176292+00:00"}

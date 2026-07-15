@@ -26,9 +26,46 @@ const language = ref<ProgrammingLanguage>("cpp"); const sourceCode = ref(templat
 const loading = ref(false); const generating = ref(false); const running = ref(false); const errorMessage = ref("");
 const selectedQuestion = computed(() => questions.value.find((item) => item.id === selectedQuestionId.value) ?? questions.value[0]);
 onMounted(() => void loadPage());
-async function loadPage() { loading.value = true; try { const response = await courseApi.getNodes(courseId.value); nodes.value = response.data; if (!selectedNodeId.value) selectedNodeId.value = nodes.value[0]?.id ?? ""; } catch (error) { errorMessage.value = getErrorMessage(error); } finally { loading.value = false; } }
+async function loadPage() {
+  loading.value = true;
+  errorMessage.value = "";
+  try {
+    const [nodeResponse, questionResponse] = await Promise.all([
+      courseApi.getNodes(courseId.value),
+      programmingApi.listQuestions({ page: 1, pageSize: 20 })
+    ]);
+    nodes.value = nodeResponse.data;
+    questions.value = questionResponse.data.list.filter((question) => question.courseId === courseId.value);
+    if (!selectedNodeId.value) selectedNodeId.value = nodes.value[0]?.id ?? "";
+    selectedQuestionId.value = selectedQuestionId.value ?? questions.value[0]?.id ?? null;
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error);
+  } finally {
+    loading.value = false;
+  }
+}
 async function generateQuestion() { generating.value = true; errorMessage.value = ""; try { const response = await programmingApi.generateQuestions({ userId: userId.value, courseId: courseId.value, nodeId: selectedNodeId.value || undefined, difficulty: difficulty.value, count: 1 }); questions.value = response.data; selectedQuestionId.value = questions.value[0]?.id ?? null; result.value = null; } catch (error) { errorMessage.value = getErrorMessage(error); } finally { generating.value = false; } }
-async function runCode() { if (!selectedQuestion.value || !sourceCode.value.trim()) return; running.value = true; errorMessage.value = ""; try { result.value = (await programmingApi.submit({ userId: userId.value, questionId: selectedQuestion.value.id, language: language.value, sourceCode: sourceCode.value })).data; } catch (error) { errorMessage.value = getErrorMessage(error); } finally { running.value = false; } }
+async function runCode() {
+  if (!selectedQuestion.value || !sourceCode.value.trim()) return;
+  running.value = true;
+  errorMessage.value = "";
+  try {
+    const response = await programmingApi.submit({
+      userId: userId.value,
+      questionId: selectedQuestion.value.id,
+      language: language.value,
+      sourceCode: sourceCode.value
+    });
+    result.value = {
+      ...response.data,
+      failedSampleIndex: response.data.failedSampleIndex ?? undefined
+    };
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error);
+  } finally {
+    running.value = false;
+  }
+}
 function changeLanguage(value: ProgrammingLanguage) { language.value = value; sourceCode.value = templates[value]; result.value = null; }
 </script>
 

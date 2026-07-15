@@ -21,6 +21,7 @@ const selectedNodeId = ref<string | null>(null);
 const loading = ref(false);
 const errorMessage = ref("");
 const nodeErrorMessage = ref("");
+const activeTab = ref("jump");
 const viewState = reactive<GraphViewState>({
   selectedNodeId: undefined,
   expandedChapterId: undefined,
@@ -91,12 +92,6 @@ function renderGraph() {
   const surface = themeColor("--nl-surface", "#ffffff");
   const text = themeColor("--nl-text", "#15342b");
   const border = themeColor("--nl-border-strong", "#b9d4c5");
-  const filteredNodes = graph.value.nodes.filter((node) => {
-    if (viewState.showWeakOnly) return node.masteryStatus === "weak" || node.masteryScore < 60;
-    if (viewState.showCompletedOnly) return node.masteryStatus === "mastered";
-    return true;
-  });
-  const visibleIds = new Set(filteredNodes.map((node) => node.id));
   const graphView = buildGraphView();
   chart.setOption({
     backgroundColor: surface,
@@ -116,18 +111,13 @@ function renderGraph() {
         force: { repulsion: 160, edgeLength: 90 },
         label: { show: true, color: text, fontSize: 12 },
         lineStyle: { color: border, width: 1.5, curveness: 0.08 },
-        data: filteredNodes.map((node) => ({
-        label: { show: true, color: "#0f172a", fontSize: 12 },
-        lineStyle: { color: "#cbd5e1", width: 1.5, curveness: 0.08 },
         data: graphView.nodes.map((node) => ({
           ...node,
           name: node.label,
           symbolSize: node.isChapter ? 82 : Math.max(42, node.size ?? 46),
           itemStyle: {
-            color: nodeColor(node),
-            borderColor: node.id === selectedNodeId.value ? text : surface,
             color: node.isChapter ? "#dbeafe" : nodeColor(node),
-            borderColor: node.id === selectedNodeId.value ? "#0f172a" : "#ffffff",
+            borderColor: node.id === selectedNodeId.value ? text : surface,
             borderWidth: node.id === selectedNodeId.value ? 3 : 1
           }
         })),
@@ -334,15 +324,10 @@ function openResourceAction(action: "knowledge_video" | "digital_human_video" | 
       </StateBlock>
     </section>
 
-    <el-tabs class="page-tabs">
+    <el-tabs v-model="activeTab" class="page-tabs">
       <el-tab-pane label="节点跳转" name="jump">
         <el-select filterable placeholder="选择节点" :model-value="selectedNodeId" @change="jumpToNode">
           <el-option v-for="node in graph?.nodes ?? []" :key="node.id" :label="node.label" :value="node.id" />
-    <aside class="side-stack">
-      <el-card shadow="never">
-        <template #header>主题跳转</template>
-        <el-select filterable placeholder="选择主题" :model-value="viewState.expandedChapterId" @change="selectChapter">
-          <el-option v-for="group in chapterGroups" :key="group.id" :label="group.label" :value="group.id" />
         </el-select>
       </el-tab-pane>
 

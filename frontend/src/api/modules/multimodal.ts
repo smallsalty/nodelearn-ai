@@ -1,4 +1,4 @@
-import { postKeepalive, request } from "@/api/client";
+import { postKeepalive, request, requestSseEvent } from "@/api/client";
 import type { ChatMessage } from "@/types/agent";
 import type {
   DigitalHumanCallbackRequest,
@@ -29,7 +29,7 @@ export const multimodalApi = {
     return request<MultimodalTaskEvent[]>({ method: "GET", url: `/multimodal/videos/tasks/${taskId}/events` });
   },
   streamVideoTask(taskId: string) {
-    return request<MultimodalStreamEvent>({ method: "GET", url: "/multimodal/videos/stream", params: { taskId } });
+    return requestSseEvent<MultimodalStreamEvent>("/multimodal/videos/stream", { taskId });
   },
   explainWithDigitalHuman(payload: DigitalHumanExplainRequest) {
     return request<DigitalHumanExplainResult>({

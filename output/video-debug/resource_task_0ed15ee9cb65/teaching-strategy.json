@@ -1,0 +1,21 @@
+{
+  "entry_mode": "question",
+  "preferred_scene_types": [
+    "problem_hook",
+    "direct_mapping_demo",
+    "process_flow",
+    "step_by_step",
+    "summary_recall"
+  ],
+  "terminology_level": "standard",
+  "pacing": "steady",
+  "code_depth": "illustrative",
+  "include_misconception": false,
+  "complexity_notes": [
+    "connect mechanism to one complete example: use student ID-name mapping to demonstrate hash table operations",
+    "highlight O(1) advantage over array/linked list through comparison scenario"
+  ],
+  "personalization_reasons": [
+    "mixed learner: balance concrete mapping and process explanation"
+  ]
+}

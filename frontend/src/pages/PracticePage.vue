@@ -15,13 +15,41 @@ const questions = ref<PracticeQuestion[]>([]);
 const wrongQuestions = ref<PracticeQuestion[]>([]);
 const selectedQuestionId = ref<string | null>(null);
 const userAnswer = ref("");
+const multipleAnswers = ref<string[]>([]);
 const currentRecord = ref<PracticeRecord | null>(null);
 const loading = ref(false);
 const generating = ref(false);
 const submitting = ref(false);
 const errorMessage = ref("");
+const activeTab = ref("questions");
 
 const selectedQuestion = computed(() => questions.value.find((question) => question.id === selectedQuestionId.value) ?? questions.value[0]);
+const hasAnswer = computed(() =>
+  selectedQuestion.value?.questionType === "multiple_choice"
+    ? multipleAnswers.value.length > 0
+    : Boolean(userAnswer.value.trim())
+);
+
+function optionAnswerValue(option: string) {
+  return option.match(/^\s*([A-Za-z])(?:[.、:：)）]|\s)/)?.[1]?.toUpperCase() ?? option;
+}
+
+function resetAnswer() {
+  userAnswer.value = "";
+  multipleAnswers.value = [];
+}
+
+function showReferenceAnswer() {
+  const answer = selectedQuestion.value?.answer ?? "";
+  if (selectedQuestion.value?.questionType === "multiple_choice") {
+    multipleAnswers.value = answer
+      .split(/[,，、\s]+/)
+      .map((item) => item.trim().toUpperCase())
+      .filter(Boolean);
+    return;
+  }
+  userAnswer.value = answer;
+}
 
 onMounted(() => {
   void loadPage();
@@ -60,7 +88,7 @@ async function generatePractices() {
     questions.value = response.data;
     selectedQuestionId.value = questions.value[0]?.id ?? null;
     currentRecord.value = null;
-    userAnswer.value = "";
+    resetAnswer();
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
@@ -69,14 +97,17 @@ async function generatePractices() {
 }
 
 async function submitAnswer() {
-  if (!selectedQuestion.value || !userAnswer.value.trim()) return;
+  if (!selectedQuestion.value || !hasAnswer.value) return;
   submitting.value = true;
   errorMessage.value = "";
   try {
     const response = await practiceApi.submitPractice({
       userId: userId.value,
       questionId: selectedQuestion.value.id,
-      userAnswer: userAnswer.value.trim(),
+      userAnswer:
+        selectedQuestion.value.questionType === "multiple_choice"
+          ? multipleAnswers.value.join(",")
+          : userAnswer.value.trim(),
       durationSeconds: 60
     });
     currentRecord.value = response.data;
@@ -99,7 +130,7 @@ async function submitAnswer() {
 function selectQuestion(question: PracticeQuestion) {
   selectedQuestionId.value = question.id;
   appState.selectedQuestionId = question.id;
-  userAnswer.value = "";
+  resetAnswer();
   currentRecord.value = null;
 }
 </script>
@@ -130,8 +161,17 @@ function selectQuestion(question: PracticeQuestion) {
           <h3>{{ selectedQuestion.title }}</h3>
           <p>{{ selectedQuestion.content }}</p>
 
-          <el-radio-group v-if="selectedQuestion.options?.length" v-model="userAnswer" class="option-list">
-            <el-radio v-for="option in selectedQuestion.options" :key="option" :value="option">
+          <el-checkbox-group
+            v-if="selectedQuestion.questionType === 'multiple_choice' && selectedQuestion.options?.length"
+            v-model="multipleAnswers"
+            class="option-list"
+          >
+            <el-checkbox v-for="option in selectedQuestion.options" :key="option" :value="optionAnswerValue(option)">
+              {{ option }}
+            </el-checkbox>
+          </el-checkbox-group>
+          <el-radio-group v-else-if="selectedQuestion.options?.length" v-model="userAnswer" class="option-list">
+            <el-radio v-for="option in selectedQuestion.options" :key="option" :value="optionAnswerValue(option)">
               {{ option }}
             </el-radio>
           </el-radio-group>
@@ -144,8 +184,8 @@ function selectQuestion(question: PracticeQuestion) {
           />
 
           <div class="button-row">
-            <el-button type="primary" :loading="submitting" :disabled="!userAnswer.trim()" @click="submitAnswer">提交答案</el-button>
-            <el-button plain @click="userAnswer = selectedQuestion.answer">查看参考答案</el-button>
+            <el-button type="primary" :loading="submitting" :disabled="!hasAnswer" @click="submitAnswer">提交答案</el-button>
+            <el-button plain @click="showReferenceAnswer">查看参考答案</el-button>
           </div>
 
           <el-result
@@ -162,7 +202,7 @@ function selectQuestion(question: PracticeQuestion) {
       </StateBlock>
     </section>
 
-    <el-tabs class="page-tabs">
+    <el-tabs v-model="activeTab" class="page-tabs">
       <el-tab-pane label="题目列表" name="questions">
         <section class="soft-card-grid">
           <button
