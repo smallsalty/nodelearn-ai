@@ -1,8 +1,11 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, StringConstraints
 
 from app.schemas.common import ContractModel, CourseStatus, DifficultyLevel, MasteryStatus, NodeType
+
+
+NodeContent = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
 class Course(ContractModel):
@@ -58,6 +61,7 @@ class KnowledgeNode(ContractModel):
     name: str
     node_type: NodeType
     description: str | None = None
+    content: NodeContent
     difficulty: DifficultyLevel
     learning_value: float
     prerequisite_node_ids: list[str] = Field(default_factory=list)
@@ -79,6 +83,7 @@ class KnowledgeNodeCreateRequest(ContractModel):
     name: str
     node_type: NodeType
     description: str | None = None
+    content: NodeContent
     difficulty: DifficultyLevel
     learning_value: float
     prerequisite_node_ids: list[str] | None = None

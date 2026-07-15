@@ -5,7 +5,7 @@ import {
   ChatLineRound,
   Collection,
   DataAnalysis,
-  EditPen, Monitor,
+  EditPen,
   FolderOpened,
   Guide,
   House,
@@ -43,7 +43,6 @@ const navItems = [
   { path: "/resources", label: "资源中心", description: "生成与预览", icon: Collection },
   { path: "/knowledge-graph", label: "知识图谱", description: "节点依赖", icon: Share },
   { path: "/practice", label: "练习测评", description: "题目与错因", icon: EditPen },
-  { path: "/programming", label: "编程题", description: "代码运行与判题", icon: Monitor },
   { path: "/reports", label: "学习报告", description: "评估与建议", icon: DataAnalysis },
   { path: "/admin/knowledge-base", label: "知识库管理", description: "课程材料", icon: FolderOpened }
 ];
@@ -57,16 +56,17 @@ const navGroups: SidebarNavGroup[] = [
   {
     title: "学习工具",
     icon: Collection,
-    items: navItems.slice(4, 8)
+    items: navItems.slice(4, 7)
   },
   {
     title: "项目管理",
     icon: Management,
-    items: navItems.slice(8)
+    items: navItems.slice(7)
   }
 ];
 
 const currentPageTitle = computed(() => {
+  if (route.name === "knowledge-node-content") return "知识节点正文";
   return navItems.find((item) => item.path === route.path)?.label ?? "NodeLearn AI";
 });
 
@@ -118,7 +118,8 @@ async function loadNodes() {
     }
     nodes.value = nodeResponse.value.data;
     chapters.value = chapterResponse.status === "fulfilled" ? chapterResponse.value.data : [];
-    if (!appState.selectedNodeId && nodes.value[0]) {
+    const isNodeContentRoute = route.name === "knowledge-node-content";
+    if (!isNodeContentRoute && !appState.selectedNodeId && nodes.value[0]) {
       appState.selectedNodeId = nodes.value[0].id;
     }
   } catch (error) {

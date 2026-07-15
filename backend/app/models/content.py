@@ -47,6 +47,7 @@ class KnowledgeNodeModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     node_type: Mapped[str] = mapped_column(String(64), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
     difficulty: Mapped[str] = mapped_column(String(32), nullable=False)
     learning_value: Mapped[float] = mapped_column(Float, nullable=False)
     prerequisite_node_ids: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)

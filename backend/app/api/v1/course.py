@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Path, Query
+from fastapi.exceptions import RequestValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from app.core.config import settings
 from app.core.response import error_response, page_result, success_response
@@ -12,6 +14,7 @@ from app.schemas.course import (
     KnowledgeNode,
     KnowledgeNodeCreateRequest,
     KnowledgeRelation,
+    NodeContent,
 )
 from app.services.course_service import CourseService
 
@@ -19,6 +22,7 @@ router = APIRouter()
 
 MOCK_TIME = "2026-05-19T10:00:00Z"
 course_service = CourseService()
+node_content_adapter = TypeAdapter(NodeContent)
 
 
 def mock_course(course_id: str = "course_ds_001") -> Course:
@@ -51,6 +55,8 @@ def mock_node(course_id: str = "course_ds_001", node_id: str = "node_array_001")
         course_id=course_id,
         name="Array",
         node_type=NodeType.concept,
+        description="Array stores elements in contiguous memory and supports indexed access.",
+        content="# Array\n\nArray stores elements in contiguous memory and supports indexed access.",
         difficulty=DifficultyLevel.easy,
         learning_value=80,
         prerequisite_node_ids=[],
@@ -225,6 +231,11 @@ def get_node(node_id: str = Path(alias="nodeId")):
 
 @router.put("/nodes/{nodeId}")
 def update_node(payload: dict, node_id: str = Path(alias="nodeId")):
+    if "content" in payload:
+        try:
+            payload["content"] = node_content_adapter.validate_python(payload["content"])
+        except ValidationError as exc:
+            raise RequestValidationError(exc.errors()) from exc
     if settings.enable_mock:
         return success_response(mock_node(node_id=node_id))
     try:

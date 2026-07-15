@@ -25,6 +25,8 @@
 - API：`frontend/src/api/modules/practice.ts`
 - 类型：`frontend/src/types/practice.ts`
 - 状态变量：`selectedQuestionId`
+- 页面统一展示 `single_choice`、`short_answer` 和真实 Judge0 编程题；总生成按钮按该顺序调用既有练习与编程接口。
+- 某个题型生成失败时保留已成功结果并继续后续题型，允许按题型重试。
 
 ## 后端
 

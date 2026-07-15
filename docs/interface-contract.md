@@ -709,6 +709,7 @@ interface KnowledgeNode {
   name: string;
   nodeType: NodeType;
   description?: string;
+  content: string;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds: string[];
@@ -725,6 +726,8 @@ interface KnowledgeNode {
 }
 ```
 
+`content` 为必填、去除首尾空白后非空的完整 Markdown 正文；`description` 仅作为可选摘要。
+
 数据库表：
 
 ```sql
@@ -740,6 +743,7 @@ chapter_id
 name
 node_type
 description
+content TEXT NOT NULL
 difficulty
 learning_value
 prerequisite_node_ids
@@ -765,6 +769,7 @@ interface KnowledgeNodeCreateRequest {
   name: string;
   nodeType: NodeType;
   description?: string;
+  content: string;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds?: string[];
@@ -773,6 +778,8 @@ interface KnowledgeNodeCreateRequest {
   recommendedPracticeIds?: string[];
 }
 ```
+
+创建请求中的 `content` 同样为必填非空正文。
 
 ---
 
@@ -2145,6 +2152,18 @@ interface PracticeGenerateRequest {
 }
 ```
 
+### 14.2.1 前端统一练习生成状态
+
+```ts
+interface PracticeGenerationStep {
+  questionType: "single_choice" | "short_answer" | "coding";
+  status: TaskStatus | null;
+  errorMessage?: string;
+}
+```
+
+统一练习页按 `single_choice -> short_answer -> coding` 顺序调用既有接口；单步失败不得清空已成功结果，也不得阻止后续步骤。
+
 ## 14.3 PracticeSubmitRequest
 
 ```ts
@@ -2662,9 +2681,10 @@ const routes = [
   "/learning-path",
   "/resources",
   "/knowledge-graph",
+  "/nodes/:nodeId/content",
   "/reports",
   "/practice",
-  "/programming",
+  "/programming", // 兼容入口，重定向到 /practice?tab=coding
   "/admin/knowledge-base"
 ];
 ```
@@ -2680,9 +2700,9 @@ const routes = [
 | 学习路径页 | `/api/v1/learning-paths/generate`, `/api/v1/users/{userId}/learning-paths` |
 | 资源生成页 | `/api/v1/resources/generate`, `/api/v1/users/{userId}/resources`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain`, `/api/v1/multimodal/digital-human/chat` |
 | 知识图谱页 | `/api/v1/courses/{courseId}/graph`, `/api/v1/users/{userId}/courses/{courseId}/graph`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain` |
+| 知识节点正文页 | `/api/v1/nodes/{nodeId}` |
 | 学习报告页 | `/api/v1/reports/generate`, `/api/v1/users/{userId}/reports` |
-| 测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit` |
-| 编程题页 | `/api/v1/programming/questions/generate`, `/api/v1/programming/submissions` |
+| 练习测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit`, `/api/v1/programming/questions/generate`, `/api/v1/programming/submissions` |
 | 浮窗菜单 | `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
 | 知识库管理页 | `/api/v1/files/upload`, `/api/v1/knowledge-base/build`, `/api/v1/courses/{courseId}/nodes` |
 
@@ -3042,6 +3062,8 @@ audit_log
     "courseId": "course_ds_001",
     "name": "链表",
     "nodeType": "concept",
+    "description": "链表通过指针连接离散节点。",
+    "content": "# 链表\n\n链表通过指针连接离散节点，适合频繁插入和删除的场景。",
     "difficulty": "medium",
     "learningValue": 90,
     "prerequisiteNodeIds": ["node_array_001"],
@@ -3205,6 +3227,8 @@ GET  /api/v1/system/health
     "courseId": "course_ds_001",
     "name": "数组",
     "nodeType": "concept",
+    "description": "数组使用连续内存保存相同类型元素。",
+    "content": "# 数组\n\n数组使用连续内存保存相同类型元素，可通过下标快速访问。",
     "difficulty": "easy",
     "learningValue": 80,
     "prerequisiteNodeIds": [],
@@ -3220,6 +3244,8 @@ GET  /api/v1/system/health
     "courseId": "course_ds_001",
     "name": "链表",
     "nodeType": "concept",
+    "description": "链表通过指针连接离散节点。",
+    "content": "# 链表\n\n链表通过指针连接离散节点，适合频繁插入和删除的场景。",
     "difficulty": "medium",
     "learningValue": 90,
     "prerequisiteNodeIds": ["node_array_001"],

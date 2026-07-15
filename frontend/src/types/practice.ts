@@ -1,4 +1,12 @@
-import type { DifficultyLevel, QuestionType } from "./contracts";
+import type { DifficultyLevel, QuestionType, TaskStatus } from "./contracts";
+
+export type UnifiedPracticeType = "single_choice" | "short_answer" | "coding";
+
+export interface PracticeGenerationStep {
+  questionType: UnifiedPracticeType;
+  status: TaskStatus | null;
+  errorMessage?: string;
+}
 
 export interface PracticeQuestion {
   id: string;

@@ -939,7 +939,8 @@ a:focus-visible,
 .chat-page,
 .profile-page,
 .learning-path-page,
-.knowledge-graph-page {
+.knowledge-graph-page,
+.node-content-page {
   display: grid;
   gap: 14px;
   min-width: 0;

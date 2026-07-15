@@ -67,11 +67,13 @@ def test_course_chapter_node_and_relation_crud_contracts():
         "courseId": course_id,
         "name": "数组",
         "nodeType": "concept",
+        "content": "# 数组\n\n数组使用连续内存保存元素。",
         "difficulty": "easy",
         "learningValue": 80,
     }
     node = assert_api_response(client.post(f"/api/v1/courses/{course_id}/nodes", json=node_payload))
     assert node["courseId"] == course_id
+    assert node["content"].startswith("# Array")
     assert assert_api_response(client.get(f"/api/v1/courses/{course_id}/nodes"))
     assert assert_api_response(client.get("/api/v1/nodes/node_contract_001"))["id"] == "node_contract_001"
     assert assert_api_response(client.put("/api/v1/nodes/node_contract_001", json={"name": "动态数组"}))["id"] == "node_contract_001"
@@ -101,11 +103,33 @@ def test_course_validation_rejects_invalid_enum():
             "courseId": "course_contract_001",
             "name": "非法节点",
             "nodeType": "not-a-node-type",
+            "content": "非法节点正文",
             "difficulty": "easy",
             "learningValue": 1,
         },
     )
     assert response.status_code == 422
+
+
+def test_course_validation_rejects_blank_node_content():
+    response = client.post(
+        "/api/v1/courses/course_contract_001/nodes",
+        json={
+            "courseId": "course_contract_001",
+            "name": "空正文节点",
+            "nodeType": "concept",
+            "content": "   ",
+            "difficulty": "easy",
+            "learningValue": 1,
+        },
+    )
+    assert response.status_code == 422
+
+    update_response = client.put(
+        "/api/v1/nodes/node_contract_001",
+        json={"content": "\n\t"},
+    )
+    assert update_response.status_code == 422
 
 
 def test_graph_and_mastery_contracts():

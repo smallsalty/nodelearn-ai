@@ -97,6 +97,8 @@
 - 类型：`frontend/src/types/resource.ts`、`frontend/src/types/multimodal.ts`
 - 组件：`MultimodalTaskProgress.vue`、`DigitalHumanChatPanel.vue`
 - 状态变量：`selectedResourceId`
+- 资源页不再提供 `practice_question` 生成卡片，练习统一由练习页负责；该枚举继续保留以兼容既有契约。
+- `action=mind_map` 跳转会预选当前节点、通用资源模式和唯一 `mind_map` 类型，但不会自动触发付费生成。
 
 ## 后端
 

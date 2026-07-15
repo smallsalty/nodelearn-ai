@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import DigitalHumanChatPanel from "@/components/DigitalHumanChatPanel.vue";
 import MarkdownContent from "@/components/MarkdownContent.vue";
@@ -31,10 +31,13 @@ import {
 const userId = computed(() => appState.currentUser?.id ?? DEFAULT_USER_ID);
 const courseId = computed(() => appState.currentCourse?.id ?? DEFAULT_COURSE_ID);
 const route = useRoute();
+const generatorSectionRef = ref<HTMLElement | null>(null);
 const nodes = ref<KnowledgeNode[]>([]);
 const resources = ref<GeneratedResource[]>([]);
 const recommendations = ref<ResourceRecommendation[]>([]);
-const selectedNodeId = ref("node_stack_001");
+const selectedNodeId = ref(
+  typeof route.query.nodeId === "string" ? route.query.nodeId : appState.selectedNodeId ?? "node_stack_001"
+);
 const selectedResourceId = ref<string | null>(null);
 const selectedResource = ref<GeneratedResource | null>(null);
 const activeResourceTab = ref("detail");
@@ -51,7 +54,7 @@ const generating = ref(false);
 const errorMessage = ref("");
 
 const generatorModes = [
-  { key: "standard", title: "通用资源", description: "讲解文档、导图、练习、代码案例" },
+  { key: "standard", title: "通用资源", description: "讲解文档、导图、阅读和代码案例" },
   { key: "knowledge_video", title: "知识点教学视频", description: "脚本、分镜、语音、渲染和审计" },
   { key: "digital_human_video", title: "数字人讲解", description: "视频播放器、脚本大纲和字幕" },
   { key: "digital_human_chat", title: "数字人对话", description: "围绕当前知识点追问" }
@@ -60,9 +63,7 @@ const generatorModes = [
 const resourceTypeOptions: Array<{ value: ResourceType; title: string; description: string }> = [
   { value: "lecture_doc", title: "讲解文档", description: "结构化概念说明" },
   { value: "mind_map", title: "思维导图", description: "结构化知识导图" },
-  { value: "practice_question", title: "练习题", description: "选择、简答和代码题" },
   { value: "reading_material", title: "拓展阅读", description: "补充材料和延伸理解" },
-  { value: "mind_map", title: "思维导图", description: "Mermaid 知识结构" },
   { value: "code_case", title: "代码案例", description: "数据结构实现片段" },
   { value: "summary_note", title: "总结笔记", description: "可复习的要点记录" }
 ];
@@ -78,10 +79,32 @@ const selectedVideoContent = computed<AnimationScriptContent | null>(() => {
   }
 });
 
-onMounted(() => {
+onMounted(async () => {
   applyRouteQuery();
-  void loadPage();
+  await loadPage();
+  focusGeneratorForRouteAction();
 });
+
+watch(
+  () => [route.query.nodeId, route.query.action],
+  () => {
+    applyRouteQuery();
+    focusGeneratorForRouteAction();
+  }
+);
+
+watch(selectedNodeId, (nodeId) => {
+  if (nodeId) appState.selectedNodeId = nodeId;
+});
+
+watch(
+  () => appState.selectedNodeId,
+  (nodeId) => {
+    if (nodeId && nodeId !== selectedNodeId.value && nodes.value.some((node) => node.id === nodeId)) {
+      selectedNodeId.value = nodeId;
+    }
+  }
+);
 
 function applyRouteQuery() {
   const nodeId = typeof route.query.nodeId === "string" ? route.query.nodeId : "";
@@ -90,6 +113,18 @@ function applyRouteQuery() {
   if (action === "knowledge_video") generatorMode.value = "knowledge_video";
   if (action === "digital_human_video") generatorMode.value = "digital_human_video";
   if (action === "digital_human_chat") generatorMode.value = "digital_human_chat";
+  if (action === "mind_map") {
+    generatorMode.value = "standard";
+    resourceTypes.value = ["mind_map"];
+  }
+}
+
+function focusGeneratorForRouteAction() {
+  if (route.query.action !== "mind_map") return;
+  void nextTick(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    generatorSectionRef.value?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  });
 }
 
 async function loadPage() {
@@ -299,7 +334,7 @@ function toggleResourceType(resourceType: ResourceType) {
 
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="mb-16" />
 
-      <section class="generator-card">
+      <section ref="generatorSectionRef" class="generator-card" tabindex="-1">
         <el-form label-position="top">
           <el-form-item label="生成模式">
             <div class="mode-grid" role="radiogroup" aria-label="资源生成模式">

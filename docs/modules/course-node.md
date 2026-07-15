@@ -36,6 +36,7 @@
 - API：`frontend/src/api/modules/course.ts`
 - 类型：`frontend/src/types/course.ts`
 - 状态变量：`currentCourse`、`currentNode`
+- `KnowledgeNode.content` 是必填 Markdown 正文，`description` 仅作为摘要；节点创建、导入和迁移不得产生空正文。
 
 ## 后端
 
@@ -47,3 +48,4 @@
 
 - 如需求需要新增 `CourseStatus`、`NodeType`、`DifficultyLevel`、`MasteryStatus` 或关系类型值，必须先同步 `docs/interface-contract.md`，再更新 schema、类型、服务、页面和测试。
 - 不重命名 `orderIndex`、`learningValue` 或节点 id 数组字段。
+- Hello Algo 节点正文与同节点 `reading_material` 共享带来源、Commit、License 和 Path 的完整 Markdown。

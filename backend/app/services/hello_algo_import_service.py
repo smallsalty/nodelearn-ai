@@ -61,6 +61,7 @@ class ParsedNode:
     chapter_id: str
     name: str
     description: str | None
+    content: str
     difficulty: str
     learning_value: float
     prerequisite_node_ids: list[str] = field(default_factory=list)
@@ -207,12 +208,14 @@ def parse_hello_algo_repo(repo_dir: str | Path, doc_language: str = "zh", code_l
             markdown_text = read_text(markdown_path)
             node_title = extract_first_heading(markdown_text) or title_from_path(markdown_path.stem)
             node_id = stable_id("node", relative_posix(repo_path, markdown_path))
+            resource = markdown_resource(repo_path, markdown_path, markdown_text, source_commit, node_id)
             node = ParsedNode(
                 id=node_id,
                 course_id=HELLO_ALGO_COURSE_ID,
                 chapter_id=chapter_id,
                 name=node_title,
                 description=extract_description(markdown_text),
+                content=resource.content,
                 difficulty=difficulty_for(chapter_index),
                 learning_value=max(40, 100 - chapter_index),
                 source_path=relative_posix(repo_path, markdown_path),
@@ -221,7 +224,6 @@ def parse_hello_algo_repo(repo_dir: str | Path, doc_language: str = "zh", code_l
             nodes.append(node)
             node_by_stem.setdefault(markdown_path.stem, node)
 
-            resource = markdown_resource(repo_path, markdown_path, markdown_text, source_commit, node.id)
             resources.append(resource)
             node.resource_ids.append(resource.id)
 
@@ -315,6 +317,7 @@ def import_hello_algo_dataset(session: Session, dataset: ParsedHelloAlgoDataset)
                 name=node.name,
                 node_type="concept",
                 description=node.description,
+                content=node.content,
                 difficulty=node.difficulty,
                 learning_value=node.learning_value,
                 prerequisite_node_ids=node.prerequisite_node_ids,

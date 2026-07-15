@@ -31,6 +31,10 @@
 
 ### 已完成
 
+- 2026-07-15 完成固定式知识图谱与节点学习联动：ECharts 改为 `layout="none"`、节点不可拖动、章节固定网格与章节内稳定拓扑分层，保留画布平移/缩放和 ResizeObserver；工作台、顶部栏与图谱统一同步 `appState.selectedNodeId`，选中节点后自动展开章节并高亮，节点提供正文、统一练习和思维导图三个键盘可操作入口。
+- 2026-07-15 新增必填非空 `KnowledgeNode.content` / `knowledge_node.content TEXT NOT NULL`、安全回填迁移和独立正文页；Hello Algo 导入将带 Source、Commit、License、Path 的完整 Markdown 同步写入节点与阅读材料。隔离 PostgreSQL 实测导入 20 章、105 节点、85 关系、459 资源，模拟旧结构后首次迁移回填 105 行、重复执行回填 0 行，105 个节点正文与最新阅读材料全部一致、来源信息完整且最终列为非空。
+- 2026-07-15 合并练习入口为单选、简答、真实 Judge0 编程题和错题本四个 Tabs；总生成按三类顺序执行，单步失败不影响后续步骤并支持单独重试；`/programming` 保留携带 `nodeId` 的兼容重定向，资源页思维导图跳转会自动预选节点、通用模式和 `mind_map`，不自动触发生成。
+- 2026-07-15 本次回归结果：后端完整测试 `194 passed, 2 skipped`，Python `compileall`、前端生产构建、页面/组件无直接 `fetch`/`axios` 检查和 `git diff --check` 通过。Playwright 使用真实 105 节点库验证工作台选中“数组”后图谱同步、完整 Markdown 正文、键盘 Enter 跳转、思维导图预选、三步生成成功/部分失败继续/单步重试、图谱缩放与平移产生预期画布变化、375/768/1024/1440px 无横向溢出；浏览器正常链路控制台 0 error/0 warning。
 - 2026-07-15 完成算法题真实代码执行与案例判题专项验收：固定“两数求和”题通过真实 Judge0 1.13.1 执行 C++、C、Python，11 项 API 矩阵覆盖 AC、WA、PE、CE、RE、TLE、隐藏案例失败、不存在题目和超长源码，结果 11/11 符合预期；公开 WA/PE 的实际输出与失败索引正确，隐藏输入、期望输出和索引未泄露。
 - 2026-07-15 在 `ENABLE_MOCK=false` 下对真实数组节点执行一次 DeepSeek 出题，生成“循环左移数组”；正确 Python 解法通过公开样例本地核对、真实 Judge0 API 和浏览器提交，均为 AC。Playwright CLI 验证固定题 AC/CE、编译信息、mock=false 真题 AC 和刷新恢复，浏览器业务请求全部 200、控制台 0 error，仅有 3 条 Element Plus radio 弃用 warning；证据位于 `output/playwright/programming-judge0-2026-07-15/`。
 - 2026-07-15 算法题专项回归结果：编程服务/API/Judge0 契约 `8 passed`，后端完整测试 `189 passed, 2 skipped`，前端生产构建和 `git diff --check` 通过。完整报告位于 `docs/programming-judge0-verification-2026-07-15.md`；本次未修改公开接口、类型、数据库结构或业务实现。
@@ -190,7 +194,7 @@
 - 超出当前真实题目生成与 Judge0 客观执行范围的主观批改、错因分析和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
 - 笔记持久化和完整笔记/错题复习业务流程。
-- 生产迁移和真实持久化发布流程。
+- 除 `knowledge_node.content` 幂等迁移外的生产迁移和真实持久化发布流程。
 
 ### 阻塞
 
@@ -204,6 +208,7 @@
 - 画像、聊天 session、学习路径、笔记、学习记录、评估和报告仍包含内存或固定占位实现；2026-07-14 验收报告均标记为 `PASS_PLACEHOLDER`，不得作为生产持久化能力宣传。
 - 编程题与提交记录当前仍保存在后端进程内存中；同一进程内刷新可以恢复，但后端重启会丢失。2026-07-15 已确认真实 DeepSeek 出题和 Judge0 执行为 `PASS_REAL`，存储能力仍为 `PASS_PLACEHOLDER`。
 - 2026-07-15 算法题真实验收结束后已停止 compose 验收容器并保留数据卷；下次真实联调需重新运行 `docker compose -f docker/docker-compose.yml up -d --build`。
+- 2026-07-15 现有主 PostgreSQL 数据卷中有 2 个历史 `real_verify_*` 测试节点既无阅读材料也无摘要（`node_5ff742e150734f8eb3c40cd8e7f383f2`、`node_e8d715f9395a49f294302dc2bd3145d2`）；`knowledge_node.content` 迁移按安全规则列出节点并回滚，未写入占位正文。需由数据所有者补充可信正文或确认删除测试节点后，才能在该数据卷提交生产迁移。
 
 ## 功能待办
 

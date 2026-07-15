@@ -33,6 +33,8 @@ knowledge_relation
 node_resource
 ```
 
+`knowledge_node.content` 为非空 Markdown 正文；`description` 只保存可选摘要。已有数据通过版本化迁移优先从同节点 `reading_material.content` 回填，无法回填时必须终止迁移并报告节点，禁止写入占位正文。
+
 ### 知识库与文件
 
 ```sql

@@ -1,6 +1,7 @@
 import asyncio
 
 from app.schemas.programming import ProgrammingGenerateRequest, ProgrammingSubmissionRequest
+from app.repositories.learning_path_repository import default_learning_path_repository
 from app.services.judge0_service import JudgeExecution
 from app.services.programming_service import ProgrammingService
 
@@ -36,6 +37,7 @@ def test_programming_submission_reports_ac_and_pe():
 
 def test_real_generation_normalizes_request_difficulty(monkeypatch):
     service = ProgrammingService()
+    node = default_learning_path_repository.get_node("node_array_001")
 
     async def generate_json(*_args, **_kwargs):
         return {
@@ -54,6 +56,7 @@ def test_real_generation_normalizes_request_difficulty(monkeypatch):
         }
 
     monkeypatch.setattr("app.services.programming_service.settings.enable_mock", False)
+    monkeypatch.setattr(default_learning_path_repository, "get_node", lambda _node_id: node)
     monkeypatch.setattr(service.llm_service, "generate_json", generate_json)
     monkeypatch.setattr(service.resource_service, "search_knowledge_base", lambda **_kwargs: [])
 

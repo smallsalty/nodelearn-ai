@@ -68,6 +68,7 @@ def node_from_model(model: KnowledgeNodeModel) -> KnowledgeNode:
         name=model.name,
         node_type=model.node_type,
         description=model.description,
+        content=model.content,
         difficulty=model.difficulty,
         learning_value=model.learning_value,
         prerequisite_node_ids=model.prerequisite_node_ids or [],
@@ -201,6 +202,7 @@ class CourseService:
             name=payload.name,
             node_type=payload.node_type.value if hasattr(payload.node_type, "value") else payload.node_type,
             description=payload.description,
+            content=payload.content,
             difficulty=payload.difficulty.value if hasattr(payload.difficulty, "value") else payload.difficulty,
             learning_value=payload.learning_value,
             prerequisite_node_ids=payload.prerequisite_node_ids or [],
@@ -229,6 +231,7 @@ class CourseService:
             "name",
             "node_type",
             "description",
+            "content",
             "difficulty",
             "learning_value",
             "prerequisite_node_ids",
@@ -240,6 +243,11 @@ class CourseService:
             "y",
         }
         updates = {to_snake(key): value for key, value in payload.items()}
+        if "content" in updates:
+            content = updates["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError("knowledge node content must not be blank")
+            updates["content"] = content.strip()
         with session_context() as session:
             model = session.get(KnowledgeNodeModel, node_id)
             if model is None or model.deleted_at is not None:

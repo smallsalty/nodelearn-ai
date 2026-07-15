@@ -27,6 +27,7 @@ const activeTab = ref("nodes");
 const nodeForm = reactive({
   name: "哈希表开放寻址",
   description: "用于演示知识库管理入口的契约节点",
+  content: "# 哈希表开放寻址\n\n开放寻址法在发生冲突时，按照探测序列寻找下一个可用桶位。",
   difficulty: "medium" as const,
   learningValue: 80
 });
@@ -120,6 +121,7 @@ async function createNode() {
       courseId: courseId.value,
       name: nodeForm.name,
       description: nodeForm.description,
+      content: nodeForm.content,
       nodeType: "concept",
       difficulty: nodeForm.difficulty,
       learningValue: nodeForm.learningValue,
@@ -214,6 +216,9 @@ async function createNode() {
           </el-form-item>
           <el-form-item label="说明">
             <el-input v-model="nodeForm.description" type="textarea" :rows="3" />
+          </el-form-item>
+          <el-form-item label="正文（Markdown）">
+            <el-input v-model="nodeForm.content" type="textarea" :rows="8" />
           </el-form-item>
           <el-form-item label="学习价值">
             <el-input-number v-model="nodeForm.learningValue" :min="1" :max="100" />

@@ -53,6 +53,7 @@ export interface KnowledgeNode {
   name: string;
   nodeType: NodeType;
   description?: string;
+  content: string;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds: string[];
@@ -74,6 +75,7 @@ export interface KnowledgeNodeCreateRequest {
   name: string;
   nodeType: NodeType;
   description?: string;
+  content: string;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds?: string[];

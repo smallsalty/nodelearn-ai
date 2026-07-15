@@ -31,6 +31,8 @@
 - 类型：`frontend/src/types/graph.ts`
 - 状态变量：`selectedNodeId`
 - 图谱默认按 `Chapter` 聚合，仅展示章节级大节点；点击大节点后展示该章节内的 `KnowledgeNode`。
+- 图谱使用确定性固定坐标，节点不可拖动，画布允许平移缩放；工作台节点选中后自动展开所属章节并高亮。
+- 节点操作提供独立正文页、统一练习页和思维导图生成入口；正文来自 `KnowledgeNode.content`。
 
 ## 后端
 
