@@ -58,10 +58,10 @@ def test_contract_health_route_exists():
     assert response.status_code == 200
 
 
-def test_contract_has_exactly_108_unique_http_routes():
+def test_contract_has_exactly_109_unique_http_routes():
     routes = contract_http_routes()
-    assert len(routes) == 108
-    assert len(set(routes)) == 108
+    assert len(routes) == 109
+    assert len(set(routes)) == 109
 
 
 def test_fastapi_routes_have_no_duplicate_method_path_pairs():
@@ -72,7 +72,7 @@ def test_fastapi_routes_have_no_duplicate_method_path_pairs():
 def test_fastapi_routes_exactly_match_interface_contract():
     contract_routes = set(contract_http_routes())
     actual_routes = set(fastapi_http_routes())
-    assert len(actual_routes) == 108
+    assert len(actual_routes) == 109
     assert actual_routes == contract_routes
 
 

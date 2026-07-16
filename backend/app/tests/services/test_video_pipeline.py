@@ -91,6 +91,7 @@ def test_context_builder_prioritizes_same_node_real_practice_and_trims_rag():
         "name": "哈希表",
         "node_type": "concept",
         "content": "# 哈希表\n\n哈希表通过哈希函数将键映射到桶。",
+        "order_index": 1,
         "difficulty": "easy",
         "learning_value": 95,
         "prerequisite_node_ids": [],

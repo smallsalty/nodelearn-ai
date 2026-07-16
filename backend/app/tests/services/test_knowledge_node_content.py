@@ -1,8 +1,10 @@
 import sys
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 
-from sqlalchemy import create_engine, text
+import pytest
+from sqlalchemy import create_engine, event, func, select, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -10,9 +12,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from app.db.migrations.knowledge_node_content import migrate_knowledge_node_content
 from app.db.base import Base
+from app.models import ChapterModel, GeneratedResourceModel, KnowledgeNodeModel, KnowledgeRelationModel
 from app.schemas.course import KnowledgeNodeCreateRequest
 from app.services.course_service import CourseService
-from app.services.hello_algo_import_service import parse_hello_algo_repo
+from app.services.hello_algo_import_service import (
+    import_hello_algo_dataset,
+    parse_hello_algo_repo,
+    publish_assets,
+    stable_id,
+)
+
+
+@pytest.fixture(scope="module")
+def hello_algo_dataset():
+    project_root = Path(__file__).resolve().parents[4]
+    repo_dir = project_root / "data_sources" / "hello-algo"
+    if not repo_dir.exists():
+        pytest.skip("Hello Algo source checkout is not available")
+    return parse_hello_algo_repo(
+        repo_dir,
+        doc_language="zh",
+        code_languages=["cpp", "python", "java"],
+        source_commit="1f9eaee5be4f5e85ad562fb57878d939104d21ea",
+    )
 
 
 def test_content_migration_backfills_resource_then_description_and_is_idempotent():
@@ -94,6 +116,7 @@ def test_course_service_creates_reads_and_updates_required_content(monkeypatch):
             node_type="concept",
             description="数组摘要",
             content="# 数组\n\n完整正文",
+            order_index=1,
             difficulty="easy",
             learning_value=80,
         ),
@@ -111,16 +134,145 @@ def test_course_service_creates_reads_and_updates_required_content(monkeypatch):
         raise AssertionError("blank knowledge node content must be rejected")
 
 
-def test_hello_algo_nodes_share_full_content_with_reading_material():
-    project_root = Path(__file__).resolve().parents[4]
-    repo_dir = project_root / "data_sources" / "hello-algo"
-    if not repo_dir.exists():
-        return
-
-    dataset = parse_hello_algo_repo(repo_dir, doc_language="zh", code_languages=["all"])
+def test_hello_algo_content_is_normalized_while_reading_material_keeps_provenance(tmp_path, hello_algo_dataset):
+    dataset = hello_algo_dataset
     resources = {resource.id: resource for resource in dataset.resources}
 
-    assert len(dataset.nodes) == 105
+    assert len(dataset.chapters) == 20
+    assert len(dataset.nodes) == 85
+    assert len(dataset.relations) == 68
+    assert all(chapter.content.strip() for chapter in dataset.chapters)
     assert all(node.content.strip() for node in dataset.nodes)
-    assert all(node.content == resources[node.resource_ids[0]].content for node in dataset.nodes)
-    assert all("License: CC BY-NC-SA 4.0" in node.content for node in dataset.nodes)
+    display_content = "\n".join([*(chapter.content for chapter in dataset.chapters), *(node.content for node in dataset.nodes)])
+    assert "Source:" not in display_content
+    assert "Commit:" not in display_content
+    assert "License:" not in display_content
+    assert "\\newline" not in display_content
+    assert ":::code-tabs" in display_content
+    assert "vector<int>" in display_content
+    assert "#### <1>" not in display_content
+    assert all("Source:" not in node.content for node in dataset.nodes)
+    assert all("License: CC BY-NC-SA 4.0" in resources[node.resource_ids[0]].content for node in dataset.nodes)
+    assert not any(marker in node.content for node in dataset.nodes for marker in ("```src", "!!!", '=== "', "<id>"))
+    publish_assets(replace(dataset, assets=dataset.assets[:3]), storage_root=tmp_path)
+    version_root = tmp_path / "course-content" / "hello-algo" / dataset.source_commit
+    assert len([path for path in version_root.rglob("*") if path.is_file()]) == 3
+    assert not (version_root.parent / f".{dataset.source_commit}.tmp").exists()
+
+
+def test_hello_algo_import_deletes_overview_relations_before_nodes_and_is_idempotent(hello_algo_dataset):
+    dataset = hello_algo_dataset
+    test_engine = create_engine("sqlite+pysqlite:///:memory:", poolclass=StaticPool)
+
+    @event.listens_for(test_engine, "connect")
+    def enable_foreign_keys(dbapi_connection, _connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    Base.metadata.create_all(test_engine)
+    session_factory = sessionmaker(bind=test_engine, expire_on_commit=False)
+    chapter = next(item for item in dataset.chapters if any(node.chapter_id == item.id for node in dataset.nodes))
+    target = next(node for node in dataset.nodes if node.chapter_id == chapter.id)
+    overview_id = stable_id("node", f"{chapter.source_path}/index.md")
+    with session_factory.begin() as session:
+        session.merge(dataset.course)
+        session.flush()
+        session.merge(
+            ChapterModel(
+                id=chapter.id,
+                course_id=chapter.course_id,
+                title=chapter.title,
+                order_index=chapter.order_index,
+                description=chapter.description,
+                content=None,
+                created_at=dataset.course.created_at,
+                updated_at=dataset.course.updated_at,
+            )
+        )
+        session.flush()
+        session.merge(
+            KnowledgeNodeModel(
+                id=target.id,
+                course_id=target.course_id,
+                chapter_id=target.chapter_id,
+                name=target.name,
+                node_type="concept",
+                description=target.description,
+                content=target.content,
+                order_index=target.order_index,
+                difficulty=target.difficulty,
+                learning_value=target.learning_value,
+                prerequisite_node_ids=target.prerequisite_node_ids,
+                next_node_ids=target.next_node_ids,
+                resource_ids=target.resource_ids,
+                common_mistakes=[],
+                recommended_practice_ids=[],
+                created_at=dataset.course.created_at,
+                updated_at=dataset.course.updated_at,
+            )
+        )
+        session.add(
+            KnowledgeNodeModel(
+                id=overview_id,
+                course_id=chapter.course_id,
+                chapter_id=chapter.id,
+                name=chapter.title,
+                node_type="concept",
+                description="旧总览",
+                content="旧总览正文",
+                order_index=1,
+                difficulty="easy",
+                learning_value=60,
+                prerequisite_node_ids=[],
+                next_node_ids=[target.id],
+                resource_ids=[],
+                common_mistakes=[],
+                recommended_practice_ids=[],
+                created_at=dataset.course.created_at,
+                updated_at=dataset.course.updated_at,
+            )
+        )
+        session.flush()
+        session.add(
+            KnowledgeRelationModel(
+                id="relation_old_overview",
+                course_id=chapter.course_id,
+                source_node_id=overview_id,
+                target_node_id=target.id,
+                relation_type="prerequisite",
+                weight=1,
+                created_at=dataset.course.created_at,
+                updated_at=dataset.course.updated_at,
+            )
+        )
+        session.add(
+            GeneratedResourceModel(
+                id="resource_old_overview",
+                user_id="user_demo_001",
+                course_id=chapter.course_id,
+                node_id=overview_id,
+                chapter_id=None,
+                title="旧章节导图",
+                resource_type="mind_map",
+                content="{}",
+                status="success",
+                audit_status="passed",
+                created_at=dataset.course.created_at,
+                updated_at=dataset.course.updated_at,
+            )
+        )
+
+    with session_factory.begin() as session:
+        first = import_hello_algo_dataset(session, dataset)
+    with session_factory.begin() as session:
+        second = import_hello_algo_dataset(session, dataset)
+        assert session.get(KnowledgeNodeModel, overview_id) is None
+        migrated = session.get(GeneratedResourceModel, "resource_old_overview")
+        assert migrated is not None
+        assert migrated.node_id is None
+        assert migrated.chapter_id == chapter.id
+        assert session.scalar(select(func.count()).select_from(KnowledgeNodeModel)) == 85
+        assert session.scalar(select(func.count()).select_from(KnowledgeRelationModel)) == 68
+    assert (first.chapters, first.nodes, first.relations) == (20, 85, 68)
+    assert (second.chapters, second.nodes, second.relations) == (20, 85, 68)

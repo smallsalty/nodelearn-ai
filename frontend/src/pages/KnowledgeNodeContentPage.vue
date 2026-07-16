@@ -29,10 +29,16 @@ async function loadNode() {
   node.value = null;
   try {
     const response = await courseApi.getNode(nodeId.value);
-    if (!response.data.content.trim()) throw new Error("该知识节点没有可显示的正文");
     node.value = response.data;
+    appState.selectedChapterId = response.data.chapterId ?? null;
     appState.selectedNodeId = response.data.id;
+    await router.replace({
+      name: "course-content",
+      params: { courseId: response.data.courseId },
+      hash: `#node-${response.data.id}`
+    });
   } catch (error) {
+    appState.selectedChapterId = null;
     appState.selectedNodeId = null;
     errorMessage.value = getErrorMessage(error);
   } finally {
@@ -41,7 +47,10 @@ async function loadNode() {
 }
 
 function backToGraph() {
-  if (node.value) appState.selectedNodeId = node.value.id;
+  if (node.value) {
+    appState.selectedChapterId = node.value.chapterId ?? null;
+    appState.selectedNodeId = node.value.id;
+  }
   void router.push("/knowledge-graph");
 }
 

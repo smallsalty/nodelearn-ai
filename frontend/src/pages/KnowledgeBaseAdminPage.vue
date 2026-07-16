@@ -122,6 +122,7 @@ async function createNode() {
       name: nodeForm.name,
       description: nodeForm.description,
       content: nodeForm.content,
+      orderIndex: nodes.value.length + 1,
       nodeType: "concept",
       difficulty: nodeForm.difficulty,
       learningValue: nodeForm.learningValue,

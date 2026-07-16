@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Path, Query
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import TypeAdapter, ValidationError
 
 from app.core.config import settings
@@ -9,6 +10,10 @@ from app.schemas.course import (
     Chapter,
     ChapterCreateRequest,
     Course,
+    CourseContent,
+    CourseContentAttribution,
+    CourseContentChapter,
+    CourseContentSection,
     CourseCreateRequest,
     CourseUpdateRequest,
     KnowledgeNode,
@@ -44,6 +49,7 @@ def mock_chapter(course_id: str = "course_ds_001") -> Chapter:
         course_id=course_id,
         title="Linear List",
         order_index=1,
+        content="# Linear List\n\nChapter overview.",
         created_at=MOCK_TIME,
         updated_at=MOCK_TIME,
     )
@@ -57,6 +63,7 @@ def mock_node(course_id: str = "course_ds_001", node_id: str = "node_array_001")
         node_type=NodeType.concept,
         description="Array stores elements in contiguous memory and supports indexed access.",
         content="# Array\n\nArray stores elements in contiguous memory and supports indexed access.",
+        order_index=1,
         difficulty=DifficultyLevel.easy,
         learning_value=80,
         prerequisite_node_ids=[],
@@ -81,6 +88,36 @@ def mock_relation(course_id: str = "course_ds_001") -> KnowledgeRelation:
         weight=1,
         created_at=MOCK_TIME,
         updated_at=MOCK_TIME,
+    )
+
+
+def mock_course_content(course_id: str = "course_ds_001") -> CourseContent:
+    chapter = mock_chapter(course_id)
+    node = mock_node(course_id)
+    return CourseContent(
+        course_id=course_id,
+        course_name="Data Structures",
+        attribution=CourseContentAttribution(
+            name="Hello 算法",
+            url="https://github.com/krahets/hello-algo",
+            license="CC BY-NC-SA 4.0",
+        ),
+        chapters=[
+            CourseContentChapter(
+                id=chapter.id,
+                title=chapter.title,
+                order_index=chapter.order_index,
+                content=chapter.content,
+                sections=[
+                    CourseContentSection(
+                        node_id=node.id,
+                        title=node.name,
+                        order_index=node.order_index,
+                        content=node.content,
+                    )
+                ],
+            )
+        ],
     )
 
 
@@ -185,6 +222,19 @@ def create_chapter(payload: ChapterCreateRequest, course_id: str = Path(alias="c
         if not settings.enable_mock:
             return error_response(f"database write failed: {exc}")
     return success_response(mock_chapter(course_id))
+
+
+@router.get("/courses/{courseId}/content")
+def get_course_content(course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response(mock_course_content(course_id))
+    try:
+        content = course_service.get_course_content(course_id)
+        if content is not None:
+            return success_response(content)
+        return JSONResponse(status_code=404, content=error_response(f"course not found: {course_id}", code=404))
+    except Exception as exc:
+        return error_response(f"database query failed: {exc}")
 
 
 @router.get("/courses/{courseId}/nodes")

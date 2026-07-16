@@ -43,6 +43,7 @@ class Chapter(ContractModel):
     title: str
     order_index: int
     description: str | None = None
+    content: str | None = None
     created_at: str
     updated_at: str
 
@@ -52,6 +53,7 @@ class ChapterCreateRequest(ContractModel):
     title: str
     order_index: int
     description: str | None = None
+    content: str | None = None
 
 
 class KnowledgeNode(ContractModel):
@@ -62,6 +64,7 @@ class KnowledgeNode(ContractModel):
     node_type: NodeType
     description: str | None = None
     content: NodeContent
+    order_index: int
     difficulty: DifficultyLevel
     learning_value: float
     prerequisite_node_ids: list[str] = Field(default_factory=list)
@@ -84,6 +87,7 @@ class KnowledgeNodeCreateRequest(ContractModel):
     node_type: NodeType
     description: str | None = None
     content: NodeContent
+    order_index: int
     difficulty: DifficultyLevel
     learning_value: float
     prerequisite_node_ids: list[str] | None = None
@@ -101,3 +105,31 @@ class KnowledgeRelation(ContractModel):
     weight: float
     created_at: str
     updated_at: str
+
+
+class CourseContentAttribution(ContractModel):
+    name: str
+    url: str
+    license: str
+
+
+class CourseContentSection(ContractModel):
+    node_id: str
+    title: str
+    order_index: int
+    content: str
+
+
+class CourseContentChapter(ContractModel):
+    id: str
+    title: str
+    order_index: int
+    content: str | None = None
+    sections: list[CourseContentSection]
+
+
+class CourseContent(ContractModel):
+    course_id: str
+    course_name: str
+    attribution: CourseContentAttribution | None = None
+    chapters: list[CourseContentChapter]

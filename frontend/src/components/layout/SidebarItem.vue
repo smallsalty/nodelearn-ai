@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { Component } from "vue";
+import type { RouteLocationRaw } from "vue-router";
 
 defineProps<{
   label: string;
   description?: string;
   icon?: Component;
-  path?: string;
+  path?: RouteLocationRaw;
   active?: boolean;
   collapsed?: boolean;
   depth?: number;

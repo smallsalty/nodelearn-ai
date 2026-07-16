@@ -33,7 +33,7 @@ knowledge_relation
 node_resource
 ```
 
-`knowledge_node.content` 为非空 Markdown 正文；`description` 只保存可选摘要。已有数据通过版本化迁移优先从同节点 `reading_material.content` 回填，无法回填时必须终止迁移并报告节点，禁止写入占位正文。
+`chapter.content` 为可空章节总览 Markdown；Hello Algo 的 20 个章节要求非空。`knowledge_node.content` 为非空 Markdown 正文，`knowledge_node.order_index` 为非空章节内顺序；`description` 只保存可选摘要。已有正文数据通过版本化迁移优先从同节点 `reading_material.content` 回填，无法回填时必须终止迁移并报告节点，禁止写入占位正文；节点顺序按 `course_id + chapter_id + created_at + id` 幂等回填后设置非空约束。
 
 ### 知识库与文件
 
@@ -72,6 +72,8 @@ wrong_question_record
 generated_resource
 resource_push_record
 ```
+
+`generated_resource.chapter_id` 可空并外键关联 `chapter.id`；章节资源使用该字段，节点资源继续使用 `node_id`。
 
 ### 笔记与报告
 

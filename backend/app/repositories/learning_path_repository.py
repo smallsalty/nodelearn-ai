@@ -29,6 +29,7 @@ def demo_knowledge_nodes() -> list[KnowledgeNode]:
             id="node_array_001",
             course_id=DEMO_COURSE_ID,
             name="数组",
+            order_index=1,
             node_type=NodeType.concept,
             content="# 数组\n\n数组是一组存储在连续内存空间中的相同类型元素，可通过下标快速访问。",
             difficulty=DifficultyLevel.easy,
@@ -47,6 +48,7 @@ def demo_knowledge_nodes() -> list[KnowledgeNode]:
             id="node_linked_list_001",
             course_id=DEMO_COURSE_ID,
             name="链表",
+            order_index=2,
             node_type=NodeType.concept,
             content="# 链表\n\n链表通过指针连接离散节点，适合频繁插入和删除的场景。",
             difficulty=DifficultyLevel.medium,
@@ -65,6 +67,7 @@ def demo_knowledge_nodes() -> list[KnowledgeNode]:
             id="node_recursion_001",
             course_id=DEMO_COURSE_ID,
             name="递归",
+            order_index=3,
             node_type=NodeType.algorithm,
             content="# 递归\n\n递归通过调用自身分解问题，必须包含可到达的终止条件。",
             difficulty=DifficultyLevel.medium,
@@ -83,6 +86,7 @@ def demo_knowledge_nodes() -> list[KnowledgeNode]:
             id="node_stack_001",
             course_id=DEMO_COURSE_ID,
             name="栈",
+            order_index=4,
             node_type=NodeType.concept,
             content="# 栈\n\n栈遵循后进先出原则，核心操作包括入栈、出栈和查看栈顶。",
             difficulty=DifficultyLevel.medium,
@@ -164,7 +168,7 @@ class LearningPathRepository:
                 query = (
                     select(KnowledgeNodeModel)
                     .where(KnowledgeNodeModel.course_id == course_id, KnowledgeNodeModel.deleted_at.is_(None))
-                    .order_by(KnowledgeNodeModel.created_at.asc())
+                    .order_by(KnowledgeNodeModel.chapter_id.asc(), KnowledgeNodeModel.order_index.asc(), KnowledgeNodeModel.id.asc())
                 )
                 return [self._node_from_model(model) for model in session.scalars(query).all()]
         return [node.model_copy(deep=True) for node in self._nodes.values() if node.course_id == course_id]
@@ -312,6 +316,7 @@ class LearningPathRepository:
             node_type=model.node_type,
             description=model.description,
             content=model.content,
+            order_index=model.order_index,
             difficulty=model.difficulty,
             learning_value=model.learning_value,
             prerequisite_node_ids=model.prerequisite_node_ids or [],

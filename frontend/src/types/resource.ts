@@ -61,6 +61,7 @@ export interface GeneratedResource {
   userId: string;
   courseId: string;
   nodeId?: string;
+  chapterId?: string;
   title: string;
   resourceType: ResourceType;
   content: string;

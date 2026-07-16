@@ -37,6 +37,7 @@ const courseId = computed(() => appState.currentCourse?.id ?? DEFAULT_COURSE_ID)
 const userId = computed(() => appState.currentUser?.id ?? DEFAULT_USER_ID);
 const selectedGraphNode = computed(() => graph.value?.nodes.find((node) => node.id === selectedNodeId.value));
 const selectedKnowledgeNode = computed(() => nodes.value.find((node) => node.id === selectedNodeId.value));
+const selectedChapter = computed(() => chapters.value.find((chapter) => chapter.id === appState.selectedChapterId));
 
 onMounted(() => {
   void loadGraph();
@@ -47,6 +48,8 @@ watch(courseId, (nextCourseId, previousCourseId) => {
     selectedNodeId.value = null;
     viewState.selectedNodeId = undefined;
     viewState.expandedChapterId = undefined;
+    appState.selectedChapterId = null;
+    appState.selectedNodeId = null;
     void loadGraph();
   }
 });
@@ -61,6 +64,14 @@ watch(
     selectedNodeId.value = null;
     viewState.selectedNodeId = undefined;
     void nextTick(renderGraph);
+  }
+);
+
+watch(
+  () => appState.selectedChapterId,
+  (chapterId) => {
+    if (!chapterId || appState.selectedNodeId) return;
+    syncSelectedChapter(chapterId);
   }
 );
 
@@ -84,7 +95,11 @@ async function loadGraph() {
     graph.value = graphResponse.data;
     nodes.value = nodeResponse.data;
     chapters.value = chapterResponse.data;
-    if (appState.selectedNodeId) syncSelectedNode(appState.selectedNodeId, false);
+    if (appState.selectedNodeId) {
+      syncSelectedNode(appState.selectedNodeId, false);
+    } else if (appState.selectedChapterId) {
+      syncSelectedChapter(appState.selectedChapterId, false);
+    }
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
@@ -102,6 +117,17 @@ function renderGraph() {
   const text = themeColor("--nl-text", "#15342b");
   const border = themeColor("--nl-border-strong", "#9ab9a8");
   const graphView = buildGraphView();
+  const chapterCount = graphView.nodes.filter((node) => node.isChapter).length;
+  const sequenceEdgeCount = graphView.edges.filter((edge) => edge.kind === "sequence").length;
+  chartRef.value.dataset.chapterCount = String(chapterCount);
+  chartRef.value.dataset.sequenceEdgeCount = String(sequenceEdgeCount);
+  chartRef.value.dataset.dependencyEdgeCount = String(graphView.edges.filter((edge) => edge.kind === "dependency").length);
+  chartRef.value.setAttribute(
+    "aria-label",
+    viewState.expandedChapterId
+      ? `${selectedChapter.value?.title ?? "当前章节"}固定知识图谱`
+      : `${chapterCount} 个章节按课程顺序连接的固定知识图谱`
+  );
 
   chart.setOption(
     {
@@ -112,7 +138,7 @@ function renderGraph() {
           if (params.dataType !== "node" || !params.data) return "";
           const data = params.data;
           return data.isChapter
-            ? `${data.label}<br/>点击展开章节节点`
+            ? `${data.label}<br/>点击展开章节节点，在详情中查看总览`
             : `${data.label}<br/>${masteryLabel(data.masteryStatus)} · ${Math.round(data.masteryScore)}`;
         }
       },
@@ -134,27 +160,35 @@ function renderGraph() {
           },
           lineStyle: { color: border, width: 2, opacity: 0.86 },
           emphasis: { focus: "adjacency", lineStyle: { width: 3 } },
-          data: graphView.nodes.map((node) => ({
-            ...node,
-            name: node.label,
-            symbolSize: node.isChapter ? 86 : Math.max(48, node.size ?? 48),
-            itemStyle: {
-              color: node.isChapter ? "#fff0a8" : nodeColor(node),
-              borderColor: node.id === selectedNodeId.value ? text : surface,
-              borderWidth: node.id === selectedNodeId.value ? 4 : 1.5,
-              shadowBlur: node.id === selectedNodeId.value ? 12 : 0,
-              shadowColor: "rgba(21, 52, 43, 0.24)"
-            }
-          })),
+          data: graphView.nodes.map((node) => {
+            const selected = isGraphNodeSelected(node);
+            const chapterContext = isGraphChapterContext(node);
+            return {
+              ...node,
+              name: node.label,
+              symbolSize: node.isChapter ? 86 : Math.max(48, node.size ?? 48),
+              itemStyle: {
+                color: node.isChapter ? "#fff0a8" : nodeColor(node),
+                borderColor: selected ? text : chapterContext ? themeColor("--nl-primary-hover", "#d5aa00") : surface,
+                borderWidth: selected ? 4 : chapterContext ? 2.5 : 1.5,
+                shadowBlur: selected ? 12 : 0,
+                shadowColor: "rgba(21, 52, 43, 0.24)"
+              }
+            };
+          }),
           links: graphView.edges.map((edge) => ({
             source: edge.source,
             target: edge.target,
             lineStyle: {
-              color: edge.synthetic ? themeColor("--nl-border", "#d6e4dc") : border,
-              width: edge.synthetic ? 1.5 : 2.2,
-              type: edge.synthetic ? "dashed" : "solid",
+              color: edge.kind === "sequence"
+                ? themeColor("--nl-primary-hover", "#d5aa00")
+                : edge.kind === "containment"
+                  ? themeColor("--nl-border", "#d6e4dc")
+                  : border,
+              width: edge.kind === "dependency" ? 2.2 : edge.kind === "sequence" ? 2 : 1.5,
+              type: edge.kind === "dependency" ? "solid" : "dashed",
               curveness: edge.curveness,
-              opacity: edge.synthetic ? 0.72 : 0.92
+              opacity: edge.kind === "dependency" ? 0.92 : edge.kind === "sequence" ? 0.82 : 0.68
             }
           }))
         }
@@ -192,7 +226,8 @@ function ensureChart() {
 }
 
 type GraphViewNode = GraphNode & { isChapter?: boolean; x: number; y: number };
-type GraphViewEdge = { source: string; target: string; synthetic?: boolean; curveness?: number };
+type GraphViewEdgeKind = "dependency" | "sequence" | "containment";
+type GraphViewEdge = { source: string; target: string; kind: GraphViewEdgeKind; curveness?: number };
 
 interface GraphViewData {
   nodes: GraphViewNode[];
@@ -212,6 +247,15 @@ const chapterGroups = computed<ChapterGroup[]>(() => {
   const chapterById = new Map(chapters.value.map((chapter) => [chapter.id, chapter]));
   const groups = new Map<string, ChapterGroup>();
 
+  for (const chapter of chapters.value) {
+    groups.set(chapter.id, {
+      id: chapter.id,
+      label: chapter.title,
+      nodes: [],
+      orderIndex: chapter.orderIndex
+    });
+  }
+
   for (const node of graphNodes) {
     const chapterId = nodeById.get(node.id)?.chapterId ?? "uncategorized";
     const chapter = chapterById.get(chapterId);
@@ -225,7 +269,21 @@ const chapterGroups = computed<ChapterGroup[]>(() => {
     groups.set(chapterId, group);
   }
 
+  for (const group of groups.values()) {
+    group.nodes.sort((left, right) => {
+      const leftNode = nodeById.get(left.id);
+      const rightNode = nodeById.get(right.id);
+      return (leftNode?.orderIndex ?? 0) - (rightNode?.orderIndex ?? 0) || left.label.localeCompare(right.label);
+    });
+  }
+
   return [...groups.values()].sort((left, right) => left.orderIndex - right.orderIndex || left.label.localeCompare(right.label));
+});
+
+const graphJumpValue = computed(() => {
+  if (selectedNodeId.value) return `node:${selectedNodeId.value}`;
+  if (appState.selectedChapterId) return `chapter:${appState.selectedChapterId}`;
+  return undefined;
 });
 
 function buildGraphView(): GraphViewData {
@@ -239,22 +297,37 @@ function buildChapterOverview(groups: ChapterGroup[]): GraphViewData {
     for (const node of group.nodes) chapterIdByNodeId.set(node.id, group.id);
   }
 
-  const edges = new Map<string, GraphViewEdge>();
+  const dependencyEdges = new Map<string, GraphViewEdge>();
+  const dependencyChapterPairs = new Set<string>();
   for (const edge of graph.value?.edges ?? []) {
     const sourceChapterId = chapterIdByNodeId.get(edge.source);
     const targetChapterId = chapterIdByNodeId.get(edge.target);
     if (!sourceChapterId || !targetChapterId || sourceChapterId === targetChapterId) continue;
     const source = `chapter:${sourceChapterId}`;
     const target = `chapter:${targetChapterId}`;
-    edges.set(`${source}:${target}`, { source, target, curveness: 0.08 });
+    dependencyEdges.set(`${source}:${target}`, { source, target, kind: "dependency", curveness: 0.08 });
+    dependencyChapterPairs.add([sourceChapterId, targetChapterId].sort().join(":"));
   }
 
   const columnCount = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(groups.length))));
+  const positionedGroups = groups.map((group, index) => {
+    const row = Math.floor(index / columnCount);
+    const offset = index % columnCount;
+    const column = row % 2 === 0 ? offset : columnCount - 1 - offset;
+    return chapterNode(group, 120 + column * 260, 100 + row * 180);
+  });
+  const sequenceEdges = groups.slice(0, -1).flatMap((group, index) => {
+    const source = `chapter:${group.id}`;
+    const target = `chapter:${groups[index + 1].id}`;
+    const pairKey = [group.id, groups[index + 1].id].sort().join(":");
+    return dependencyChapterPairs.has(pairKey)
+      ? []
+      : [{ source, target, kind: "sequence" as const, curveness: 0 }];
+  });
+
   return {
-    nodes: groups.map((group, index) =>
-      chapterNode(group, 120 + (index % columnCount) * 260, 100 + Math.floor(index / columnCount) * 180)
-    ),
-    edges: [...edges.values()]
+    nodes: positionedGroups,
+    edges: [...sequenceEdges, ...dependencyEdges.values()]
   };
 }
 
@@ -278,10 +351,11 @@ function buildExpandedChapterView(group: ChapterGroup): GraphViewData {
   return {
     nodes: [chapterNode(group, 80, maxY / 2), ...positionedNodes],
     edges: [
-      ...rootIds.map((nodeId) => ({ source: chapterId, target: nodeId, synthetic: true, curveness: 0 })),
+      ...rootIds.map((nodeId) => ({ source: chapterId, target: nodeId, kind: "containment" as const, curveness: 0 })),
       ...relationEdges.map((edge, index) => ({
         source: edge.source,
         target: edge.target,
+        kind: "dependency" as const,
         curveness: relationCurveness(index)
       }))
     ]
@@ -362,6 +436,21 @@ function matchesActiveFilters(node: GraphNode): boolean {
   return true;
 }
 
+function isGraphNodeSelected(node: GraphViewNode) {
+  if (node.isChapter) {
+    return !selectedNodeId.value && node.id === `chapter:${appState.selectedChapterId ?? ""}`;
+  }
+  return node.id === selectedNodeId.value;
+}
+
+function isGraphChapterContext(node: GraphViewNode) {
+  return Boolean(
+    node.isChapter
+    && selectedNodeId.value
+    && node.id === `chapter:${appState.selectedChapterId ?? ""}`
+  );
+}
+
 function nodeColor(node: GraphNode) {
   if (node.masteryStatus === "mastered") return themeColor("--nl-success-soft", "#ddf5e8");
   if (node.masteryStatus === "weak") return themeColor("--nl-warning-soft", "#fff4d8");
@@ -374,8 +463,10 @@ function themeColor(token: string, fallback: string) {
 }
 
 function selectNode(nodeId: string): void {
+  const node = nodes.value.find((item) => item.id === nodeId);
   selectedNodeId.value = nodeId;
   viewState.selectedNodeId = nodeId;
+  appState.selectedChapterId = node?.chapterId ?? null;
   appState.selectedNodeId = nodeId;
   activeTab.value = "detail";
   renderGraph();
@@ -386,7 +477,19 @@ function syncSelectedNode(nodeId: string, shouldRender = true): void {
   if (!node || !graph.value?.nodes.some((item) => item.id === nodeId)) return;
   selectedNodeId.value = nodeId;
   viewState.selectedNodeId = nodeId;
-  if (node.chapterId) viewState.expandedChapterId = node.chapterId;
+  if (node.chapterId) {
+    appState.selectedChapterId = node.chapterId;
+    viewState.expandedChapterId = node.chapterId;
+  }
+  activeTab.value = "detail";
+  if (shouldRender) void nextTick(renderGraph);
+}
+
+function syncSelectedChapter(chapterId: string, shouldRender = true): void {
+  if (!chapters.value.some((chapter) => chapter.id === chapterId)) return;
+  selectedNodeId.value = null;
+  viewState.selectedNodeId = undefined;
+  viewState.expandedChapterId = chapterId;
   activeTab.value = "detail";
   if (shouldRender) void nextTick(renderGraph);
 }
@@ -395,7 +498,9 @@ function selectChapter(chapterId: string): void {
   viewState.expandedChapterId = viewState.expandedChapterId === chapterId ? undefined : chapterId;
   selectedNodeId.value = null;
   viewState.selectedNodeId = undefined;
+  appState.selectedChapterId = chapterId;
   appState.selectedNodeId = null;
+  activeTab.value = "detail";
   renderGraph();
 }
 
@@ -418,18 +523,33 @@ function resetGraphView(): void {
   viewState.showCompletedOnly = false;
   selectedNodeId.value = null;
   viewState.selectedNodeId = undefined;
+  appState.selectedChapterId = null;
   appState.selectedNodeId = null;
   renderGraph();
 }
 
-function jumpToNode(nodeId: string): void {
-  appState.selectedNodeId = nodeId;
-  syncSelectedNode(nodeId);
+function jumpToTarget(value: string): void {
+  if (value.startsWith("chapter:")) {
+    const chapterId = value.slice("chapter:".length);
+    appState.selectedChapterId = chapterId;
+    appState.selectedNodeId = null;
+    syncSelectedChapter(chapterId);
+    return;
+  }
+  const nodeId = value.startsWith("node:") ? value.slice("node:".length) : value;
+  selectNode(nodeId);
 }
 
 function openNodeContent() {
   if (!selectedNodeId.value) return;
-  void router.push({ name: "knowledge-node-content", params: { nodeId: selectedNodeId.value } });
+  void router.push({ name: "course-content", params: { courseId: courseId.value }, hash: `#node-${selectedNodeId.value}` });
+}
+
+function openChapterContent() {
+  if (!selectedChapter.value) return;
+  appState.selectedChapterId = selectedChapter.value.id;
+  appState.selectedNodeId = null;
+  void router.push({ name: "course-content", params: { courseId: courseId.value }, hash: `#chapter-${selectedChapter.value.id}` });
 }
 
 function openPractice() {
@@ -463,6 +583,10 @@ function openMindMap() {
         <el-switch v-model="viewState.showWeakOnly" active-text="只看薄弱" @change="renderGraph" />
         <el-switch v-model="viewState.showCompletedOnly" active-text="只看掌握" @change="renderGraph" />
         <span class="graph-hint">{{ viewState.expandedChapterId ? "再次点击章节可返回概览" : "点击章节展开固定节点布局" }}</span>
+        <div class="graph-legend" aria-label="图谱连线图例">
+          <span><i class="sequence" aria-hidden="true" />章节顺序</span>
+          <span><i class="dependency" aria-hidden="true" />知识依赖</span>
+        </div>
       </div>
 
       <StateBlock :loading="loading" :error="errorMessage" :empty="!graph?.nodes.length" empty-text="暂无图谱数据" @retry="loadGraph">
@@ -473,7 +597,18 @@ function openMindMap() {
     <el-tabs v-model="activeTab" class="page-tabs">
       <el-tab-pane label="节点详情" name="detail">
         <el-alert v-if="nodeErrorMessage" :title="nodeErrorMessage" type="warning" show-icon :closable="false" class="mb-16" />
-        <el-empty v-if="!selectedGraphNode" description="点击图谱节点或从工作台选择知识节点" />
+        <article v-if="selectedChapter && !selectedGraphNode" class="node-detail">
+          <h3>{{ selectedChapter.title }}</h3>
+          <div class="tag-row">
+            <el-tag type="warning">章节</el-tag>
+            <el-tag type="info">{{ chapterGroups.find((group) => group.id === selectedChapter?.id)?.nodes.length ?? 0 }} 个知识节点</el-tag>
+          </div>
+          <p>{{ selectedChapter.description || "该章节可直接阅读总览正文，并继续浏览所属知识节点。" }}</p>
+          <div class="node-actions" aria-label="章节学习操作">
+            <el-button type="primary" @click="openChapterContent">查看章节总览</el-button>
+          </div>
+        </article>
+        <el-empty v-else-if="!selectedGraphNode" description="点击图谱章节或节点查看详情" />
         <article v-else class="node-detail">
           <h3>{{ selectedGraphNode.label }}</h3>
           <div class="tag-row">
@@ -492,9 +627,23 @@ function openMindMap() {
         </article>
       </el-tab-pane>
 
-      <el-tab-pane label="节点跳转" name="jump">
-        <el-select filterable placeholder="选择节点" :model-value="selectedNodeId" @change="jumpToNode">
-          <el-option v-for="node in graph?.nodes ?? []" :key="node.id" :label="node.label" :value="node.id" />
+      <el-tab-pane label="快速跳转" name="jump">
+        <el-select
+          filterable
+          placeholder="选择章节总览或知识节点"
+          aria-label="图谱快速跳转"
+          :model-value="graphJumpValue"
+          @change="jumpToTarget"
+        >
+          <el-option-group v-for="group in chapterGroups" :key="group.id" :label="group.label">
+            <el-option :label="`${group.label} · 总览`" :value="`chapter:${group.id}`" />
+            <el-option
+              v-for="node in group.nodes"
+              :key="node.id"
+              :label="node.label"
+              :value="`node:${node.id}`"
+            />
+          </el-option-group>
         </el-select>
       </el-tab-pane>
     </el-tabs>
@@ -507,10 +656,47 @@ function openMindMap() {
   font-size: 13px;
 }
 
+.graph-legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-left: auto;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.graph-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.graph-legend i {
+  display: inline-block;
+  width: 26px;
+  border-top: 2px solid var(--nl-border-strong);
+}
+
+.graph-legend i.sequence {
+  border-color: var(--nl-primary-hover);
+  border-top-style: dashed;
+}
+
+.graph-legend i.dependency {
+  border-top-style: solid;
+}
+
 .node-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .graph-legend {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 </style>

@@ -4,6 +4,7 @@ import type {
   Chapter,
   ChapterCreateRequest,
   Course,
+  CourseContent,
   CourseCreateRequest,
   CourseUpdateRequest,
   KnowledgeNode,
@@ -25,6 +26,9 @@ export const courseApi = {
   },
   getCourse(courseId: string) {
     return request<Course>({ method: "GET", url: `/courses/${courseId}` });
+  },
+  getCourseContent(courseId: string) {
+    return request<CourseContent>({ method: "GET", url: `/courses/${courseId}/content`, timeout: COURSE_REQUEST_TIMEOUT });
   },
   updateCourse(courseId: string, payload: CourseUpdateRequest) {
     return request<Course>({ method: "PUT", url: `/courses/${courseId}`, data: payload });

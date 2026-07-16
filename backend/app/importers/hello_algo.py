@@ -32,7 +32,8 @@ def main() -> None:
     parser.add_argument("--branch", default=settings.hello_algo_branch)
     parser.add_argument("--local-dir", default=settings.hello_algo_local_dir)
     parser.add_argument("--doc-language", default=settings.hello_algo_doc_language)
-    parser.add_argument("--code-languages", default=settings.hello_algo_code_languages or settings.hello_algo_code_language or "all")
+    parser.add_argument("--code-languages", default=settings.hello_algo_code_languages or settings.hello_algo_code_language or "cpp,python,java")
+    parser.add_argument("--source-commit", default=None, help="Required with --skip-git when the source is not its own Git worktree.")
     parser.add_argument("--skip-git", action="store_true", help="Use the existing local repository without clone/pull.")
     parser.add_argument("--init-db", action="store_true", help="Create contract tables before importing.")
     args = parser.parse_args()
@@ -52,6 +53,7 @@ def main() -> None:
             repo_dir=repo_dir,
             doc_language=args.doc_language,
             code_languages=parse_code_languages(args.code_languages),
+            source_commit=args.source_commit,
         )
     print(
         {

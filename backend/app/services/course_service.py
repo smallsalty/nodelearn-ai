@@ -6,12 +6,16 @@ from uuid import uuid4
 from sqlalchemy import func, select
 
 from app.db.session import session_context
-from app.models import ChapterModel, CourseModel, KnowledgeNodeModel, KnowledgeRelationModel
+from app.models import ChapterModel, CourseModel, KnowledgeNodeModel, KnowledgeRelationModel, UploadedFileModel
 from app.schemas.common import CourseStatus, DifficultyLevel, NodeType
 from app.schemas.course import (
     Chapter,
     ChapterCreateRequest,
     Course,
+    CourseContent,
+    CourseContentAttribution,
+    CourseContentChapter,
+    CourseContentSection,
     CourseCreateRequest,
     CourseUpdateRequest,
     KnowledgeNode,
@@ -55,6 +59,7 @@ def chapter_from_model(model: ChapterModel) -> Chapter:
         title=model.title,
         order_index=model.order_index,
         description=model.description,
+        content=model.content,
         created_at=as_iso(model.created_at),
         updated_at=as_iso(model.updated_at),
     )
@@ -69,6 +74,7 @@ def node_from_model(model: KnowledgeNodeModel) -> KnowledgeNode:
         node_type=model.node_type,
         description=model.description,
         content=model.content,
+        order_index=model.order_index,
         difficulty=model.difficulty,
         learning_value=model.learning_value,
         prerequisite_node_ids=model.prerequisite_node_ids or [],
@@ -176,6 +182,7 @@ class CourseService:
             title=payload.title,
             order_index=payload.order_index,
             description=payload.description,
+            content=payload.content.strip() if payload.content else None,
             created_at=now,
             updated_at=now,
         )
@@ -189,7 +196,7 @@ class CourseService:
             query = (
                 select(KnowledgeNodeModel)
                 .where(KnowledgeNodeModel.course_id == course_id, KnowledgeNodeModel.deleted_at.is_(None))
-                .order_by(KnowledgeNodeModel.created_at.asc())
+                .order_by(KnowledgeNodeModel.chapter_id.asc(), KnowledgeNodeModel.order_index.asc(), KnowledgeNodeModel.id.asc())
             )
             return [node_from_model(model) for model in session.scalars(query).all()]
 
@@ -203,6 +210,7 @@ class CourseService:
             node_type=payload.node_type.value if hasattr(payload.node_type, "value") else payload.node_type,
             description=payload.description,
             content=payload.content,
+            order_index=payload.order_index,
             difficulty=payload.difficulty.value if hasattr(payload.difficulty, "value") else payload.difficulty,
             learning_value=payload.learning_value,
             prerequisite_node_ids=payload.prerequisite_node_ids or [],
@@ -218,6 +226,69 @@ class CourseService:
             session.flush()
             return node_from_model(model)
 
+    def get_course_content(self, course_id: str) -> CourseContent | None:
+        with session_context() as session:
+            course = session.get(CourseModel, course_id)
+            if course is None or course.deleted_at is not None:
+                return None
+
+            chapter_models = session.scalars(
+                select(ChapterModel)
+                .where(ChapterModel.course_id == course_id, ChapterModel.deleted_at.is_(None))
+                .order_by(ChapterModel.order_index.asc(), ChapterModel.id.asc())
+            ).all()
+            node_models = session.scalars(
+                select(KnowledgeNodeModel)
+                .where(KnowledgeNodeModel.course_id == course_id, KnowledgeNodeModel.deleted_at.is_(None))
+                .order_by(KnowledgeNodeModel.order_index.asc(), KnowledgeNodeModel.id.asc())
+            ).all()
+            nodes_by_chapter: dict[str, list[KnowledgeNodeModel]] = {}
+            for node in node_models:
+                if node.chapter_id:
+                    nodes_by_chapter.setdefault(node.chapter_id, []).append(node)
+
+            attribution = None
+            source_file = session.get(UploadedFileModel, "file_hello_algo_repo")
+            if course.code == "HELLO_ALGO" and source_file is not None:
+                attribution = CourseContentAttribution(
+                    name="Hello 算法",
+                    url=source_file.file_url,
+                    license="CC BY-NC-SA 4.0",
+                )
+
+            content_chapters = [
+                CourseContentChapter(
+                    id=chapter.id,
+                    title=chapter.title,
+                    order_index=chapter.order_index,
+                    content=chapter.content,
+                    sections=[
+                        CourseContentSection(
+                            node_id=node.id,
+                            title=node.name,
+                            order_index=node.order_index,
+                            content=node.content,
+                        )
+                        for node in sorted(
+                            nodes_by_chapter.get(chapter.id, []),
+                            key=lambda item: (item.order_index, item.id),
+                        )
+                    ],
+                )
+                for chapter in chapter_models
+            ]
+            content_chapters = [
+                chapter
+                for chapter in content_chapters
+                if (chapter.content is not None and chapter.content.strip()) or chapter.sections
+            ]
+            return CourseContent(
+                course_id=course.id,
+                course_name=course.name,
+                attribution=attribution,
+                chapters=content_chapters,
+            )
+
     def get_node(self, node_id: str) -> KnowledgeNode | None:
         with session_context() as session:
             model = session.get(KnowledgeNodeModel, node_id)
@@ -232,6 +303,7 @@ class CourseService:
             "node_type",
             "description",
             "content",
+            "order_index",
             "difficulty",
             "learning_value",
             "prerequisite_node_ids",

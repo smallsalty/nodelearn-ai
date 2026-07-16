@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import {
   ArrowLeft,
@@ -36,6 +36,7 @@ interface SidebarNodeBranch {
   id: string;
   title: string;
   description?: string;
+  overviewAvailable: boolean;
   root?: KnowledgeNode;
   nodes: KnowledgeNode[];
 }
@@ -46,21 +47,24 @@ const props = defineProps<{
   chapters: Chapter[];
   nodes: KnowledgeNode[];
   selectedCourseId?: string;
+  selectedChapterId?: string | null;
   selectedNodeId?: string | null;
   collapsed: boolean;
   mobileOpen: boolean;
+  forceCollapsed?: boolean;
 }>();
 
 const emit = defineEmits<{
   "update:collapsed": [value: boolean];
   "update:mobileOpen": [value: boolean];
   courseChange: [courseId: string];
+  chapterChange: [chapterId: string];
   nodeChange: [nodeId: string];
 }>();
 
 const expandedBranches = ref(new Set<string>());
 
-const effectiveCollapsed = computed(() => props.collapsed && !props.mobileOpen);
+const effectiveCollapsed = computed(() => (props.collapsed || props.forceCollapsed) && !props.mobileOpen);
 
 const activeCourse = computed(() => props.courses.find((course) => course.id === props.selectedCourseId) ?? props.courses[0]);
 
@@ -72,10 +76,12 @@ const nodeBranches = computed<SidebarNodeBranch[]>(() => {
       id: chapter.id,
       title: chapter.title,
       description: chapter.description,
+      overviewAvailable: true,
       root: undefined,
-      nodes: props.nodes.filter((node) => node.chapterId === chapter.id)
-    }))
-    .filter((branch) => branch.nodes.length);
+      nodes: props.nodes
+        .filter((node) => node.chapterId === chapter.id)
+        .sort((left, right) => left.orderIndex - right.orderIndex || left.name.localeCompare(right.name))
+    }));
 
   if (branchesFromChapters.length) return branchesFromChapters;
 
@@ -87,6 +93,7 @@ const nodeBranches = computed<SidebarNodeBranch[]>(() => {
     id: root.id,
     title: root.name,
     description: root.description,
+    overviewAvailable: false,
     root,
     nodes: (root.nextNodeIds ?? [])
       .map((nodeId) => nodeById.value.get(nodeId))
@@ -113,6 +120,11 @@ function selectNode(nodeId: string) {
   closeMobile();
 }
 
+function selectChapter(chapterId: string) {
+  emit("chapterChange", chapterId);
+  closeMobile();
+}
+
 function toggleBranch(branchId: string) {
   const next = new Set(expandedBranches.value);
   if (next.has(branchId)) {
@@ -132,8 +144,23 @@ function groupHasActiveChild(group: SidebarNavGroup) {
 }
 
 function branchHasActiveNode(branch: SidebarNodeBranch) {
-  return branch.root?.id === props.selectedNodeId || branch.nodes.some((node) => node.id === props.selectedNodeId);
+  return props.selectedChapterId === branch.id
+    || branch.root?.id === props.selectedNodeId
+    || branch.nodes.some((node) => node.id === props.selectedNodeId);
 }
+
+watch(
+  () => [props.selectedChapterId, props.selectedNodeId, props.chapters.length, props.nodes.length] as const,
+  () => {
+    const selectedNode = props.nodes.find((node) => node.id === props.selectedNodeId);
+    const branchId = props.selectedChapterId ?? selectedNode?.chapterId;
+    if (!branchId || !nodeBranches.value.some((branch) => branch.id === branchId)) return;
+    const next = new Set(expandedBranches.value);
+    next.add(branchId);
+    expandedBranches.value = next;
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -158,8 +185,14 @@ function branchHasActiveNode(branch: SidebarNodeBranch) {
           <small>学习工作台</small>
         </span>
       </RouterLink>
-      <button type="button" class="sidebar-collapse-button" :aria-pressed="collapsed" @click="toggleCollapsed">
-        <el-icon><component :is="collapsed ? ArrowRight : ArrowLeft" /></el-icon>
+      <button
+        v-if="!forceCollapsed"
+        type="button"
+        class="sidebar-collapse-button"
+        :aria-pressed="effectiveCollapsed"
+        @click="toggleCollapsed"
+      >
+        <el-icon><component :is="effectiveCollapsed ? ArrowRight : ArrowLeft" /></el-icon>
       </button>
     </div>
 
@@ -214,7 +247,7 @@ function branchHasActiveNode(branch: SidebarNodeBranch) {
         :icon="Reading"
         :count="nodes.length"
         :collapsed="effectiveCollapsed"
-        :has-active-child="route.path === '/knowledge-graph' || Boolean(selectedNodeId)"
+        :has-active-child="route.path === '/knowledge-graph' || Boolean(selectedChapterId) || Boolean(selectedNodeId)"
         :popover-width="340"
       >
         <article v-if="activeCourse" class="sidebar-course-note">
@@ -223,24 +256,45 @@ function branchHasActiveNode(branch: SidebarNodeBranch) {
         </article>
         <article v-if="!nodeBranches.length" class="sidebar-empty-note">暂无知识节点</article>
         <section v-for="branch in nodeBranches" :key="branch.id" class="sidebar-node-branch">
-          <button
-            type="button"
-            class="sidebar-branch-trigger"
+          <div
+            class="sidebar-branch-row"
             :class="{ 'has-active-child': branchHasActiveNode(branch) }"
-            :aria-expanded="isBranchOpen(branch.id)"
-            @click="toggleBranch(branch.id)"
           >
-            <span class="sidebar-item-icon">
-              <el-icon><Notebook /></el-icon>
-            </span>
-            <span>
-              <strong>{{ branch.title }}</strong>
-              <small>{{ branch.nodes.length }} 个子节点</small>
-            </span>
-            <el-icon class="sidebar-group-arrow"><component :is="isBranchOpen(branch.id) ? ArrowLeft : ArrowRight" /></el-icon>
-          </button>
+            <RouterLink
+              class="sidebar-chapter-link"
+              :to="{ name: 'course-content', params: { courseId: selectedCourseId }, hash: `#chapter-${branch.id}` }"
+              @click="selectChapter(branch.id)"
+            >
+              <span class="sidebar-item-icon">
+                <el-icon><Notebook /></el-icon>
+              </span>
+              <span>
+                <strong>{{ branch.title }}</strong>
+                <small>{{ branch.nodes.length }} 个子节点</small>
+              </span>
+            </RouterLink>
+            <button
+              type="button"
+              class="sidebar-branch-toggle"
+              :aria-label="`${isBranchOpen(branch.id) ? '收起' : '展开'}${branch.title}子节点`"
+              :aria-expanded="isBranchOpen(branch.id)"
+              @click="toggleBranch(branch.id)"
+            >
+              <el-icon><component :is="isBranchOpen(branch.id) ? ArrowLeft : ArrowRight" /></el-icon>
+            </button>
+          </div>
 
           <div v-show="isBranchOpen(branch.id)" class="sidebar-child-list">
+            <SidebarItem
+              v-if="branch.overviewAvailable"
+              label="总览"
+              description="章节导读"
+              :icon="Notebook"
+              :path="{ name: 'course-content', params: { courseId: selectedCourseId }, hash: `#chapter-${branch.id}` }"
+              :active="selectedChapterId === branch.id && !selectedNodeId"
+              :depth="2"
+              @activate="selectChapter(branch.id)"
+            />
             <SidebarItem
               v-if="branch.root"
               :label="branch.root.name"

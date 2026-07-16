@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from app.api.v1 import course as course_api
+from app.core.config import settings
 from app.main import app
 
 
@@ -68,6 +70,7 @@ def test_course_chapter_node_and_relation_crud_contracts():
         "name": "数组",
         "nodeType": "concept",
         "content": "# 数组\n\n数组使用连续内存保存元素。",
+        "orderIndex": 1,
         "difficulty": "easy",
         "learningValue": 80,
     }
@@ -94,6 +97,19 @@ def test_course_chapter_node_and_relation_crud_contracts():
 
     assert isinstance(assert_api_response(client.delete("/api/v1/nodes/node_contract_001")), bool)
     assert isinstance(assert_api_response(client.delete(f"/api/v1/courses/{course_id}")), bool)
+
+
+def test_course_content_contract_and_missing_course_http_status(monkeypatch):
+    data = assert_api_response(client.get("/api/v1/courses/course_ds_001/content"))
+    assert set(data) == {"courseId", "courseName", "attribution", "chapters"}
+    assert data["chapters"][0]["content"]
+    assert data["chapters"][0]["sections"][0]["orderIndex"] == 1
+
+    monkeypatch.setattr(settings, "enable_mock", False)
+    monkeypatch.setattr(course_api.course_service, "get_course_content", lambda _course_id: None)
+    response = client.get("/api/v1/courses/missing/content")
+    assert response.status_code == 404
+    assert response.json()["code"] == 404
 
 
 def test_course_validation_rejects_invalid_enum():

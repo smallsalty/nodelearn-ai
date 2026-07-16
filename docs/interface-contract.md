@@ -660,6 +660,7 @@ interface Chapter {
   title: string;
   orderIndex: number;
   description?: string;
+  content?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -679,6 +680,7 @@ course_id
 title
 order_index
 description
+content TEXT NULL
 created_at
 updated_at
 deleted_at
@@ -694,6 +696,7 @@ interface ChapterCreateRequest {
   title: string;
   orderIndex: number;
   description?: string;
+  content?: string;
 }
 ```
 
@@ -710,6 +713,7 @@ interface KnowledgeNode {
   nodeType: NodeType;
   description?: string;
   content: string;
+  orderIndex: number;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds: string[];
@@ -744,6 +748,7 @@ name
 node_type
 description
 content TEXT NOT NULL
+order_index INTEGER NOT NULL
 difficulty
 learning_value
 prerequisite_node_ids
@@ -770,6 +775,7 @@ interface KnowledgeNodeCreateRequest {
   nodeType: NodeType;
   description?: string;
   content: string;
+  orderIndex: number;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds?: string[];
@@ -820,7 +826,41 @@ deleted_at
 
 ---
 
-## 6.9 接口列表
+## 6.9 CourseContent
+
+```ts
+interface CourseContentAttribution {
+  name: string;
+  url: string;
+  license: string;
+}
+
+interface CourseContentSection {
+  nodeId: string;
+  title: string;
+  orderIndex: number;
+  content: string;
+}
+
+interface CourseContentChapter {
+  id: string;
+  title: string;
+  orderIndex: number;
+  content?: string;
+  sections: CourseContentSection[];
+}
+
+interface CourseContent {
+  courseId: string;
+  courseName: string;
+  attribution?: CourseContentAttribution;
+  chapters: CourseContentChapter[];
+}
+```
+
+`chapters` 按 `orderIndex` 升序返回，`sections` 按所属章节内的 `orderIndex` 升序返回。课程不存在时返回 HTTP 404；课程存在但没有章节总览或小节正文时返回空 `chapters`，不得回退到其他课程。前端章节与小节锚点分别固定为 `chapter-{chapterId}`、`node-{nodeId}`。
+
+## 6.10 接口列表
 
 | 方法 | 路径 | 说明 | 请求体 | 返回 |
 |---|---|---|---|---|
@@ -830,6 +870,7 @@ deleted_at
 | PUT | `/api/v1/courses/{courseId}` | 更新课程 | `CourseUpdateRequest` | `ApiResponse<Course>` |
 | DELETE | `/api/v1/courses/{courseId}` | 删除课程 | 无 | `ApiResponse<boolean>` |
 | GET | `/api/v1/courses/{courseId}/chapters` | 获取章节列表 | 无 | `ApiResponse<Chapter[]>` |
+| GET | `/api/v1/courses/{courseId}/content` | 获取课程全部章节总览与小节正文 | 无 | `ApiResponse<CourseContent>` |
 | POST | `/api/v1/courses/{courseId}/chapters` | 创建章节 | `ChapterCreateRequest` | `ApiResponse<Chapter>` |
 | GET | `/api/v1/courses/{courseId}/nodes` | 获取知识节点列表 | 无 | `ApiResponse<KnowledgeNode[]>` |
 | POST | `/api/v1/courses/{courseId}/nodes` | 创建知识节点 | `KnowledgeNodeCreateRequest` | `ApiResponse<KnowledgeNode>` |
@@ -1054,6 +1095,7 @@ id
 user_id
 course_id
 node_id
+chapter_id
 title
 session_type
 created_at
@@ -1260,6 +1302,7 @@ interface GeneratedResource {
   userId: string;
   courseId: string;
   nodeId?: string;
+  chapterId?: string;
   title: string;
   resourceType: ResourceType;
   content: string;
@@ -2681,6 +2724,7 @@ const routes = [
   "/learning-path",
   "/resources",
   "/knowledge-graph",
+  "/courses/:courseId/content",
   "/nodes/:nodeId/content",
   "/reports",
   "/practice",
@@ -2700,11 +2744,14 @@ const routes = [
 | 学习路径页 | `/api/v1/learning-paths/generate`, `/api/v1/users/{userId}/learning-paths` |
 | 资源生成页 | `/api/v1/resources/generate`, `/api/v1/users/{userId}/resources`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain`, `/api/v1/multimodal/digital-human/chat` |
 | 知识图谱页 | `/api/v1/courses/{courseId}/graph`, `/api/v1/users/{userId}/courses/{courseId}/graph`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain` |
-| 知识节点正文页 | `/api/v1/nodes/{nodeId}` |
+| 课程正文页 | `/api/v1/courses/{courseId}/content` |
+| 知识节点正文兼容入口 | `/api/v1/nodes/{nodeId}`，读取后重定向至课程全文锚点 |
 | 学习报告页 | `/api/v1/reports/generate`, `/api/v1/users/{userId}/reports` |
 | 练习测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit`, `/api/v1/programming/questions/generate`, `/api/v1/programming/submissions` |
 | 浮窗菜单 | `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
 | 知识库管理页 | `/api/v1/files/upload`, `/api/v1/knowledge-base/build`, `/api/v1/courses/{courseId}/nodes` |
+
+课程正文页继续一次读取完整 `CourseContent`，但客户端每次只渲染一个 `CourseContentChapter` 及其 `sections`。`#chapter-{chapterId}` 打开章节顶部并清空 `selectedNodeId`，`#node-{nodeId}` 打开所属章节后定位真实小节；显式目录和上下章操作写入浏览器历史，正文 ScrollSpy 只替换当前 hash。课程阅读模式下学习工作台、课程目录和正文使用相互独立的滚动区域。
 
 ---
 
@@ -2717,6 +2764,7 @@ const currentNode = ref<KnowledgeNode | null>(null);
 const currentProfile = ref<StudentProfile | null>(null);
 const currentLearningPath = ref<LearningPath | null>(null);
 
+const selectedChapterId = ref<string | null>(null);
 const selectedNodeId = ref<string | null>(null);
 const selectedResourceId = ref<string | null>(null);
 const selectedQuestionId = ref<string | null>(null);
@@ -2736,6 +2784,8 @@ const floatingMenuState = ref<FloatingMenuState>({
   collapsed: false
 });
 ```
+
+`selectedChapterId` 表示当前章节上下文；章节总览选中时 `selectedNodeId` 必须为 `null`，真实知识节点选中时两者分别保存所属章节和节点 ID。章节总览是基于 `Chapter.content` 的前端导航目标，不属于 `KnowledgeNode`，不得为此恢复或伪造重名节点。
 
 ---
 

@@ -20,6 +20,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/pages/KnowledgeGraphPage.vue")
   },
   {
+    path: "/courses/:courseId/content",
+    name: "course-content",
+    component: () => import("@/pages/CourseContentPage.vue")
+  },
+  {
     path: "/nodes/:nodeId/content",
     name: "knowledge-node-content",
     component: () => import("@/pages/KnowledgeNodeContentPage.vue")

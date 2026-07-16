@@ -99,6 +99,7 @@
 - 状态变量：`selectedResourceId`
 - 资源页不再提供 `practice_question` 生成卡片，练习统一由练习页负责；该枚举继续保留以兼容既有契约。
 - `action=mind_map` 跳转会预选当前节点、通用资源模式和唯一 `mind_map` 类型，但不会自动触发付费生成。
+- `GeneratedResource.chapterId` 可空；Hello Algo 章节阅读材料以及从旧总览节点迁移的章节讲解文档、思维导图使用章节关联并清空 `nodeId`，既有知识节点生成链路不变。
 
 ## 后端
 

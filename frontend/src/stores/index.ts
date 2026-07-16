@@ -8,6 +8,7 @@ export const appState = reactive({
   currentUser: null as User | null,
   currentCourse: null as Course | null,
   currentProfile: null as StudentProfile | null,
+  selectedChapterId: null as string | null,
   selectedNodeId: null as string | null,
   selectedResourceId: null as string | null,
   selectedQuestionId: null as string | null,
@@ -66,4 +67,6 @@ export function clearAuthState() {
   setCurrentUser(null);
   setCurrentCourse(null);
   setCurrentProfile(null);
+  appState.selectedChapterId = null;
+  appState.selectedNodeId = null;
 }
