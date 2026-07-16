@@ -10,6 +10,7 @@ export const appState = reactive({
   currentProfile: null as StudentProfile | null,
   selectedChapterId: null as string | null,
   selectedNodeId: null as string | null,
+  graphOverviewRequestId: 0,
   selectedResourceId: null as string | null,
   selectedQuestionId: null as string | null,
   selectedNoteId: null as string | null,
@@ -37,6 +38,12 @@ export function setCurrentCourse(course: Course | null) {
 
 export function setCurrentProfile(profile: StudentProfile | null) {
   appState.currentProfile = profile;
+}
+
+export function requestGraphOverview(): void {
+  appState.selectedChapterId = null;
+  appState.selectedNodeId = null;
+  appState.graphOverviewRequestId += 1;
 }
 
 export function openFloatingMenu(): void {

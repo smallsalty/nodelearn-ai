@@ -24,6 +24,7 @@
 - API：`frontend/src/api/modules/learningPath.ts`
 - 类型：`frontend/src/types/learningPath.ts`
 - 状态变量：`currentLearningPath`
+- 学习路径只在侧栏“个性化管理”中出现，不再在“学习入口”或其他分组重复显示。
 
 ## 后端
 

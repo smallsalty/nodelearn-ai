@@ -954,6 +954,7 @@ function selectNode(nodeId: string): void;
 function zoomIn(): void;
 function zoomOut(): void;
 function resetGraphView(): void;
+function requestGraphOverview(): void;
 function jumpToNode(nodeId: string): void;
 function openNodeDetail(nodeId: string): void;
 ```
@@ -2766,6 +2767,7 @@ const currentLearningPath = ref<LearningPath | null>(null);
 
 const selectedChapterId = ref<string | null>(null);
 const selectedNodeId = ref<string | null>(null);
+const graphOverviewRequestId = ref(0);
 const selectedResourceId = ref<string | null>(null);
 const selectedQuestionId = ref<string | null>(null);
 const selectedNoteId = ref<string | null>(null);
@@ -2786,6 +2788,8 @@ const floatingMenuState = ref<FloatingMenuState>({
 ```
 
 `selectedChapterId` 表示当前章节上下文；章节总览选中时 `selectedNodeId` 必须为 `null`，真实知识节点选中时两者分别保存所属章节和节点 ID。章节总览是基于 `Chapter.content` 的前端导航目标，不属于 `KnowledgeNode`，不得为此恢复或伪造重名节点。
+
+`graphOverviewRequestId` 是仅存在于前端内存的单调递增导航信号。“课程管理 → 知识节点”每次激活时清空章节/节点选择并增加该值，图谱页据此恢复完整章节总览、默认缩放和平移、关闭筛选并切回节点详情；该值不持久化，也不作为 HTTP 参数传递。顶部选择器和正文返回图谱不增加该值，继续保留定点展开与高亮行为。
 
 ---
 

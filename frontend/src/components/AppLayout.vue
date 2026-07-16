@@ -8,7 +8,6 @@ import {
   EditPen,
   FolderOpened,
   Guide,
-  House,
   Management,
   Notebook,
   Share,
@@ -19,7 +18,7 @@ import DetailDrawer from "@/components/layout/DetailDrawer.vue";
 import ExpandableSidebar, { type SidebarNavGroup } from "@/components/layout/ExpandableSidebar.vue";
 import { courseApi } from "@/api/modules/course";
 import { getErrorMessage } from "@/api/client";
-import { appState, clearAuthState, setCurrentCourse } from "@/stores";
+import { appState, clearAuthState, requestGraphOverview, setCurrentCourse } from "@/stores";
 import type { Chapter, Course, KnowledgeNode } from "@/types/course";
 import { DEFAULT_COURSE_ID } from "@/utils/format";
 
@@ -38,41 +37,130 @@ const sidebarMobileOpen = ref(false);
 const readerCompactViewport = ref(false);
 let readerCompactMedia: MediaQueryList | null = null;
 
-const navItems = computed(() => [
-  { path: `/courses/${selectedCourseId.value}/content`, label: "课程正文", description: "全文与目录", icon: Notebook },
-  { path: "/home", label: "首页", description: "学习概览", icon: House },
-  { path: "/chat", label: "对话学习", description: "课程问答", icon: ChatLineRound },
-  { path: "/profile", label: "学生画像", description: "偏好与薄弱点", icon: User },
-  { path: "/learning-path", label: "学习路径", description: "阶段任务", icon: Guide },
-  { path: "/resources", label: "资源中心", description: "生成与预览", icon: Collection },
-  { path: "/knowledge-graph", label: "知识图谱", description: "节点依赖", icon: Share },
-  { path: "/practice", label: "练习测评", description: "题目与错因", icon: EditPen },
-  { path: "/reports", label: "学习报告", description: "评估与建议", icon: DataAnalysis },
-  { path: "/admin/knowledge-base", label: "知识库管理", description: "课程材料", icon: FolderOpened }
-]);
-
 const navGroups = computed<SidebarNavGroup[]>(() => [
   {
     title: "学习入口",
     icon: Notebook,
-    items: navItems.value.slice(0, 5)
+    items: [
+      {
+        id: "course-content",
+        to: `/courses/${selectedCourseId.value}/content`,
+        label: "课程正文",
+        description: "全文与目录",
+        icon: Notebook,
+        match: { path: `/courses/${selectedCourseId.value}/content` }
+      },
+      {
+        id: "practice",
+        to: "/practice",
+        label: "练习测评",
+        description: "题目与错因",
+        icon: EditPen,
+        match: { path: "/practice" }
+      }
+    ]
   },
   {
     title: "学习工具",
     icon: Collection,
-    items: navItems.value.slice(5, 8)
+    items: [
+      {
+        id: "resources",
+        to: "/resources",
+        label: "资源中心",
+        description: "讲解与拓展阅读",
+        icon: Collection,
+        match: { path: "/resources", action: null }
+      },
+      {
+        id: "mind-map",
+        to: { path: "/resources", query: { action: "mind_map" } },
+        label: "思维导图",
+        description: "生成知识结构图",
+        icon: Share,
+        match: { path: "/resources", action: "mind_map" }
+      },
+      {
+        id: "digital-human-answer",
+        to: { path: "/resources", query: { action: "digital_human_chat" } },
+        label: "数字人解答",
+        description: "实时数字人问答",
+        icon: ChatLineRound,
+        match: { path: "/resources", action: "digital_human_chat" }
+      }
+    ]
   },
   {
-    title: "项目管理",
+    title: "个性化管理",
+    icon: User,
+    items: [
+      {
+        id: "chat",
+        to: "/chat",
+        label: "对话学习",
+        description: "课程问答",
+        icon: ChatLineRound,
+        match: { path: "/chat" }
+      },
+      {
+        id: "profile",
+        to: "/profile",
+        label: "学生画像",
+        description: "偏好与薄弱点",
+        icon: User,
+        match: { path: "/profile" }
+      },
+      {
+        id: "learning-path",
+        to: "/learning-path",
+        label: "学习路径",
+        description: "阶段任务",
+        icon: Guide,
+        match: { path: "/learning-path" }
+      },
+      {
+        id: "reports",
+        to: "/reports",
+        label: "学习报告",
+        description: "评估与建议",
+        icon: DataAnalysis,
+        match: { path: "/reports" }
+      }
+    ]
+  },
+  {
+    title: "课程管理",
     icon: Management,
-    items: navItems.value.slice(8)
+    items: [
+      {
+        id: "knowledge-base",
+        to: "/admin/knowledge-base",
+        label: "知识库管理",
+        description: "课程材料",
+        icon: FolderOpened,
+        match: { path: "/admin/knowledge-base" }
+      },
+      {
+        id: "knowledge-nodes",
+        to: "/knowledge-graph",
+        label: "知识节点",
+        description: "章节与节点总览",
+        icon: Share,
+        match: { path: "/knowledge-graph" }
+      }
+    ]
   }
 ]);
 
 const currentPageTitle = computed(() => {
   if (route.name === "knowledge-node-content") return "知识节点正文";
   if (route.name === "course-content") return "课程正文";
-  return navItems.value.find((item) => item.path === route.path)?.label ?? "NodeLearn AI";
+  if (route.path === "/knowledge-graph") return "知识图谱";
+  const action = typeof route.query.action === "string" ? route.query.action : null;
+  const item = navGroups.value
+    .flatMap((group) => group.items)
+    .find((candidate) => candidate.match.path === route.path && (candidate.match.action ?? null) === action);
+  return item?.label ?? (route.path === "/home" ? "课程首页" : "NodeLearn AI");
 });
 
 const currentCourse = computed(() => courses.value.find((course) => course.id === selectedCourseId.value) ?? appState.currentCourse);
@@ -189,6 +277,10 @@ function changeChapter(chapterId: string) {
   void router.push({ name: "course-content", params: { courseId: selectedCourseId.value }, hash: `#chapter-${chapterId}` });
 }
 
+function activateSidebarNav(itemId: string) {
+  if (itemId === "knowledge-nodes") requestGraphOverview();
+}
+
 async function logout() {
   clearAuthState();
   await router.push("/login");
@@ -208,15 +300,10 @@ async function logout() {
       v-model:mobile-open="sidebarMobileOpen"
       :nav-groups="navGroups"
       :courses="courses"
-      :chapters="chapters"
-      :nodes="nodes"
       :selected-course-id="selectedCourseId"
-      :selected-chapter-id="appState.selectedChapterId"
-      :selected-node-id="appState.selectedNodeId"
       :force-collapsed="forceReaderSidebarCollapsed"
       @course-change="changeCourse"
-      @chapter-change="changeChapter"
-      @node-change="changeNode"
+      @nav-activate="activateSidebarNav"
     />
 
     <section class="app-main">

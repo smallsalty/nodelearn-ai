@@ -58,6 +58,8 @@ const chapterIdByNodeId = computed(() => {
 let observer: IntersectionObserver | null = null;
 let syncingSelection = false;
 let suppressedRouteAnchor = "";
+let scrollSyncSuppressed = false;
+let scrollSyncTimer: number | null = null;
 
 watch(courseId, () => void loadContent(), { immediate: true });
 
@@ -168,6 +170,7 @@ async function applyAnchor(anchor: string, options: ApplyAnchorOptions = {}) {
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const behavior = reduceMotion ? "auto" : (options.behavior ?? "smooth");
+  suppressScrollSync(behavior);
   if (target.nodeId) {
     document.getElementById(anchor)?.scrollIntoView({ behavior, block: "start" });
   } else {
@@ -197,6 +200,7 @@ function setupObserver() {
   if (!readerScroll.value) return;
   observer = new IntersectionObserver(
     (entries) => {
+      if (scrollSyncSuppressed) return;
       const visible = entries
         .filter((entry) => entry.isIntersecting)
         .map((entry) => entry.target as HTMLElement)
@@ -206,6 +210,15 @@ function setupObserver() {
     { root: readerScroll.value, rootMargin: "-20px 0px -68%", threshold: [0, 0.05, 0.2] }
   );
   reader.value?.querySelectorAll<HTMLElement>("[data-content-anchor]").forEach((element) => observer?.observe(element));
+}
+
+function suppressScrollSync(behavior: ScrollBehavior | "auto") {
+  scrollSyncSuppressed = true;
+  if (scrollSyncTimer !== null) window.clearTimeout(scrollSyncTimer);
+  scrollSyncTimer = window.setTimeout(() => {
+    scrollSyncSuppressed = false;
+    scrollSyncTimer = null;
+  }, behavior === "smooth" ? 650 : 100);
 }
 
 function activateAnchorFromScroll(anchor: string) {
@@ -258,7 +271,10 @@ onMounted(() => {
   if (content.value) setupObserver();
 });
 
-onBeforeUnmount(() => observer?.disconnect());
+onBeforeUnmount(() => {
+  observer?.disconnect();
+  if (scrollSyncTimer !== null) window.clearTimeout(scrollSyncTimer);
+});
 </script>
 
 <template>

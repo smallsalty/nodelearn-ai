@@ -24,6 +24,7 @@
 - API：`frontend/src/api/modules/profile.ts`
 - 类型：`frontend/src/types/profile.ts`
 - 状态变量：`currentProfile`
+- 学生画像与对话学习、学习路径、学习报告统一归入侧栏“个性化管理”。
 
 ## 后端
 

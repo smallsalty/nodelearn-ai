@@ -8,25 +8,30 @@ import MultimodalTaskProgress from "@/components/MultimodalTaskProgress.vue";
 import ResourceTypeCard from "@/components/resource/ResourceTypeCard.vue";
 import StateBlock from "@/components/StateBlock.vue";
 import VideoLessonPlayer from "@/components/VideoLessonPlayer.vue";
+import { useSelectedOptionAtTop } from "@/composables/useSelectedOptionAtTop";
 import { courseApi } from "@/api/modules/course";
 import { multimodalApi } from "@/api/modules/multimodal";
 import { resourceApi } from "@/api/modules/resource";
-import { recommendationsApi } from "@/api/modules/recommendations";
 import { getErrorMessage } from "@/api/client";
 import { appState } from "@/stores";
 import type { KnowledgeNode } from "@/types/course";
 import type { ResourceType, VideoTheme } from "@/types/contracts";
 import type { MultimodalTaskResult } from "@/types/multimodal";
-import type { AnimationScriptContent, GeneratedResource, ResourceGenerateResult, ResourceRecommendation } from "@/types/resource";
+import type { AnimationScriptContent, GeneratedResource, ResourceGenerateResult } from "@/types/resource";
+import { sortNodesByCourseOrder } from "@/utils/courseOrder";
 import {
   auditLabel,
   DEFAULT_COURSE_ID,
   DEFAULT_USER_ID,
   difficultyLabel,
+  formatDate,
   resourceTypeLabel,
   statusLabel,
   statusTagType
 } from "@/utils/format";
+
+const RESOURCE_NODE_POPPER_CLASS = "resource-node-select-popper";
+const RESOURCE_NODE_SELECT_ID = "resource-node-select";
 
 const userId = computed(() => appState.currentUser?.id ?? DEFAULT_USER_ID);
 const courseId = computed(() => appState.currentCourse?.id ?? DEFAULT_COURSE_ID);
@@ -34,16 +39,18 @@ const route = useRoute();
 const generatorSectionRef = ref<HTMLElement | null>(null);
 const nodes = ref<KnowledgeNode[]>([]);
 const resources = ref<GeneratedResource[]>([]);
-const recommendations = ref<ResourceRecommendation[]>([]);
+const { handleVisibleChange: handleNodeSelectVisibleChange } = useSelectedOptionAtTop(
+  RESOURCE_NODE_POPPER_CLASS,
+  RESOURCE_NODE_SELECT_ID
+);
 const selectedNodeId = ref(
   typeof route.query.nodeId === "string" ? route.query.nodeId : appState.selectedNodeId ?? "node_stack_001"
 );
 const selectedResourceId = ref<string | null>(null);
 const selectedResource = ref<GeneratedResource | null>(null);
-const activeResourceTab = ref("detail");
-const resourceTypes = ref<ResourceType[]>(["lecture_doc", "mind_map"]);
+const resourceTypes = ref<ResourceType[]>(["lecture_doc", "reading_material"]);
 const generatorMode = ref<"standard" | "knowledge_video" | "digital_human_video" | "digital_human_chat">("standard");
-const learningGoal = ref("通过讲解、导图和练习掌握当前知识点");
+const learningGoal = ref("通过讲解文档和拓展阅读掌握当前知识点");
 const customRequirement = ref("");
 const durationSeconds = ref(120);
 const videoTheme = ref<VideoTheme>("warm_academic");
@@ -52,21 +59,51 @@ const multimodalTask = ref<MultimodalTaskResult | null>(null);
 const loading = ref(false);
 const generating = ref(false);
 const errorMessage = ref("");
-
-const generatorModes = [
-  { key: "standard", title: "通用资源", description: "讲解文档、导图、阅读和代码案例" },
-  { key: "knowledge_video", title: "知识点教学视频", description: "脚本、分镜、语音、渲染和审计" },
-  { key: "digital_human_video", title: "数字人讲解", description: "视频播放器、脚本大纲和字幕" },
-  { key: "digital_human_chat", title: "数字人对话", description: "围绕当前知识点追问" }
-] as const;
+let nodesReady = false;
+let pageRequestId = 0;
+let resourceRequestId = 0;
 
 const resourceTypeOptions: Array<{ value: ResourceType; title: string; description: string }> = [
   { value: "lecture_doc", title: "讲解文档", description: "结构化概念说明" },
-  { value: "mind_map", title: "思维导图", description: "结构化知识导图" },
-  { value: "reading_material", title: "拓展阅读", description: "补充材料和延伸理解" },
-  { value: "code_case", title: "代码案例", description: "数据结构实现片段" },
-  { value: "summary_note", title: "总结笔记", description: "可复习的要点记录" }
+  { value: "reading_material", title: "拓展材料阅读", description: "补充材料和延伸理解" }
 ];
+
+const routeAction = computed(() => (typeof route.query.action === "string" ? route.query.action : ""));
+const isMindMapEntry = computed(() => routeAction.value === "mind_map");
+const isDigitalHumanAnswer = computed(() => generatorMode.value === "digital_human_chat");
+const allowedResourceTypes = computed<ResourceType[]>(() => {
+  if (isDigitalHumanAnswer.value) return [];
+  if (isMindMapEntry.value) return ["mind_map"];
+  if (generatorMode.value === "knowledge_video") return ["knowledge_video"];
+  if (generatorMode.value === "digital_human_video") return ["digital_human_video"];
+  return ["lecture_doc", "reading_material"];
+});
+const resourceScopeDescription = computed(() => {
+  if (isMindMapEntry.value) return "仅显示当前知识点已生成并通过审核的思维导图。";
+  if (generatorMode.value === "knowledge_video") return "仅显示当前知识点已生成并通过审核的教学视频。";
+  if (generatorMode.value === "digital_human_video") return "仅显示当前知识点已生成并通过审核的数字人讲解。";
+  return "仅显示当前知识点已生成并通过审核的讲解文档和拓展阅读。";
+});
+const emptyResourceText = computed(() => {
+  if (isMindMapEntry.value) return "当前知识点暂无可查看的思维导图";
+  if (generatorMode.value === "knowledge_video") return "当前知识点暂无可查看的教学视频";
+  if (generatorMode.value === "digital_human_video") return "当前知识点暂无可查看的数字人讲解";
+  return "当前知识点暂无可查看的讲解文档或拓展阅读";
+});
+const pageTitle = computed(() => {
+  if (isMindMapEntry.value) return "思维导图";
+  if (isDigitalHumanAnswer.value) return "数字人解答";
+  if (generatorMode.value === "knowledge_video") return "知识点教学视频";
+  if (generatorMode.value === "digital_human_video") return "数字人讲解";
+  return "资源中心";
+});
+const pageDescription = computed(() => {
+  if (isMindMapEntry.value) return "当前知识点和思维导图类型已预选，确认学习目标后即可生成。";
+  if (isDigitalHumanAnswer.value) return "围绕当前知识点与数字人实时对话，不产生讲解视频。";
+  if (generatorMode.value === "knowledge_video") return "兼容旧知识点教学视频深链接与生成流程。";
+  if (generatorMode.value === "digital_human_video") return "兼容旧数字人讲解深链接与生成流程。";
+  return "生成讲解文档与拓展材料阅读，全部内容继续经过后端审计流程。";
+});
 
 const selectedVideoContent = computed<AnimationScriptContent | null>(() => {
   const content = selectedResource.value?.content;
@@ -88,13 +125,22 @@ onMounted(async () => {
 watch(
   () => [route.query.nodeId, route.query.action],
   () => {
+    const previousNodeId = selectedNodeId.value;
     applyRouteQuery();
+    if (nodesReady && previousNodeId === selectedNodeId.value) {
+      void loadCurrentResources();
+    }
     focusGeneratorForRouteAction();
   }
 );
 
 watch(selectedNodeId, (nodeId) => {
-  if (nodeId) appState.selectedNodeId = nodeId;
+  if (nodeId) {
+    appState.selectedNodeId = nodeId;
+  }
+  if (nodesReady) {
+    void loadCurrentResources();
+  }
 });
 
 watch(
@@ -106,21 +152,42 @@ watch(
   }
 );
 
+watch(courseId, () => {
+  void loadPage();
+});
+
 function applyRouteQuery() {
   const nodeId = typeof route.query.nodeId === "string" ? route.query.nodeId : "";
   const action = typeof route.query.action === "string" ? route.query.action : "";
   if (nodeId) selectedNodeId.value = nodeId;
-  if (action === "knowledge_video") generatorMode.value = "knowledge_video";
-  if (action === "digital_human_video") generatorMode.value = "digital_human_video";
-  if (action === "digital_human_chat") generatorMode.value = "digital_human_chat";
+  generationResult.value = null;
+  multimodalTask.value = null;
   if (action === "mind_map") {
     generatorMode.value = "standard";
     resourceTypes.value = ["mind_map"];
+    return;
   }
+  if (action === "digital_human_chat") {
+    generatorMode.value = "digital_human_chat";
+    resourceTypes.value = [];
+    return;
+  }
+  if (action === "knowledge_video") {
+    generatorMode.value = "knowledge_video";
+    resourceTypes.value = [];
+    return;
+  }
+  if (action === "digital_human_video") {
+    generatorMode.value = "digital_human_video";
+    resourceTypes.value = [];
+    return;
+  }
+  generatorMode.value = "standard";
+  resourceTypes.value = ["lecture_doc", "reading_material"];
 }
 
 function focusGeneratorForRouteAction() {
-  if (route.query.action !== "mind_map") return;
+  if (!route.query.action) return;
   void nextTick(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     generatorSectionRef.value?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
@@ -128,28 +195,104 @@ function focusGeneratorForRouteAction() {
 }
 
 async function loadPage() {
+  const requestId = ++pageRequestId;
+  const targetCourseId = courseId.value;
+  let delegatedResourceLoading = false;
+  nodesReady = false;
+  resourceRequestId += 1;
+  loading.value = true;
+  errorMessage.value = "";
+  clearResourceScope();
+  try {
+    const [chapterResponse, nodeResponse] = await Promise.all([
+      courseApi.getChapters(targetCourseId),
+      courseApi.getNodes(targetCourseId)
+    ]);
+    if (requestId !== pageRequestId || targetCourseId !== courseId.value) return;
+    nodes.value = sortNodesByCourseOrder(chapterResponse.data, nodeResponse.data);
+    const nextNodeId = nodes.value.some((node) => node.id === selectedNodeId.value)
+      ? selectedNodeId.value
+      : nodes.value[0]?.id ?? "";
+    if (nextNodeId !== selectedNodeId.value) {
+      selectedNodeId.value = nextNodeId;
+      await nextTick();
+    }
+    appState.selectedNodeId = nextNodeId || null;
+    nodesReady = true;
+    delegatedResourceLoading = true;
+    await loadCurrentResources();
+  } catch (error) {
+    if (requestId === pageRequestId) {
+      errorMessage.value = getErrorMessage(error);
+    }
+  } finally {
+    if (requestId === pageRequestId && !delegatedResourceLoading) {
+      loading.value = false;
+    }
+  }
+}
+
+async function loadCurrentResources(preferredResourceIds: string[] = []) {
+  const requestId = ++resourceRequestId;
+  const targetCourseId = courseId.value;
+  const targetNodeId = selectedNodeId.value;
+  const targetTypes = [...allowedResourceTypes.value];
+  clearResourceScope();
+
+  if (isDigitalHumanAnswer.value || !targetNodeId || !targetTypes.length) {
+    loading.value = false;
+    return;
+  }
+
   loading.value = true;
   errorMessage.value = "";
   try {
-    const [nodeResponse, resourceResponse, recommendationResponse] = await Promise.all([
-      courseApi.getNodes(courseId.value),
-      resourceApi.getUserResources(userId.value, { page: 1, pageSize: 40 }),
-      recommendationsApi.getUserRecommendations(userId.value)
-    ]);
-    nodes.value = nodeResponse.data;
-    resources.value = resourceResponse.data.list;
-    recommendations.value = recommendationResponse.data;
-    if (!nodes.value.some((node) => node.id === selectedNodeId.value) && nodes.value[0]) {
-      selectedNodeId.value = nodes.value[0].id;
-    }
-    if (!selectedResource.value && resources.value[0]) {
-      await openResource(resources.value[0].id);
-    }
+    const response = await resourceApi.getNodeResources(targetNodeId);
+    if (requestId !== resourceRequestId) return;
+
+    const allowedTypes = new Set<ResourceType>(targetTypes);
+    resources.value = response.data
+      .filter(
+        (resource) =>
+          resource.courseId === targetCourseId &&
+          resource.nodeId === targetNodeId &&
+          allowedTypes.has(resource.resourceType) &&
+          resource.status === "success" &&
+          resource.auditStatus === "passed"
+      )
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+
+    const preferredResource = preferredResourceIds
+      .map((resourceId) => resources.value.find((resource) => resource.id === resourceId))
+      .find((resource): resource is GeneratedResource => Boolean(resource));
+    selectResource(preferredResource?.id ?? resources.value[0]?.id ?? null);
   } catch (error) {
-    errorMessage.value = getErrorMessage(error);
+    if (requestId === resourceRequestId) {
+      errorMessage.value = getErrorMessage(error);
+    }
   } finally {
-    loading.value = false;
+    if (requestId === resourceRequestId) {
+      loading.value = false;
+    }
   }
+}
+
+function clearSelectedResource() {
+  selectedResourceId.value = null;
+  selectedResource.value = null;
+  appState.selectedResourceId = null;
+}
+
+function clearResourceScope() {
+  resources.value = [];
+  clearSelectedResource();
+}
+
+function selectResource(resourceId: string | null | undefined) {
+  const resource = resources.value.find((item) => item.id === resourceId) ?? null;
+  selectedResourceId.value = resource?.id ?? null;
+  selectedResource.value = resource;
+  appState.selectedResourceId = resource?.id ?? null;
 }
 
 async function generateResources() {
@@ -180,9 +323,7 @@ async function generateResources() {
     if (response.data.status === "running" || response.data.status === "pending") {
       await pollGenerationTask(response.data.taskId);
     }
-    await loadPage();
-    const firstResourceId = generationResult.value?.resourceIds[0];
-    if (firstResourceId) await openResource(firstResourceId);
+    await loadCurrentResources(generationResult.value?.resourceIds ?? []);
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
@@ -250,25 +391,11 @@ async function generateDigitalHumanExplain() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    await loadPage();
-    if (response.data.resourceId) await openResource(response.data.resourceId);
+    await loadCurrentResources(response.data.resourceId ? [response.data.resourceId] : []);
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
     generating.value = false;
-  }
-}
-
-async function openResource(resourceId: string) {
-  selectedResourceId.value = resourceId;
-  activeResourceTab.value = "detail";
-  appState.selectedResourceId = resourceId;
-  errorMessage.value = "";
-  try {
-    const response = await resourceApi.getResource(resourceId);
-    selectedResource.value = response.data;
-  } catch (error) {
-    errorMessage.value = getErrorMessage(error);
   }
 }
 
@@ -296,8 +423,7 @@ async function pollGenerationTask(taskId: string) {
 
 async function handleMultimodalCompleted(task: MultimodalTaskResult) {
   multimodalTask.value = task;
-  await loadPage();
-  if (task.resourceId) await openResource(task.resourceId);
+  await loadCurrentResources(task.resourceId ? [task.resourceId] : []);
 }
 
 function sleep(duration: number) {
@@ -326,33 +452,25 @@ function toggleResourceType(resourceType: ResourceType) {
     <section class="panel-card">
       <header class="panel-header">
         <div>
-          <h2>资源中心</h2>
-          <p>生成资源必须经过后端资源接口和审计状态，不把未通过审计的内容显示为可直接使用。</p>
+          <h2>{{ pageTitle }}</h2>
+          <p>{{ pageDescription }}</p>
         </div>
-        <el-button :loading="loading" @click="loadPage">刷新</el-button>
+        <el-button :loading="loading" @click="loadPage()">刷新</el-button>
       </header>
 
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" class="mb-16" />
 
       <section ref="generatorSectionRef" class="generator-card" tabindex="-1">
         <el-form label-position="top">
-          <el-form-item label="生成模式">
-            <div class="mode-grid" role="radiogroup" aria-label="资源生成模式">
-              <button
-                v-for="mode in generatorModes"
-                :key="mode.key"
-                type="button"
-                class="mode-card"
-                :class="{ active: generatorMode === mode.key }"
-                @click="generatorMode = mode.key"
-              >
-                <strong>{{ mode.title }}</strong>
-                <span>{{ mode.description }}</span>
-              </button>
-            </div>
-          </el-form-item>
           <el-form-item label="知识点">
-            <el-select v-model="selectedNodeId" filterable placeholder="选择知识点">
+            <el-select
+              :id="RESOURCE_NODE_SELECT_ID"
+              v-model="selectedNodeId"
+              :popper-class="RESOURCE_NODE_POPPER_CLASS"
+              filterable
+              placeholder="选择知识点"
+              @visible-change="handleNodeSelectVisibleChange"
+            >
               <el-option
                 v-for="node in nodes"
                 :key="node.id"
@@ -361,7 +479,7 @@ function toggleResourceType(resourceType: ResourceType) {
               />
             </el-select>
           </el-form-item>
-          <el-form-item v-if="generatorMode === 'standard'" label="资源类型">
+          <el-form-item v-if="generatorMode === 'standard' && !isMindMapEntry" label="资源类型">
             <div class="resource-type-grid">
               <ResourceTypeCard
                 v-for="option in resourceTypeOptions"
@@ -373,10 +491,18 @@ function toggleResourceType(resourceType: ResourceType) {
               />
             </div>
           </el-form-item>
-          <el-form-item label="学习目标">
+          <el-alert
+            v-if="isMindMapEntry"
+            title="已选择思维导图，无需再次选择资源类型"
+            type="success"
+            show-icon
+            :closable="false"
+            class="mb-16"
+          />
+          <el-form-item v-if="!isDigitalHumanAnswer" label="学习目标">
             <el-input v-model="learningGoal" />
           </el-form-item>
-          <template v-if="generatorMode !== 'digital_human_chat'">
+          <template v-if="!isDigitalHumanAnswer">
             <el-form-item label="补充要求">
               <el-input v-model="customRequirement" type="textarea" :rows="2" placeholder="可填写讲解风格、薄弱点、例子要求" />
             </el-form-item>
@@ -395,7 +521,7 @@ function toggleResourceType(resourceType: ResourceType) {
           </template>
           <div class="button-row">
             <el-button
-              v-if="generatorMode !== 'digital_human_chat'"
+              v-if="!isDigitalHumanAnswer"
               type="primary"
               :loading="generating"
               :disabled="generatorMode === 'standard' && !resourceTypes.length"
@@ -405,7 +531,7 @@ function toggleResourceType(resourceType: ResourceType) {
             </el-button>
           </div>
         </el-form>
-        <section v-if="generationResult" class="generation-progress">
+        <section v-if="generationResult && !isDigitalHumanAnswer" class="generation-progress">
           <div class="generation-title">
             <strong>任务 {{ generationResult.taskId }}</strong>
             <el-tag :type="statusTagType(generationResult.status)">{{ statusLabel(generationResult.status) }}</el-tag>
@@ -415,65 +541,62 @@ function toggleResourceType(resourceType: ResourceType) {
           <el-alert v-if="generationResult.errorMessage" :title="generationResult.errorMessage" type="error" show-icon :closable="false" />
         </section>
         <MultimodalTaskProgress
-          v-if="multimodalTask?.taskId"
+          v-if="multimodalTask?.taskId && !isDigitalHumanAnswer"
           :task-id="multimodalTask.taskId"
           :initial-task="multimodalTask"
           @completed="handleMultimodalCompleted"
           @failed="multimodalTask = $event"
         />
         <DigitalHumanChatPanel
-          v-if="generatorMode === 'digital_human_chat'"
+          v-if="isDigitalHumanAnswer"
           :user-id="userId"
           :course-id="courseId"
           :node-id="selectedNodeId"
         />
       </section>
 
-      <StateBlock :loading="loading" :error="errorMessage" :empty="!resources.length" empty-text="暂无资源" @retry="loadPage">
-        <section class="resource-list-grid">
-          <button
-            v-for="resource in resources"
-            :key="resource.id"
-            type="button"
-            class="resource-card"
-            :class="{ active: resource.id === selectedResourceId }"
-            @click="openResource(resource.id)"
-          >
-            <strong>{{ resource.title }}</strong>
-            <span>{{ resourceTypeLabel(resource.resourceType) }}</span>
-            <div class="tag-row">
-              <el-tag size="small" :type="statusTagType(resource.status)">{{ statusLabel(resource.status) }}</el-tag>
-              <el-tag size="small" :type="resource.auditStatus === 'passed' ? 'success' : 'warning'">
-                {{ auditLabel(resource.auditStatus) }}
-              </el-tag>
-            </div>
-          </button>
-        </section>
-      </StateBlock>
     </section>
 
-    <el-tabs v-model="activeResourceTab" class="page-tabs">
-      <el-tab-pane label="资源详情" name="detail">
-        <el-empty v-if="!selectedResource" description="选择一个资源查看详情" />
-        <article v-else class="resource-detail">
+    <section v-if="!isDigitalHumanAnswer" class="panel-card resource-detail-panel">
+      <header class="resource-detail-toolbar">
+        <div>
+          <h2>资源详情</h2>
+          <p>{{ resourceScopeDescription }}</p>
+        </div>
+        <label class="resource-picker">
+          <span>当前知识点资源</span>
+          <el-select
+            :model-value="selectedResourceId"
+            :disabled="loading || !resources.length"
+            placeholder="暂无可查看资源"
+            aria-label="选择当前知识点资源"
+            @change="selectResource"
+          >
+            <el-option
+              v-for="resource in resources"
+              :key="resource.id"
+              :label="`${resourceTypeLabel(resource.resourceType)} · ${resource.title} · ${formatDate(resource.createdAt)}`"
+              :value="resource.id"
+            />
+          </el-select>
+        </label>
+      </header>
+
+      <StateBlock
+        :loading="loading"
+        :error="errorMessage"
+        :empty="!resources.length || !selectedResource"
+        :empty-text="emptyResourceText"
+        @retry="loadCurrentResources()"
+      >
+        <article v-if="selectedResource" class="resource-detail">
           <header class="detail-title">
             <h3>{{ selectedResource.title }}</h3>
             <div class="tag-row">
               <el-tag>{{ resourceTypeLabel(selectedResource.resourceType) }}</el-tag>
-              <el-tag :type="selectedResource.auditStatus === 'passed' ? 'success' : 'warning'">
-                {{ auditLabel(selectedResource.auditStatus) }}
-              </el-tag>
+              <el-tag type="success">{{ auditLabel(selectedResource.auditStatus) }}</el-tag>
             </div>
           </header>
-
-          <el-alert
-            v-if="selectedResource.auditStatus !== 'passed'"
-            title="该资源尚未通过审计，不应作为可直接使用内容发布。"
-            type="warning"
-            show-icon
-            :closable="false"
-            class="mb-16"
-          />
 
           <template v-if="isVideoResource(selectedResource)">
             <video v-if="selectedResource.fileUrl" class="mp4-player" :src="selectedResource.fileUrl" controls />
@@ -487,19 +610,8 @@ function toggleResourceType(resourceType: ResourceType) {
           <MarkdownContent v-else-if="isMarkdownResource(selectedResource)" :content="selectedResource.content" />
           <pre v-else class="resource-content">{{ selectedResource.content }}</pre>
         </article>
-      </el-tab-pane>
-
-      <el-tab-pane label="推荐资源" name="recommendations">
-        <el-empty v-if="!recommendations.length" description="暂无推荐" />
-        <section v-else class="soft-card-grid">
-          <article v-for="item in recommendations" :key="item.id" class="mini-list-item">
-            <strong>{{ item.title }}</strong>
-            <span>{{ resourceTypeLabel(item.resourceType) }} · {{ Math.round(item.score * 100) }}%</span>
-            <p>{{ item.reason }}</p>
-          </article>
-        </section>
-      </el-tab-pane>
-    </el-tabs>
+      </StateBlock>
+    </section>
   </section>
 </template>
 
@@ -527,6 +639,38 @@ function toggleResourceType(resourceType: ResourceType) {
   font-size: 13px;
 }
 
+.resource-detail-panel {
+  min-width: 0;
+}
+
+.resource-detail-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.resource-detail-toolbar h2,
+.resource-detail-toolbar p {
+  margin: 0;
+}
+
+.resource-detail-toolbar p {
+  margin-top: 6px;
+  color: var(--nl-text-muted);
+}
+
+.resource-picker {
+  display: grid;
+  flex: 0 1 520px;
+  gap: 6px;
+  min-width: 260px;
+  color: var(--nl-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .option-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -536,6 +680,17 @@ function toggleResourceType(resourceType: ResourceType) {
 @media (max-width: 760px) {
   .option-grid {
     grid-template-columns: 1fr;
+  }
+
+  .resource-detail-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resource-picker {
+    flex-basis: auto;
+    min-width: 0;
+    width: 100%;
   }
 }
 </style>

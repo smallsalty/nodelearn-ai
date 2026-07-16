@@ -55,6 +55,11 @@ watch(courseId, (nextCourseId, previousCourseId) => {
 });
 
 watch(
+  () => appState.graphOverviewRequestId,
+  () => resetGraphView()
+);
+
+watch(
   () => appState.selectedNodeId,
   (nodeId) => {
     if (nodeId) {
@@ -525,6 +530,8 @@ function resetGraphView(): void {
   viewState.selectedNodeId = undefined;
   appState.selectedChapterId = null;
   appState.selectedNodeId = null;
+  activeTab.value = "detail";
+  chart?.clear();
   renderGraph();
 }
 
@@ -621,7 +628,7 @@ function openMindMap() {
           <p><strong>常见错因：</strong>{{ selectedKnowledgeNode?.commonMistakes.join("、") || "暂无" }}</p>
           <div class="node-actions" aria-label="节点学习操作">
             <el-button type="primary" @click="openNodeContent">查看正文</el-button>
-            <el-button plain @click="openPractice">进入练习</el-button>
+            <el-button plain @click="openPractice">课后测试</el-button>
             <el-button plain @click="openMindMap">生成思维导图</el-button>
           </div>
         </article>
