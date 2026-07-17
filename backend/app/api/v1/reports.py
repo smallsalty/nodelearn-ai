@@ -3,7 +3,6 @@ from fastapi import APIRouter, Path, Query
 from app.core.response import page_result, success_response
 from app.schemas.common import AuditStatus, BehaviorType
 from app.schemas.report import (
-    AuditCheckRequest,
     AuditResult,
     LearningEvaluation,
     LearningRecord,
@@ -96,12 +95,6 @@ def export_report_pdf(report_id: str = Path(alias="reportId")):
 @router.delete("/reports/{reportId}")
 def delete_report(report_id: str = Path(alias="reportId")):
     return success_response(True)
-
-
-@router.post("/audit/check")
-def audit_check(payload: AuditCheckRequest):
-    result = AuditResult(id="audit_demo_001", target_type=payload.target_type, target_id=payload.target_id, audit_status=AuditStatus.unchecked, risk_labels=[], created_at=MOCK_TIME)
-    return success_response(result)
 
 
 @router.get("/audit/logs")

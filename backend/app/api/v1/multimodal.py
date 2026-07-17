@@ -1,4 +1,7 @@
+from collections.abc import Iterator
+
 from fastapi import APIRouter, BackgroundTasks, Path, Query
+from fastapi.responses import StreamingResponse
 
 from app.core.response import error_response, success_response
 from app.schemas.multimodal import (
@@ -31,7 +34,12 @@ def list_multimodal_video_events(task_id: str = Path(alias="taskId")):
 
 @router.get("/multimodal/videos/stream")
 def stream_multimodal_video(task_id: str = Query(alias="taskId")):
-    return success_response(default_multimodal_service.get_stream_event(task_id))
+    event = default_multimodal_service.get_stream_event(task_id)
+
+    def generate() -> Iterator[str]:
+        yield f"data: {event.model_dump_json(by_alias=True, exclude_none=True)}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @router.post("/multimodal/digital-human/explain")

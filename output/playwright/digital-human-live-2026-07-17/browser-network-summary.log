@@ -1,0 +1,16 @@
+Playwright CLI sanitized network summary
+Date: 2026-07-17
+
+GET  /api/v1/courses?page=1&pageSize=20                         200
+GET  /api/v1/courses/course_ds_001/nodes                        200
+GET  /api/v1/courses/course_ds_001/chapters                     200
+POST /api/v1/auth/login                                         200
+GET  /api/v1/users/me                                           200
+POST /api/v1/multimodal/digital-human/chat                      200
+
+The digital-human chat response used the ApiResponse envelope with code=500:
+digital human chat failed: [Errno -3] Temporary failure in name resolution
+
+No /generated-resources request was made in digital_human_chat mode.
+No HLS manifest or segment request was made because no live session was created.
+Browser console: 0 errors, 0 warnings.

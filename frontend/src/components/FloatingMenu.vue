@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { Close, Notebook, Position } from "@element-plus/icons-vue";
+import { useRouter } from "vue-router";
+import MarkdownContent from "@/components/MarkdownContent.vue";
 import { chatApi } from "@/api/modules/chat";
 import { noteApi } from "@/api/modules/note";
 import { practiceApi } from "@/api/modules/practice";
@@ -9,7 +11,6 @@ import { getErrorMessage } from "@/api/client";
 import {
   appState,
   closeFloatingMenu,
-  openFloatingMenu,
   switchFloatingTab,
   toggleFloatingMenu,
   updateFloatingPosition
@@ -17,11 +18,16 @@ import {
 import type { Note } from "@/types/note";
 import type { PracticeQuestion } from "@/types/practice";
 import type { ResourceRecommendation } from "@/types/resource";
+import type { ChatMessage } from "@/types/agent";
+import { difficultyLabel, formatDate, questionTypeLabel } from "@/utils/format";
+
+const router = useRouter();
 
 const userId = computed(() => appState.currentUser?.id ?? "user_demo_001");
 const courseId = computed(() => appState.currentCourse?.id ?? "course_ds_001");
 const question = ref("");
-const answer = ref("");
+const qaMessages = ref<ChatMessage[]>([]);
+const qaSessionId = ref<string>();
 const noteTitle = ref("");
 const noteContent = ref("");
 const notes = ref<Note[]>([]);
@@ -52,12 +58,20 @@ async function loadTabData() {
       wrongQuestions.value = (await practiceApi.getWrongQuestions(userId.value)).data;
     } else if (appState.floatingMenuState.activeTab === "resource") {
       recommendations.value = (await recommendationsApi.getUserRecommendations(userId.value)).data;
+    } else if (appState.floatingMenuState.activeTab === "qa") {
+      await loadQaHistory();
     }
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
     loading.value = false;
   }
+}
+
+async function loadQaHistory() {
+  const sessions = (await chatApi.getSessions({ page: 1, pageSize: 50, userId: userId.value })).data.list;
+  qaSessionId.value = sessions.find((session) => session.sessionType === "qa")?.id;
+  qaMessages.value = qaSessionId.value ? (await chatApi.getMessages(qaSessionId.value)).data : [];
 }
 
 async function ask() {
@@ -68,14 +82,16 @@ async function ask() {
   try {
     const response = await chatApi.sendMessage({
       userId: userId.value,
+      sessionId: qaSessionId.value,
       courseId: courseId.value,
       nodeId: appState.selectedNodeId ?? undefined,
       message,
       useRag: true,
       useProfile: true
     });
-    answer.value = response.data.answer;
+    qaSessionId.value = response.data.sessionId;
     question.value = "";
+    qaMessages.value = (await chatApi.getMessages(response.data.sessionId)).data;
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
@@ -111,13 +127,24 @@ function changeTab(tab: typeof appState.floatingMenuState.activeTab) {
   void loadTabData();
 }
 
+function togglePanel() {
+  const opening = !appState.floatingMenuState.visible;
+  toggleFloatingMenu();
+  if (opening) void loadTabData();
+}
+
+function openQaHistory() {
+  closeFloatingMenu();
+  void router.push("/chat");
+}
+
 function movePanel() {
   updateFloatingPosition(appState.floatingMenuState.positionX, appState.floatingMenuState.positionY);
 }
 </script>
 
 <template>
-  <button class="floating-trigger" type="button" @click="toggleFloatingMenu">
+  <button class="floating-trigger" type="button" @click="togglePanel">
     <el-icon><Notebook /></el-icon>
     学习侧栏
   </button>
@@ -134,7 +161,7 @@ function movePanel() {
     <nav class="floating-tabs" aria-label="浮窗标签">
       <button
         v-for="tab in [
-          { key: 'qa', label: '提问' },
+          { key: 'qa', label: '问答' },
           { key: 'note', label: '笔记' },
           { key: 'wrong_book', label: '错题' },
           { key: 'resource', label: '资源' }
@@ -154,7 +181,15 @@ function movePanel() {
     <section v-else-if="appState.floatingMenuState.activeTab === 'qa'" class="floating-body">
       <el-input v-model="question" type="textarea" :rows="3" placeholder="问一个当前知识点问题" aria-label="浮窗问题" />
       <el-button type="primary" :loading="loading" :disabled="!question.trim()" @click="ask">发送问题</el-button>
-      <p v-if="answer" class="floating-answer">{{ answer }}</p>
+      <div v-if="qaMessages.length" class="floating-qa-history" aria-label="最近问答历史">
+        <article v-for="message in qaMessages.slice(-4)" :key="message.id" class="floating-answer" :class="message.role">
+          <header><strong>{{ message.role === 'user' ? '我' : '问答助手' }}</strong><time>{{ formatDate(message.createdAt) }}</time></header>
+          <MarkdownContent v-if="message.contentType !== 'text'" :content="message.content" />
+          <p v-else>{{ message.content }}</p>
+        </article>
+      </div>
+      <el-empty v-else description="暂无问答历史" />
+      <el-button text @click="openQaHistory">查看全部问答历史</el-button>
     </section>
 
     <section v-else-if="appState.floatingMenuState.activeTab === 'note'" class="floating-body">
@@ -171,7 +206,7 @@ function movePanel() {
       <el-empty v-if="!wrongQuestions.length" description="暂无错题" />
       <article v-for="item in wrongQuestions" :key="item.id" class="mini-list-item">
         <strong>{{ item.title }}</strong>
-        <span>{{ item.difficulty }} · {{ item.questionType }}</span>
+        <span>{{ difficultyLabel(item.difficulty) }} · {{ questionTypeLabel(item.questionType) }}</span>
       </article>
     </section>
 

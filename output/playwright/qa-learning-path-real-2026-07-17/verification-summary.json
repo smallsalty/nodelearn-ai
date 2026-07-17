@@ -1,0 +1,41 @@
+{
+  "date": "2026-07-17",
+  "enableMock": false,
+  "llmProvider": "deepseek",
+  "llmModel": "deepseek-v4-pro",
+  "chat": {
+    "result": "PASS_REAL",
+    "sessionId": "session_chat_71868202e9c1",
+    "rounds": 2,
+    "messageCount": 4,
+    "uniqueMessageCount": 4,
+    "assistantReferenceCounts": [3, 3],
+    "sharedByMainAndSidebar": true,
+    "postgresPersisted": true
+  },
+  "learningPath": {
+    "generationResult": "PASS_REAL",
+    "storageResult": "PASS_PLACEHOLDER",
+    "pathId": "path_236b5e908d5d",
+    "taskCount": 6,
+    "allTasksHaveDueAt": true,
+    "targetTopicsIncluded": ["栈", "递归", "哈希表"],
+    "visibleInternalNodeIds": 0,
+    "visibleEnglishTaskTypes": 0,
+    "availableLearningTools": ["课程资源", "思维导图", "练习测评", "问答助手", "数字人解答"]
+  },
+  "browser": {
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "unexpectedHttpFailures": 0,
+    "mobileHorizontalOverflow": false
+  },
+  "tests": {
+    "backend": "201 passed, 2 skipped, 1 warning",
+    "frontendBuild": "passed",
+    "pythonCompile": "passed",
+    "directFetchAxiosInPagesOrComponents": 0,
+    "gitDiffCheckErrors": 0
+  },
+  "secretsIncluded": false
+}

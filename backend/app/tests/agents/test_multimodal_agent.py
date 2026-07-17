@@ -24,6 +24,7 @@ GENERATED_RESOURCE_FIELDS = {
     "userId",
     "courseId",
     "nodeId",
+    "chapterId",
     "title",
     "resourceType",
     "content",

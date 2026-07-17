@@ -1,4 +1,4 @@
-import { request } from "@/api/client";
+import { request, requestSseEvent } from "@/api/client";
 import type { PageRequest, PageResult } from "@/types/contracts";
 import type {
   GeneratedResource,
@@ -57,7 +57,7 @@ export const resourceApi = {
     return request<ResourceGenerateResult>({ method: "GET", url: `/resources/generation-tasks/${taskId}` });
   },
   getGenerationStreamEvent(taskId: string) {
-    return request<ResourceStreamEvent>({ method: "GET", url: "/resources/generate/stream", params: { taskId } });
+    return requestSseEvent<ResourceStreamEvent>("/resources/generate/stream", { taskId });
   },
   getResource(resourceId: string) {
     return request<GeneratedResource>({ method: "GET", url: `/resources/${resourceId}` });

@@ -43,6 +43,7 @@ class LearningPathGenerateRequest(ContractModel):
     target_goal: str | None = None
     time_budget: str | None = None
     weak_node_ids: list[str] | None = None
+    additional_requirements: str | None = None
 
 
 class LearningTaskStatusUpdateRequest(ContractModel):

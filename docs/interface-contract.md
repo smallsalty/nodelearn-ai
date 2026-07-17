@@ -88,7 +88,7 @@ docs/interface-contract.md
 6. nodes             知识节点
 7. graph             知识图谱
 8. knowledge-base    知识库构建与检索
-9. chat              对话学习与实时问答
+9. chat              问答助手与实时问答
 10. agents           多智能体编排
 11. resources        个性化资源生成
 12. multimodal       稳定视频、数字人讲解与数字人对话
@@ -660,6 +660,7 @@ interface Chapter {
   title: string;
   orderIndex: number;
   description?: string;
+  content?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -679,6 +680,7 @@ course_id
 title
 order_index
 description
+content TEXT NULL
 created_at
 updated_at
 deleted_at
@@ -694,6 +696,7 @@ interface ChapterCreateRequest {
   title: string;
   orderIndex: number;
   description?: string;
+  content?: string;
 }
 ```
 
@@ -709,6 +712,8 @@ interface KnowledgeNode {
   name: string;
   nodeType: NodeType;
   description?: string;
+  content: string;
+  orderIndex: number;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds: string[];
@@ -725,6 +730,8 @@ interface KnowledgeNode {
 }
 ```
 
+`content` 为必填、去除首尾空白后非空的完整 Markdown 正文；`description` 仅作为可选摘要。
+
 数据库表：
 
 ```sql
@@ -740,6 +747,8 @@ chapter_id
 name
 node_type
 description
+content TEXT NOT NULL
+order_index INTEGER NOT NULL
 difficulty
 learning_value
 prerequisite_node_ids
@@ -765,6 +774,8 @@ interface KnowledgeNodeCreateRequest {
   name: string;
   nodeType: NodeType;
   description?: string;
+  content: string;
+  orderIndex: number;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds?: string[];
@@ -773,6 +784,8 @@ interface KnowledgeNodeCreateRequest {
   recommendedPracticeIds?: string[];
 }
 ```
+
+创建请求中的 `content` 同样为必填非空正文。
 
 ---
 
@@ -813,7 +826,41 @@ deleted_at
 
 ---
 
-## 6.9 接口列表
+## 6.9 CourseContent
+
+```ts
+interface CourseContentAttribution {
+  name: string;
+  url: string;
+  license: string;
+}
+
+interface CourseContentSection {
+  nodeId: string;
+  title: string;
+  orderIndex: number;
+  content: string;
+}
+
+interface CourseContentChapter {
+  id: string;
+  title: string;
+  orderIndex: number;
+  content?: string;
+  sections: CourseContentSection[];
+}
+
+interface CourseContent {
+  courseId: string;
+  courseName: string;
+  attribution?: CourseContentAttribution;
+  chapters: CourseContentChapter[];
+}
+```
+
+`chapters` 按 `orderIndex` 升序返回，`sections` 按所属章节内的 `orderIndex` 升序返回。课程不存在时返回 HTTP 404；课程存在但没有章节总览或小节正文时返回空 `chapters`，不得回退到其他课程。前端章节与小节锚点分别固定为 `chapter-{chapterId}`、`node-{nodeId}`。
+
+## 6.10 接口列表
 
 | 方法 | 路径 | 说明 | 请求体 | 返回 |
 |---|---|---|---|---|
@@ -823,6 +870,7 @@ deleted_at
 | PUT | `/api/v1/courses/{courseId}` | 更新课程 | `CourseUpdateRequest` | `ApiResponse<Course>` |
 | DELETE | `/api/v1/courses/{courseId}` | 删除课程 | 无 | `ApiResponse<boolean>` |
 | GET | `/api/v1/courses/{courseId}/chapters` | 获取章节列表 | 无 | `ApiResponse<Chapter[]>` |
+| GET | `/api/v1/courses/{courseId}/content` | 获取课程全部章节总览与小节正文 | 无 | `ApiResponse<CourseContent>` |
 | POST | `/api/v1/courses/{courseId}/chapters` | 创建章节 | `ChapterCreateRequest` | `ApiResponse<Chapter>` |
 | GET | `/api/v1/courses/{courseId}/nodes` | 获取知识节点列表 | 无 | `ApiResponse<KnowledgeNode[]>` |
 | POST | `/api/v1/courses/{courseId}/nodes` | 创建知识节点 | `KnowledgeNodeCreateRequest` | `ApiResponse<KnowledgeNode>` |
@@ -906,6 +954,7 @@ function selectNode(nodeId: string): void;
 function zoomIn(): void;
 function zoomOut(): void;
 function resetGraphView(): void;
+function requestGraphOverview(): void;
 function jumpToNode(nodeId: string): void;
 function openNodeDetail(nodeId: string): void;
 ```
@@ -1017,7 +1066,7 @@ interface RetrievedDocument {
 
 ---
 
-# 9. 对话学习与实时问答接口
+# 9. 问答助手与实时问答接口
 
 ## 9.1 ChatSession
 
@@ -1047,6 +1096,7 @@ id
 user_id
 course_id
 node_id
+chapter_id
 title
 session_type
 created_at
@@ -1113,6 +1163,16 @@ interface ChatRequest {
 }
 ```
 
+问答助手页面和学习侧栏共用 `ChatSession` 与 `ChatMessage` 历史；未显式传入 `sessionId` 时，服务端复用该用户当前课程最近的 `qa` 会话，找不到时才创建新会话。DeepSeek 回答必须先通过 audit/safety，再将一组 user/assistant 消息写入 `chat_session`、`chat_message`。
+
+## 9.3.1 ChatSessionQuery
+
+```ts
+interface ChatSessionQuery extends PageRequest {
+  userId?: string;
+}
+```
+
 ## 9.4 ChatResult
 
 ```ts
@@ -1142,7 +1202,7 @@ interface ChatStreamEvent {
 | 方法 | 路径 | 说明 | 请求体 | 返回 |
 |---|---|---|---|---|
 | POST | `/api/v1/chat/sessions` | 创建对话会话 | `Partial<ChatSession>` | `ApiResponse<ChatSession>` |
-| GET | `/api/v1/chat/sessions` | 获取对话会话列表 | `PageRequest` | `ApiResponse<PageResult<ChatSession>>` |
+| GET | `/api/v1/chat/sessions` | 获取问答会话列表 | `ChatSessionQuery` | `ApiResponse<PageResult<ChatSession>>` |
 | GET | `/api/v1/chat/sessions/{sessionId}` | 获取会话详情 | 无 | `ApiResponse<ChatSession>` |
 | GET | `/api/v1/chat/sessions/{sessionId}/messages` | 获取消息列表 | 无 | `ApiResponse<ChatMessage[]>` |
 | POST | `/api/v1/chat/send` | 发送消息 | `ChatRequest` | `ApiResponse<ChatResult>` |
@@ -1253,6 +1313,7 @@ interface GeneratedResource {
   userId: string;
   courseId: string;
   nodeId?: string;
+  chapterId?: string;
   title: string;
   resourceType: ResourceType;
   content: string;
@@ -2059,8 +2120,11 @@ interface LearningPathGenerateRequest {
   targetGoal?: string;
   timeBudget?: string;
   weakNodeIds?: string[];
+  additionalRequirements?: string;
 }
 ```
+
+真实模式下，规划服务通过统一 `LLMService` 调用 DeepSeek 生成中文路径标题、说明、阶段、任务顺序和任务标题；每个 `LearningTask.dueAt` 必须根据 `timeBudget` 排入建议完成时间。前端不得直接展示 `taskType`、`nodeId` 等内部值，应映射为中文任务类型和知识点名称，并为每项任务展示学习工具建议及可直接复制的中文提示词。
 
 ## 13.4 LearningTaskStatusUpdateRequest
 
@@ -2144,6 +2208,18 @@ interface PracticeGenerateRequest {
   count: number;
 }
 ```
+
+### 14.2.1 前端统一练习生成状态
+
+```ts
+interface PracticeGenerationStep {
+  questionType: "single_choice" | "short_answer" | "coding";
+  status: TaskStatus | null;
+  errorMessage?: string;
+}
+```
+
+统一练习页按 `single_choice -> short_answer -> coding` 顺序调用既有接口；单步失败不得清空已成功结果，也不得阻止后续步骤。
 
 ## 14.3 PracticeSubmitRequest
 
@@ -2662,8 +2738,11 @@ const routes = [
   "/learning-path",
   "/resources",
   "/knowledge-graph",
+  "/courses/:courseId/content",
+  "/nodes/:nodeId/content",
   "/reports",
   "/practice",
+  "/programming", // 兼容入口，重定向到 /practice?tab=coding
   "/admin/knowledge-base"
 ];
 ```
@@ -2674,15 +2753,19 @@ const routes = [
 |---|---|
 | 登录页 | `/api/v1/auth/login`, `/api/v1/auth/register` |
 | 首页 | `/api/v1/courses`, `/api/v1/users/me` |
-| 对话学习页 | `/api/v1/chat/send`, `/api/v1/chat/stream`, `/api/v1/profiles/extract` |
+| 问答助手页 | `/api/v1/chat/sessions`, `/api/v1/chat/sessions/{sessionId}/messages`, `/api/v1/chat/send` |
 | 学生画像页 | `/api/v1/profiles/{userId}` |
 | 学习路径页 | `/api/v1/learning-paths/generate`, `/api/v1/users/{userId}/learning-paths` |
 | 资源生成页 | `/api/v1/resources/generate`, `/api/v1/users/{userId}/resources`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain`, `/api/v1/multimodal/digital-human/chat` |
 | 知识图谱页 | `/api/v1/courses/{courseId}/graph`, `/api/v1/users/{userId}/courses/{courseId}/graph`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain` |
+| 课程正文页 | `/api/v1/courses/{courseId}/content` |
+| 知识节点正文兼容入口 | `/api/v1/nodes/{nodeId}`，读取后重定向至课程全文锚点 |
 | 学习报告页 | `/api/v1/reports/generate`, `/api/v1/users/{userId}/reports` |
-| 测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit` |
-| 浮窗菜单 | `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
+| 练习测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit`, `/api/v1/programming/questions/generate`, `/api/v1/programming/submissions` |
+| 学习侧栏 | `/api/v1/chat/sessions`, `/api/v1/chat/sessions/{sessionId}/messages`, `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
 | 知识库管理页 | `/api/v1/files/upload`, `/api/v1/knowledge-base/build`, `/api/v1/courses/{courseId}/nodes` |
+
+课程正文页继续一次读取完整 `CourseContent`，但客户端每次只渲染一个 `CourseContentChapter` 及其 `sections`。`#chapter-{chapterId}` 打开章节顶部并清空 `selectedNodeId`，`#node-{nodeId}` 打开所属章节后定位真实小节；显式目录和上下章操作写入浏览器历史，正文 ScrollSpy 只替换当前 hash。课程阅读模式下学习工作台、课程目录和正文使用相互独立的滚动区域。
 
 ---
 
@@ -2695,7 +2778,9 @@ const currentNode = ref<KnowledgeNode | null>(null);
 const currentProfile = ref<StudentProfile | null>(null);
 const currentLearningPath = ref<LearningPath | null>(null);
 
+const selectedChapterId = ref<string | null>(null);
 const selectedNodeId = ref<string | null>(null);
+const graphOverviewRequestId = ref(0);
 const selectedResourceId = ref<string | null>(null);
 const selectedQuestionId = ref<string | null>(null);
 const selectedNoteId = ref<string | null>(null);
@@ -2714,6 +2799,10 @@ const floatingMenuState = ref<FloatingMenuState>({
   collapsed: false
 });
 ```
+
+`selectedChapterId` 表示当前章节上下文；章节总览选中时 `selectedNodeId` 必须为 `null`，真实知识节点选中时两者分别保存所属章节和节点 ID。章节总览是基于 `Chapter.content` 的前端导航目标，不属于 `KnowledgeNode`，不得为此恢复或伪造重名节点。
+
+`graphOverviewRequestId` 是仅存在于前端内存的单调递增导航信号。“课程管理 → 知识节点”每次激活时清空章节/节点选择并增加该值，图谱页据此恢复完整章节总览、默认缩放和平移、关闭筛选并切回节点详情；该值不持久化，也不作为 HTTP 参数传递。顶部选择器和正文返回图谱不增加该值，继续保留定点展开与高亮行为。
 
 ---
 
@@ -2928,6 +3017,15 @@ VITE_ENABLE_STREAM=true
 VITE_GRAPH_RENDERER=react-flow
 ```
 
+## 24.3 Judge0 环境变量
+
+Docker Desktop 使用 cgroup v2，而当前固定的 Judge0 CE `1.13.1` 镜像内置 isolate `1.8.1` 仅能以 cgroup v1 的 `--cg` 路径工作。验收环境统一开启 isolate 的进程级 rlimit 模式，仍保留 Judge0 沙箱、CPU/墙钟时间、内存、文件大小与禁网限制。
+
+```env
+ENABLE_PER_PROCESS_AND_THREAD_TIME_LIMIT=true
+ENABLE_PER_PROCESS_AND_THREAD_MEMORY_LIMIT=true
+```
+
 ---
 
 # 25. 数据库表清单
@@ -3031,6 +3129,8 @@ audit_log
     "courseId": "course_ds_001",
     "name": "链表",
     "nodeType": "concept",
+    "description": "链表通过指针连接离散节点。",
+    "content": "# 链表\n\n链表通过指针连接离散节点，适合频繁插入和删除的场景。",
     "difficulty": "medium",
     "learningValue": 90,
     "prerequisiteNodeIds": ["node_array_001"],
@@ -3194,6 +3294,8 @@ GET  /api/v1/system/health
     "courseId": "course_ds_001",
     "name": "数组",
     "nodeType": "concept",
+    "description": "数组使用连续内存保存相同类型元素。",
+    "content": "# 数组\n\n数组使用连续内存保存相同类型元素，可通过下标快速访问。",
     "difficulty": "easy",
     "learningValue": 80,
     "prerequisiteNodeIds": [],
@@ -3209,6 +3311,8 @@ GET  /api/v1/system/health
     "courseId": "course_ds_001",
     "name": "链表",
     "nodeType": "concept",
+    "description": "链表通过指针连接离散节点。",
+    "content": "# 链表\n\n链表通过指针连接离散节点，适合频繁插入和删除的场景。",
     "difficulty": "medium",
     "learningValue": 90,
     "prerequisiteNodeIds": ["node_array_001"],

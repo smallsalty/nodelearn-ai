@@ -112,7 +112,12 @@ async function restartAudio() {
       </header>
 
       <main class="motion-stage">
-        <h3>{{ currentBeat.screenText[0] }}</h3>
+        <div class="screen-copy">
+          <h3>{{ currentBeat.screenText[0] }}</h3>
+          <ul v-if="currentBeat.screenText.length > 1">
+            <li v-for="item in currentBeat.screenText.slice(1, 3)" :key="item">{{ item }}</li>
+          </ul>
+        </div>
         <section class="visual-plan" :class="`layout-${currentVisualPlan.layout}`">
           <template v-for="(element, index) in currentVisualPlan.elements" :key="`${element.type}-${index}`">
             <div v-if="element.type === 'text' || element.type === 'keyword'" class="motion-text" :class="[animationClass(element), { keyword: element.type === 'keyword' }]" :style="animationDelay(index)">
@@ -206,13 +211,19 @@ async function restartAudio() {
 .stage-header h2, .motion-stage h3 { margin: 6px 0 0; }
 .scene-meta { color: var(--nl-text-muted); font-size: 13px; }
 .scene-meta span { padding: 4px 9px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-sm); background: var(--nl-bg); }
-.motion-stage { display: grid; grid-template-rows: auto 1fr; min-height: 0; }
+.motion-stage { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; min-height: 0; }
 .motion-stage h3 { color: var(--nl-primary); }
+.screen-copy { display: grid; gap: 8px; }
+.screen-copy ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.screen-copy li { padding: 5px 9px; border-left: 3px solid var(--nl-warning); border-radius: var(--nl-radius-sm); background: var(--nl-surface); color: var(--nl-text-muted); font-size: 13px; font-weight: 650; }
 .visual-plan { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px; min-height: 0; padding: 12px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-lg); background: var(--nl-bg); }
-.layout-pipeline, .layout-left_right { flex-direction: row; }
+.layout-pipeline { flex-direction: row; justify-content: space-around; }
+.layout-left_right { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; }
 .layout-center_focus { flex-direction: column; }
 .layout-summary_cards, .layout-comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .layout-comparison { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.layout-grid_focus { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(140px, .7fr); align-content: center; }
+.layout-timeline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 1fr); align-content: center; }
 .motion-text, .concept-card, .circle-label, .formula-element, .code-element { padding: 13px 17px; border: 1px solid var(--nl-border); border-radius: var(--nl-radius-md); background: var(--nl-surface); box-shadow: var(--nl-shadow-card); }
 .motion-text.keyword, .circle-label { border-color: var(--nl-primary-soft); color: var(--nl-primary); border-radius: var(--nl-radius-sm); font-weight: 700; }
 .concept-card { color: var(--nl-text); text-align: center; }
@@ -250,6 +261,6 @@ async function restartAudio() {
 @keyframes enter-right { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes enter-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
 @keyframes draw { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
-@media (max-width: 760px) { .lesson-stage { aspect-ratio: auto; min-height: 420px; }.layout-summary_cards { grid-template-columns: 1fr; }.timeline-steps { flex-wrap: wrap; } }
+@media (max-width: 760px) { .lesson-stage { aspect-ratio: auto; min-height: 420px; }.layout-summary_cards, .layout-comparison, .layout-left_right, .layout-grid_focus, .layout-timeline { grid-template-columns: 1fr; }.timeline-steps { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { .visual-plan * { animation-duration: 1ms !important; animation-iteration-count: 1 !important; } }
 </style>

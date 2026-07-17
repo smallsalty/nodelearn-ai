@@ -35,6 +35,7 @@ export interface Chapter {
   title: string;
   orderIndex: number;
   description?: string;
+  content?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -44,6 +45,7 @@ export interface ChapterCreateRequest {
   title: string;
   orderIndex: number;
   description?: string;
+  content?: string;
 }
 
 export interface KnowledgeNode {
@@ -53,6 +55,8 @@ export interface KnowledgeNode {
   name: string;
   nodeType: NodeType;
   description?: string;
+  content: string;
+  orderIndex: number;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds: string[];
@@ -74,6 +78,8 @@ export interface KnowledgeNodeCreateRequest {
   name: string;
   nodeType: NodeType;
   description?: string;
+  content: string;
+  orderIndex: number;
   difficulty: DifficultyLevel;
   learningValue: number;
   prerequisiteNodeIds?: string[];
@@ -91,4 +97,32 @@ export interface KnowledgeRelation {
   weight: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CourseContentAttribution {
+  name: string;
+  url: string;
+  license: string;
+}
+
+export interface CourseContentSection {
+  nodeId: string;
+  title: string;
+  orderIndex: number;
+  content: string;
+}
+
+export interface CourseContentChapter {
+  id: string;
+  title: string;
+  orderIndex: number;
+  content?: string;
+  sections: CourseContentSection[];
+}
+
+export interface CourseContent {
+  courseId: string;
+  courseName: string;
+  attribution?: CourseContentAttribution;
+  chapters: CourseContentChapter[];
 }

@@ -1,4 +1,4 @@
-import type { AgentType, TaskStatus } from "./contracts";
+import type { AgentType, PageRequest, TaskStatus } from "./contracts";
 import type { KnowledgeNode } from "./course";
 import type { LearningPath } from "./learningPath";
 import type { StudentProfile } from "./profile";
@@ -14,6 +14,10 @@ export interface ChatSession {
   sessionType: "profile" | "qa" | "resource" | "practice" | "digital_human";
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ChatSessionQuery extends PageRequest {
+  userId?: string;
 }
 
 export interface ChatMessage {

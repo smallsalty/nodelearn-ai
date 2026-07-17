@@ -107,7 +107,7 @@ class Settings(BaseSettings):
     hello_algo_local_dir: str = "./data_sources/hello-algo"
     hello_algo_doc_language: str = "zh"
     hello_algo_code_language: str = ""
-    hello_algo_code_languages: str = "all"
+    hello_algo_code_languages: str = "cpp,python,java"
 
     model_config = SettingsConfigDict(env_file=(".env", "../.env"), env_file_encoding="utf-8", extra="ignore")
 

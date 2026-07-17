@@ -22,6 +22,9 @@ from app.schemas.common import AuditStatus
 from app.schemas.resource import ResourceGenerateRequest, RetrievedDocument
 from app.schemas.video import AnimationScriptContent, VideoLessonOutput, VideoLessonScene
 from app.services.resource_service import ResourceService
+from app.services.video_pipeline.models import ContextNode, LearnerContext, SceneAudio, VideoGenerationContext
+from app.services.video_pipeline.planning import deterministic_strategy, hash_fallback_storyboard
+from app.services.video_pipeline.timeline import resolve_timeline
 
 
 def run(coro):
@@ -134,6 +137,59 @@ def test_tts_skill_retries_one_transient_transport_error(monkeypatch: pytest.Mon
     assert calls == 2
 
 
+def test_tts_skill_normalizes_small_duration_overrun(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    skill = TtsSkill()
+    audio_path = tmp_path / "scene_006.mp3"
+    audio_path.write_bytes(b"original")
+    commands: list[tuple[str, ...]] = []
+
+    class Process:
+        returncode = 0
+
+        async def communicate(self):
+            return b"", b""
+
+    async def create_subprocess_exec(*args, **_kwargs):
+        commands.append(tuple(str(item) for item in args))
+        Path(args[-1]).write_bytes(b"normalized")
+        return Process()
+
+    async def probe_duration(_ffprobe, _path):
+        return 14.2
+
+    monkeypatch.setattr("app.agents.multimodal_skills._command_path", lambda _command: "ffmpeg")
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", create_subprocess_exec)
+    monkeypatch.setattr(skill, "_probe_duration", probe_duration)
+
+    duration = run(
+        skill._normalize_audio_duration(
+            "ffprobe",
+            audio_path,
+            duration_seconds=15.288,
+            max_duration_seconds=14.45,
+        )
+    )
+
+    assert duration == 14.2
+    assert audio_path.read_bytes() == b"normalized"
+    assert any(item.startswith("atempo=1.07") for item in commands[0])
+
+
+def test_tts_skill_rejects_unsafe_tempo_normalization(tmp_path: Path):
+    audio_path = tmp_path / "scene.mp3"
+    audio_path.write_bytes(b"audio")
+
+    with pytest.raises(RuntimeError, match="safe tempo-normalization range"):
+        run(
+            TtsSkill()._normalize_audio_duration(
+                "ffprobe",
+                audio_path,
+                duration_seconds=20,
+                max_duration_seconds=14.45,
+            )
+        )
+
+
 def test_video_render_skill_reports_missing_remotion_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setattr(settings, "video_render_project_path", str(tmp_path / "missing-renderer"))
     lesson = render_ready_lesson()
@@ -222,7 +278,7 @@ def test_v2_visual_director_replaces_malformed_llm_visual_elements():
 
 
 def test_v2_visual_director_keeps_hook_beats_and_screen_text_within_limits():
-    scene_types = ["hook", "definition", "mechanism", "example", "summary"]
+    scene_types = ["hook", "definition", "analogy", "mechanism", "comparison", "process", "example", "summary"]
     storyboard = {
         "title": "哈希表为什么能快速查找",
         "scenes": [
@@ -252,37 +308,72 @@ def test_v2_visual_director_keeps_hook_beats_and_screen_text_within_limits():
     assert len(hook.beats) == 2
     assert sum(beat.duration_seconds for beat in hook.beats) <= 8
     assert all(3 <= beat.duration_seconds <= 4 for beat in hook.beats)
-    assert all(len(beat.screen_text) == 1 for scene in lesson.scenes for beat in scene.beats)
-
-
-def test_video_generation_aligns_non_hook_beats_to_target_duration():
-    lesson = AnimationSpecSkill().normalize(
-        None,
-        {
-            "title": "哈希表为什么能快速查找",
-            "scenes": [
-                {
-                    "sceneType": scene_type,
-                    "title": f"场景 {index}",
-                    "narration": "观察键如何映射到桶。再比较桶内的查找过程。",
-                    "screenText": ["键到桶"],
-                }
-                for index, scene_type in enumerate(
-                    ["hook", "definition", "mechanism", "example", "summary"],
-                    start=1,
-                )
-            ],
-        },
-        schema_version="2.0",
-        documents=[RetrievedDocument(id="doc_hash", sourceId="source_hash", title="哈希表", content="哈希表材料", score=1)],
-        target_duration_seconds=120,
+    assert all(1 <= len(beat.screen_text) <= 3 for scene in lesson.scenes for beat in scene.beats)
+    assert all(len("".join(beat.screen_text)) <= 40 for scene in lesson.scenes for beat in scene.beats)
+    assert any(len(beat.screen_text) > 1 for scene in lesson.scenes for beat in scene.beats)
+    assert {scene.beats[0].visual_plan.layout for scene in lesson.scenes} >= {
+        "center_focus",
+        "left_right",
+        "pipeline",
+        "grid_focus",
+        "comparison",
+        "timeline",
+        "summary_cards",
+    }
+    generic_types = {"text", "keyword", "card", "icon", "arrow", "circle"}
+    assert all(
+        any(element.type not in generic_types for element in beat.visual_plan.elements)
+        for scene in lesson.scenes
+        if scene.scene_type not in {"hook", "summary"}
+        for beat in scene.beats
     )
 
-    VideoGenerationService._align_to_target_duration(lesson, 120)
 
-    assert sum(scene.duration_seconds for scene in lesson.scenes) == pytest.approx(120)
-    assert lesson.scenes[0].duration_seconds <= 8
-    assert all(beat.duration_seconds <= 15 for scene in lesson.scenes for beat in scene.beats)
+def test_video_generation_duration_is_driven_by_scene_audio_not_target_padding():
+    context = VideoGenerationContext(
+        course_id="course_ds_001",
+        current_node=ContextNode(id="node_hash", name="哈希表", difficulty="easy"),
+        learner=LearnerContext(cognitive_style="diagram", knowledge_base_level="easy"),
+    )
+    storyboard = hash_fallback_storyboard(context, deterministic_strategy(context))
+    audio = {
+        scene.id: SceneAudio(scene_id=scene.id, path="fixture.mp3", url="http://localhost/fixture.mp3", duration_seconds=6)
+        for scene in storyboard.scenes
+    }
+
+    timeline = resolve_timeline(storyboard, audio, fps=30)
+
+    assert timeline.total_frames == len(storyboard.scenes) * 191
+    assert timeline.total_duration_seconds == pytest.approx(38.2)
+    assert timeline.total_duration_seconds != 120
+
+
+def test_prepare_lesson_emits_first_six_internal_pipeline_steps():
+    node = LearningPathRepository().get_node("node_stack_001")
+    details = []
+
+    lesson = run(
+        VideoGenerationService().prepare_lesson(
+            target_id="target_prepare_steps",
+            user_id="user_prepare_steps",
+            course_id="course_ds_001",
+            node=node,
+            target_goal="理解栈的状态变化",
+            documents=[],
+            run_safety_audit=False,
+            detail_callback=lambda step, progress: details.append((step, progress)),
+        )
+    )
+
+    assert [step for step, _ in details] == [
+        "context_building",
+        "teaching_strategy",
+        "narrative_planning",
+        "storyboard_generation",
+        "storyboard_validation",
+        "scene_template_resolution",
+    ]
+    assert lesson.schema_version == "2.0"
 
 
 def test_hash_visual_director_keeps_complexity_and_bucket_labels_factual():
@@ -302,9 +393,11 @@ def test_hash_visual_director_keeps_complexity_and_bucket_labels_factual():
     )
 
     assert comparison["items"] == ["\u6570\u7ec4\u7d22\u5f15 O(1)", "\u94fe\u8868\u67e5\u627e O(n)", "\u54c8\u5e0c\u8868\u5e73\u5747 O(1)"]
+    assert comparison["activeIndex"] == 2
     assert mechanism["buckets"] == ["34", "35", "36", "37"]
     assert mechanism["keyLabel"] == "12836"
     assert example["bucketIndex"] == 50
+    assert "16750" in example["nodes"]
 
 
 def test_video_request_saves_failed_resources_without_fake_file_url(monkeypatch: pytest.MonkeyPatch):

@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"userId":"user_demo_001","courseId":"course_ds_001","completionRate":0.0,"correctRate":0.0,"weakNodeIds":[],"masteredNodeIds":[],"averageMasteryScore":0.0,"progressTrend":[],"advice":"mock"},"traceId":"trace_5d6208ebeb41470bb35e1ba6d2c3eaa1","timestamp":"2026-07-14T10:51:05.965082+00:00"}

@@ -1,4 +1,7 @@
+from collections.abc import Iterator
+
 from fastapi import APIRouter, BackgroundTasks, File, Path, Query, UploadFile
+from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
 from app.core.response import error_response, page_result, success_response
@@ -223,7 +226,12 @@ def delete_resource(resource_id: str = Path(alias="resourceId")):
 
 @router.get("/resources/generate/stream")
 def stream_resource_generation(task_id: str = Query(alias="taskId")):
-    return success_response(resource_service.get_generation_stream_event(task_id))
+    event = resource_service.get_generation_stream_event(task_id)
+
+    def generate() -> Iterator[str]:
+        yield f"data: {event.model_dump_json(by_alias=True, exclude_none=True)}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @router.post("/recommendations/resources")

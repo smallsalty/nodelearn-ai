@@ -1,13 +1,30 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { InfoFilled, Menu, SwitchButton } from "@element-plus/icons-vue";
-import type { Course, KnowledgeNode } from "@/types/course";
+import { useSelectedOptionAtTop } from "@/composables/useSelectedOptionAtTop";
+import type { Chapter, Course, KnowledgeNode } from "@/types/course";
 import type { StudentProfile } from "@/types/profile";
+import { sortChaptersByCourseOrder, sortNodesByCourseOrder } from "@/utils/courseOrder";
 
-defineProps<{
+const NODE_TARGET_POPPER_CLASS = "topbar-node-target-popper";
+const NODE_TARGET_SELECT_ID = "topbar-node-target-select";
+
+const emit = defineEmits<{
+  courseChange: [courseId: string];
+  chapterChange: [chapterId: string];
+  nodeChange: [nodeId: string];
+  openSidebar: [];
+  openContext: [];
+  logout: [];
+}>();
+
+const props = defineProps<{
   title: string;
   courses: Course[];
+  chapters: Chapter[];
   nodes: KnowledgeNode[];
   selectedCourseId?: string;
+  selectedChapterId?: string | null;
   selectedNodeId?: string | null;
   username: string;
   course?: Course | null;
@@ -17,20 +34,43 @@ defineProps<{
   error?: string;
 }>();
 
-const emit = defineEmits<{
-  courseChange: [courseId: string];
-  nodeChange: [nodeId: string];
-  openSidebar: [];
-  openContext: [];
-  logout: [];
-}>();
+const selectedTarget = computed(() => {
+  if (props.selectedNodeId) return `node:${props.selectedNodeId}`;
+  if (props.selectedChapterId) return `chapter:${props.selectedChapterId}`;
+  return undefined;
+});
+
+const orderedChapters = computed(() => sortChaptersByCourseOrder(props.chapters));
+const orderedNodes = computed(() => sortNodesByCourseOrder(orderedChapters.value, props.nodes));
+const { handleVisibleChange: handleNodeTargetVisibleChange } = useSelectedOptionAtTop(
+  NODE_TARGET_POPPER_CLASS,
+  NODE_TARGET_SELECT_ID
+);
+
+const nodesByChapter = computed(() => {
+  const groups = new Map<string, KnowledgeNode[]>();
+  for (const chapter of orderedChapters.value) groups.set(chapter.id, []);
+  for (const node of orderedNodes.value) {
+    if (!node.chapterId || !groups.has(node.chapterId)) continue;
+    groups.get(node.chapterId)?.push(node);
+  }
+  return groups;
+});
 
 function handleCourseChange(value: string | number | boolean | Record<string, unknown>) {
   if (typeof value === "string") emit("courseChange", value);
 }
 
 function handleNodeChange(value: string | number | boolean | Record<string, unknown> | undefined) {
-  emit("nodeChange", typeof value === "string" ? value : "");
+  if (typeof value !== "string") {
+    emit("nodeChange", "");
+    return;
+  }
+  if (value.startsWith("chapter:")) {
+    emit("chapterChange", value.slice("chapter:".length));
+    return;
+  }
+  emit("nodeChange", value.startsWith("node:") ? value.slice("node:".length) : value);
 }
 </script>
 
@@ -58,15 +98,26 @@ function handleNodeChange(value: string | number | boolean | Record<string, unkn
         <el-option v-for="course in courses" :key="course.id" :label="course.name" :value="course.id" />
       </el-select>
       <el-select
+        :id="NODE_TARGET_SELECT_ID"
         class="topbar-select"
-        :model-value="selectedNodeId ?? undefined"
+        :model-value="selectedTarget"
+        :popper-class="NODE_TARGET_POPPER_CLASS"
         filterable
         clearable
-        placeholder="选择知识点"
-        aria-label="选择知识点"
+        placeholder="选择章节总览或知识点"
+        aria-label="选择章节总览或知识点"
         @change="handleNodeChange"
+        @visible-change="handleNodeTargetVisibleChange"
       >
-        <el-option v-for="node in nodes" :key="node.id" :label="node.name" :value="node.id" />
+        <el-option-group v-for="chapter in orderedChapters" :key="chapter.id" :label="chapter.title">
+          <el-option :label="`${chapter.title} · 总览`" :value="`chapter:${chapter.id}`" />
+          <el-option
+            v-for="node in nodesByChapter.get(chapter.id) ?? []"
+            :key="node.id"
+            :label="node.name"
+            :value="`node:${node.id}`"
+          />
+        </el-option-group>
       </el-select>
       <span class="user-chip">{{ username }}</span>
       <button type="button" class="top-context-card" @click="emit('openContext')">

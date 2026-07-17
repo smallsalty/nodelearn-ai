@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import { usersApi } from "@/api/modules/users";
 import { appState, clearAuthState, setCurrentUser } from "@/stores";
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   { path: "/", redirect: "/home" },
   { path: "/login", name: "login", component: () => import("@/pages/LoginPage.vue"), meta: { public: true } },
   { path: "/home", name: "home", component: () => import("@/pages/HomePage.vue") },
@@ -19,8 +19,22 @@ const routes = [
     name: "knowledge-graph",
     component: () => import("@/pages/KnowledgeGraphPage.vue")
   },
+  {
+    path: "/courses/:courseId/content",
+    name: "course-content",
+    component: () => import("@/pages/CourseContentPage.vue")
+  },
+  {
+    path: "/nodes/:nodeId/content",
+    name: "knowledge-node-content",
+    component: () => import("@/pages/KnowledgeNodeContentPage.vue")
+  },
   { path: "/practice", name: "practice", component: () => import("@/pages/PracticePage.vue") },
-  { path: "/programming", name: "programming", component: () => import("@/pages/ProgrammingPage.vue") },
+  {
+    path: "/programming",
+    name: "programming",
+    redirect: (to) => ({ path: "/practice", query: { ...to.query, tab: "coding" } })
+  },
   { path: "/reports", name: "reports", component: () => import("@/pages/ReportPage.vue") },
   {
     path: "/admin/knowledge-base",

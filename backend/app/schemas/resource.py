@@ -67,6 +67,7 @@ class GeneratedResource(ContractModel):
     user_id: str
     course_id: str
     node_id: str | None = None
+    chapter_id: str | None = None
     title: str
     resource_type: ResourceType
     content: str

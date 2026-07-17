@@ -9,15 +9,18 @@ const props = defineProps<{
 }>();
 
 const steps = [
-  { key: "load_context", label: "读取知识点" },
-  { key: "plan_content", label: "规划事实与节拍" },
-  { key: "generate_script", label: "生成科普口播" },
-  { key: "generate_storyboard", label: "生成视觉意图" },
-  { key: "audit_storyboard", label: "事实与分镜校验" },
-  { key: "synthesize_audio", label: "语音合成" },
-  { key: "render_video", label: "视频渲染" },
-  { key: "audit_resource", label: "安全校验" },
-  { key: "persist_resource", label: "保存资源" }
+  { key: "context_building", label: "构建学习上下文" },
+  { key: "teaching_strategy", label: "规划个性化策略" },
+  { key: "narrative_planning", label: "规划教学叙事" },
+  { key: "storyboard_generation", label: "生成 Scene DSL" },
+  { key: "storyboard_validation", label: "校验分镜与安全" },
+  { key: "scene_template_resolution", label: "解析场景模板" },
+  { key: "tts_generation", label: "逐场景语音合成" },
+  { key: "audio_duration_analysis", label: "分析真实音频时长" },
+  { key: "animation_timing_resolution", label: "解析动画时间轴" },
+  { key: "remotion_rendering", label: "Remotion 渲染" },
+  { key: "video_validation", label: "媒体与安全验收" },
+  { key: "persistence", label: "发布资源" }
 ];
 
 const currentIndex = computed(() => steps.findIndex((step) => step.key === props.currentStep));

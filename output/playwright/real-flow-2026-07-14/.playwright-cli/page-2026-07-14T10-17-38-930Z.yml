@@ -1,0 +1,196 @@
+- generic [ref=f1e2]:
+  - link "跳到主内容" [ref=f1e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f1e4]:
+    - complementary "项目导航" [ref=f1e5]:
+      - generic [ref=f1e6]:
+        - link "NodeLearn 首页" [ref=f1e7] [cursor=pointer]:
+          - /url: /home
+          - generic [ref=f1e8]: "N"
+          - generic [ref=f1e9]:
+            - strong [ref=f1e10]: NodeLearn
+            - generic [ref=f1e11]: 学习工作台
+        - button [ref=f1e12] [cursor=pointer]
+      - generic [ref=f1e16]:
+        - generic [ref=f1e17]:
+          - button "课程入口 1" [expanded] [ref=f1e18] [cursor=pointer]:
+            - generic [ref=f1e23]: 课程入口
+            - generic [ref=f1e24]: "1"
+          - button "H Hello 算法 HELLO_ALGO" [ref=f1e29] [cursor=pointer]:
+            - generic [ref=f1e30]: H
+            - strong [ref=f1e31]: Hello 算法
+            - generic [ref=f1e32]: HELLO_ALGO
+        - generic [ref=f1e33]:
+          - button "学习入口 4" [expanded] [ref=f1e34] [cursor=pointer]:
+            - generic [ref=f1e40]: 学习入口
+            - generic [ref=f1e41]: "4"
+          - generic [ref=f1e45]:
+            - link "首页 学习概览" [ref=f1e46] [cursor=pointer]:
+              - /url: /home
+              - generic [ref=f1e51]:
+                - strong [ref=f1e52]: 首页
+                - generic [ref=f1e53]: 学习概览
+            - link "对话学习 课程问答" [ref=f1e54] [cursor=pointer]:
+              - /url: /chat
+              - generic [ref=f1e60]:
+                - strong [ref=f1e61]: 对话学习
+                - generic [ref=f1e62]: 课程问答
+            - link "学生画像 偏好与薄弱点" [ref=f1e63] [cursor=pointer]:
+              - /url: /profile
+              - generic [ref=f1e68]:
+                - strong [ref=f1e69]: 学生画像
+                - generic [ref=f1e70]: 偏好与薄弱点
+            - link "学习路径 阶段任务" [ref=f1e71] [cursor=pointer]:
+              - /url: /learning-path
+              - generic [ref=f1e77]:
+                - strong [ref=f1e78]: 学习路径
+                - generic [ref=f1e79]: 阶段任务
+        - generic [ref=f1e80]:
+          - button "学习工具 4" [expanded] [ref=f1e81] [cursor=pointer]:
+            - generic [ref=f1e87]: 学习工具
+            - generic [ref=f1e88]: "4"
+          - generic [ref=f1e92]:
+            - link "资源中心 生成与预览" [ref=f1e93] [cursor=pointer]:
+              - /url: /resources
+              - generic [ref=f1e99]:
+                - strong [ref=f1e100]: 资源中心
+                - generic [ref=f1e101]: 生成与预览
+            - link "知识图谱 节点依赖" [ref=f1e102] [cursor=pointer]:
+              - /url: /knowledge-graph
+              - generic [ref=f1e107]:
+                - strong [ref=f1e108]: 知识图谱
+                - generic [ref=f1e109]: 节点依赖
+            - link "练习测评 题目与错因" [ref=f1e110] [cursor=pointer]:
+              - /url: /practice
+              - generic [ref=f1e115]:
+                - strong [ref=f1e116]: 练习测评
+                - generic [ref=f1e117]: 题目与错因
+            - link "编程题 代码运行与判题" [ref=f1e118] [cursor=pointer]:
+              - /url: /programming
+              - generic [ref=f1e123]:
+                - strong [ref=f1e124]: 编程题
+                - generic [ref=f1e125]: 代码运行与判题
+        - generic [ref=f1e126]:
+          - button "项目管理 2" [expanded] [ref=f1e127] [cursor=pointer]:
+            - generic [ref=f1e132]: 项目管理
+            - generic [ref=f1e133]: "2"
+          - generic [ref=f1e137]:
+            - link "学习报告 评估与建议" [ref=f1e138] [cursor=pointer]:
+              - /url: /reports
+              - generic [ref=f1e143]:
+                - strong [ref=f1e144]: 学习报告
+                - generic [ref=f1e145]: 评估与建议
+            - link "知识库管理 课程材料" [ref=f1e146] [cursor=pointer]:
+              - /url: /admin/knowledge-base
+              - generic [ref=f1e151]:
+                - strong [ref=f1e152]: 知识库管理
+                - generic [ref=f1e153]: 课程材料
+        - generic [ref=f1e154]:
+          - button "知识节点 105" [expanded] [ref=f1e155] [cursor=pointer]:
+            - generic [ref=f1e161]: 知识节点
+            - generic [ref=f1e162]: "105"
+          - generic [ref=f1e166]:
+            - article [ref=f1e167]:
+              - generic [ref=f1e171]: Hello 算法
+            - button "一起参与创作 4 个子节点" [ref=f1e173] [cursor=pointer]:
+              - generic [ref=f1e179]:
+                - strong [ref=f1e180]: 一起参与创作
+                - generic [ref=f1e181]: 4 个子节点
+            - button "数组 6 个子节点" [ref=f1e186] [cursor=pointer]:
+              - generic [ref=f1e192]:
+                - strong [ref=f1e193]: 数组
+                - generic [ref=f1e194]: 6 个子节点
+            - button "回溯算法 6 个子节点" [ref=f1e199] [cursor=pointer]:
+              - generic [ref=f1e205]:
+                - strong [ref=f1e206]: 回溯算法
+                - generic [ref=f1e207]: 6 个子节点
+            - button "复杂度分析 6 个子节点" [ref=f1e212] [cursor=pointer]:
+              - generic [ref=f1e218]:
+                - strong [ref=f1e219]: 复杂度分析
+                - generic [ref=f1e220]: 6 个子节点
+            - button "基本数据类型 6 个子节点" [ref=f1e225] [cursor=pointer]:
+              - generic [ref=f1e231]:
+                - strong [ref=f1e232]: 基本数据类型
+                - generic [ref=f1e233]: 6 个子节点
+            - button "分治搜索策略 6 个子节点" [ref=f1e238] [cursor=pointer]:
+              - generic [ref=f1e244]:
+                - strong [ref=f1e245]: 分治搜索策略
+                - generic [ref=f1e246]: 6 个子节点
+            - button "动态规划问题特性 8 个子节点" [ref=f1e251] [cursor=pointer]:
+              - generic [ref=f1e257]:
+                - strong [ref=f1e258]: 动态规划问题特性
+                - generic [ref=f1e259]: 8 个子节点
+            - button "图 5 个子节点" [ref=f1e264] [cursor=pointer]:
+              - generic [ref=f1e270]:
+                - strong [ref=f1e271]: 图
+                - generic [ref=f1e272]: 5 个子节点
+            - button "分数背包问题 6 个子节点" [ref=f1e277] [cursor=pointer]:
+              - generic [ref=f1e283]:
+                - strong [ref=f1e284]: 分数背包问题
+                - generic [ref=f1e285]: 6 个子节点
+            - button "哈希算法 5 个子节点" [ref=f1e290] [cursor=pointer]:
+              - generic [ref=f1e296]:
+                - strong [ref=f1e297]: 哈希算法
+                - generic [ref=f1e298]: 5 个子节点
+            - button "建堆操作 5 个子节点" [ref=f1e303] [cursor=pointer]:
+              - generic [ref=f1e309]:
+                - strong [ref=f1e310]: 建堆操作
+                - generic [ref=f1e311]: 5 个子节点
+            - button "序 1 个子节点" [ref=f1e316] [cursor=pointer]:
+              - generic [ref=f1e322]:
+                - strong [ref=f1e323]: 序
+                - generic [ref=f1e324]: 1 个子节点
+            - button "算法无处不在 4 个子节点" [ref=f1e329] [cursor=pointer]:
+              - generic [ref=f1e335]:
+                - strong [ref=f1e336]: 算法无处不在
+                - generic [ref=f1e337]: 4 个子节点
+            - button "纸质书 1 个子节点" [ref=f1e342] [cursor=pointer]:
+              - generic [ref=f1e348]:
+                - strong [ref=f1e349]: 纸质书
+                - generic [ref=f1e350]: 1 个子节点
+            - button "关于本书 4 个子节点" [ref=f1e355] [cursor=pointer]:
+              - generic [ref=f1e361]:
+                - strong [ref=f1e362]: 关于本书
+                - generic [ref=f1e363]: 4 个子节点
+            - button "参考文献 1 个子节点" [ref=f1e368] [cursor=pointer]:
+              - generic [ref=f1e374]:
+                - strong [ref=f1e375]: 参考文献
+                - generic [ref=f1e376]: 1 个子节点
+            - button "二分查找 7 个子节点" [ref=f1e381] [cursor=pointer]:
+              - generic [ref=f1e387]:
+                - strong [ref=f1e388]: 二分查找
+                - generic [ref=f1e389]: 7 个子节点
+            - button "冒泡排序 12 个子节点" [ref=f1e394] [cursor=pointer]:
+              - generic [ref=f1e400]:
+                - strong [ref=f1e401]: 冒泡排序
+                - generic [ref=f1e402]: 12 个子节点
+            - button "双向队列 5 个子节点" [ref=f1e407] [cursor=pointer]:
+              - generic [ref=f1e413]:
+                - strong [ref=f1e414]: 双向队列
+                - generic [ref=f1e415]: 5 个子节点
+            - button "二叉树数组表示 7 个子节点" [ref=f1e420] [cursor=pointer]:
+              - generic [ref=f1e426]:
+                - strong [ref=f1e427]: 二叉树数组表示
+                - generic [ref=f1e428]: 7 个子节点
+    - generic [ref=f1e432]:
+      - generic [ref=f1e433]:
+        - generic [ref=f1e435]:
+          - paragraph [ref=f1e436]: NodeLearn 学习平台
+          - heading "NodeLearn AI" [level=1] [ref=f1e437]
+        - generic [ref=f1e438]:
+          - generic [ref=f1e440]:
+            - generic:
+              - combobox "选择课程" [ref=f1e442]
+              - generic [ref=f1e443]: Hello 算法
+          - generic [ref=f1e449]:
+            - generic:
+              - combobox "选择知识点" [ref=f1e451]
+              - generic [ref=f1e452]: 附录
+          - generic [ref=f1e457]: demo_student
+          - button "Hello 算法 附录" [ref=f1e458] [cursor=pointer]:
+            - generic [ref=f1e462]:
+              - strong [ref=f1e463]: Hello 算法
+              - generic [ref=f1e464]: 附录
+          - button "退出" [ref=f1e465] [cursor=pointer]
+      - main [ref=f1e471]
+  - button [ref=f1e472] [cursor=pointer]

@@ -1,8 +1,10 @@
 import type {
   AgentType,
   AuditStatus,
+  CognitiveStyle,
   DifficultyLevel,
   MasteryStatus,
+  PracticePreference,
   QuestionType,
   ResourceType,
   TaskStatus
@@ -38,6 +40,58 @@ export function difficultyLabel(value?: DifficultyLevel) {
     challenge: "挑战"
   };
   return value ? map[value] : "暂无";
+}
+
+export function cognitiveStyleLabel(value?: CognitiveStyle) {
+  const map: Record<CognitiveStyle, string> = {
+    text: "文字讲解",
+    diagram: "图示理解",
+    example: "案例理解",
+    code: "代码实践",
+    mixed: "综合学习"
+  };
+  return value ? map[value] : "待补充";
+}
+
+export function practicePreferenceLabel(value?: PracticePreference) {
+  const map: Record<PracticePreference, string> = {
+    choice: "选择题",
+    coding: "编程练习",
+    case: "案例分析",
+    mixed: "综合练习"
+  };
+  return value ? map[value] : "待补充";
+}
+
+export function profileUpdateSourceLabel(value?: "dialogue" | "behavior" | "practice" | "manual") {
+  const map = {
+    dialogue: "画像对话",
+    behavior: "学习行为",
+    practice: "练习结果",
+    manual: "手动填写"
+  } as const;
+  return value ? map[value] : "待补充";
+}
+
+export function learningTaskTypeLabel(value?: "learn" | "practice" | "review" | "project") {
+  const map = {
+    learn: "新课学习",
+    practice: "巩固练习",
+    review: "重点复习",
+    project: "综合实践"
+  } as const;
+  return value ? map[value] : "学习任务";
+}
+
+export function learningTaskStatusLabel(value?: TaskStatus) {
+  const map: Record<TaskStatus, string> = {
+    pending: "待学习",
+    running: "学习中",
+    success: "已完成",
+    failed: "需重试",
+    cancelled: "已取消"
+  };
+  return value ? map[value] : "待学习";
 }
 
 export function masteryLabel(value?: MasteryStatus) {

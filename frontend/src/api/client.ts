@@ -73,6 +73,17 @@ export async function request<T>(config: AxiosRequestConfig): Promise<ApiRespons
   return response.data;
 }
 
+export async function requestSseEvent<T>(path: string, params: Record<string, string>): Promise<T> {
+  const response = await http.get<string>(path, { params, responseType: "text" });
+  const dataLine = response.data
+    .split(/\r?\n/)
+    .find((line) => line.startsWith("data:"));
+  if (!dataLine) {
+    throw new ApiClientError("流式接口未返回 data 事件");
+  }
+  return JSON.parse(dataLine.slice(5).trim()) as T;
+}
+
 export function postKeepalive(path: string): void {
   const url = `${API_BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
   if (typeof navigator.sendBeacon === "function") {

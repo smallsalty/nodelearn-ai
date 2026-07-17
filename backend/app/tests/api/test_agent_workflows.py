@@ -98,7 +98,7 @@ def test_qa_workflow_api_runs_qa_agent():
 
     assert data["status"] == "success"
     assert [step["agentType"] for step in data["steps"]] == ["qa_agent"]
-    assert data["finalOutput"]["answer"] == "mock"
+    assert data["finalOutput"]["answer"] == "这是演示模式下的课程问答。"
 
 
 def test_profile_build_workflow_api_does_not_require_natural_language_input():

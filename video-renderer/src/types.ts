@@ -99,3 +99,104 @@ export interface AnimationScriptContent {
     audioUrls: string[];
   };
 }
+
+export type InternalSceneType =
+  | "problem_hook"
+  | "direct_mapping_demo"
+  | "process_flow"
+  | "step_by_step"
+  | "compare_race"
+  | "collision_demo"
+  | "misconception_correction"
+  | "code_execution"
+  | "data_structure_operation"
+  | "algorithm_trace"
+  | "concept_relationship"
+  | "before_after"
+  | "timeline"
+  | "zoom_focus"
+  | "summary_recall";
+
+export type SlotName = "stage" | "center" | "top" | "bottom" | "left" | "right" | "left_lane" | "right_lane" | "foreground" | "background";
+export type ActionType = "appear" | "move" | "grow" | "draw" | "highlight" | "count" | "type" | "reveal" | "follow_path" | "camera" | "collision" | "state_transition" | "code_highlight";
+
+interface ActorBase {
+  id: string;
+  slot: SlotName;
+  label?: string;
+  continuityKey?: string;
+}
+
+export type SceneActor =
+  | (ActorBase & { kind: "key" | "data_token"; value: string })
+  | (ActorBase & { kind: "bucket_row"; bucketCount: number; focusIndices: number[] })
+  | (ActorBase & { kind: "formula"; expression: string; steps: string[] })
+  | (ActorBase & { kind: "arrow"; fromActorId: string; toActorId: string })
+  | (ActorBase & { kind: "code_panel"; language: string; codeLines: string[] })
+  | (ActorBase & { kind: "variable_panel"; variables: Record<string, string> })
+  | (ActorBase & { kind: "array" | "list" | "stack" | "queue" | "tree" | "graph"; items: string[] })
+  | (ActorBase & { kind: "counter"; start: number; end: number; suffix?: string })
+  | (ActorBase & { kind: "callout"; text: string; tone: "neutral" | "positive" | "warning" | "result" })
+  | (ActorBase & { kind: "comparison_lane"; title: string; items: string[] });
+
+export interface ResolvedActionBeat {
+  id: string;
+  action: ActionType;
+  targets: string[];
+  startFrame: number;
+  endFrame: number;
+  emphasis?: string;
+}
+
+export interface SubtitleCue {
+  id: string;
+  text: string;
+  startFrame: number;
+  endFrame: number;
+  highlightTerms: string[];
+}
+
+export interface ManifestTransition {
+  type: "match_cut" | "object_continuity" | "camera_focus" | "fade_through_background" | "directional_slide";
+  continuityActorId?: string;
+  direction?: "left" | "right" | "up" | "down";
+}
+
+export interface RenderManifestScene {
+  id: string;
+  narrativeRole: SceneType;
+  sceneType: InternalSceneType;
+  title: string;
+  teachingPurpose: string;
+  narration: string;
+  screenText: string[];
+  actors: SceneActor[];
+  beats: ResolvedActionBeat[];
+  subtitles: SubtitleCue[];
+  audioUrl: string;
+  startFrame: number;
+  durationFrames: number;
+  namedSlots: Record<string, string[]>;
+  transitionOut: ManifestTransition;
+}
+
+export interface RenderManifest {
+  schemaVersion: "1.0";
+  courseId: string;
+  nodeId: string;
+  title: string;
+  theme: VideoTheme;
+  aspectRatio: VideoAspect;
+  qualityPreset: VideoQualityPreset;
+  subtitleEnabled: boolean;
+  fps: number;
+  width: number;
+  height: number;
+  totalFrames: number;
+  scenes: RenderManifestScene[];
+}
+
+export interface VideoLessonProps extends Record<string, unknown> {
+  lesson: AnimationScriptContent;
+  renderManifest?: RenderManifest;
+}

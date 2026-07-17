@@ -1,7 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-07-12
-最后更新：2026-07-11
+最后更新：2026-07-17
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -26,12 +25,59 @@
 - 智能辅导答疑：结合课程上下文、学生画像、RAG 检索结果和错题历史回答问题。
 - 学习评估与报告：评估完成率、正确率、薄弱节点、掌握分数、进步趋势和改进建议。
 - 浮窗笔记模块：支持记笔记、题目标记、错题复习、节点或资源关联和快捷问答。
-- 前端页面：登录/首页、对话、画像、学习路径、资源、知识图谱、报告、练习、浮窗菜单和知识库管理。
+- 前端页面：登录/首页、问答助手、画像、学习路径、资源、知识图谱、报告、练习、学习侧栏和知识库管理。
 
 ## 当前进度
 
 ### 已完成
 
+- 2026-07-17 完成问答助手、共享历史、画像中文化与个性化学习路径真实改造：界面将“对话学习”统一改为“问答助手”，删除问答页知识节点和引用步骤面板，改为“开始问答 / 问答历史”；问答助手与学习侧栏复用同一个 PostgreSQL 会话，显式复用时校验会话归属。`ENABLE_MOCK=false`、`LLM_PROVIDER=deepseek`、`LLM_MODEL_NAME=deepseek-v4-pro` 下完成两轮真实问答，会话 `session_chat_71868202e9c1` 含 4 条唯一消息，两条回答各保存 3 条课程引用，后端重启后仍可读取；真实学习路径 `path_236b5e908d5d` 生成 6 个中文任务，覆盖栈、递归、哈希表及必要薄弱点/前置节点，全部写入逐日 20:00 建议完成时间，每个任务展示 3 种学习工具及可直接复制的中文提示词。学生画像不再直接显示内部节点编号和英文枚举。后端完整测试 `201 passed, 2 skipped, 1 warning`、前端生产构建、Python 编译、直接请求静态检查和 `git diff --check` 通过；独立 Playwright 洁净会话控制台 0 error/0 warning、业务请求全部 200，375px 无横向溢出。问答与问答历史为 `PASS_REAL`，学习路径生成为 `PASS_REAL`，路径存储仍为 `PASS_PLACEHOLDER`；报告见 `docs/qa-learning-path-real-verification-2026-07-17.md`，证据见 `output/playwright/qa-learning-path-real-2026-07-17/`。
+
+- 2026-07-17 完成 Docker DNS 冷重启恢复与实时数字人最终复验：保持 Clash 和 Windows 系统代理，优雅停止 Docker Desktop 后执行 `wsl --shutdown`，重启 11 秒后 Docker Desktop 为 `running` 且 Engine API 可用；使用原 Compose 直接 `up -d`，未删除卷、未覆盖 DNS、未修改项目代码。backend 容器对两个讯飞域名连续解析达到 `40/40`，真实接口服务模型冒烟返回非空回答，定向测试 `26 passed in 1.41s`。Playwright CLI 在 `enableMock=false` 下完成“5.1 栈”两轮真实问答，两轮均为 `ApiResponse` success 且各带 3 条课程引用，复用同一 `sessionId`、`videoUrl`、`startedAt` 与单个 FFmpeg；HLS manifest/分片均为 200，5 秒心跳推进，浏览器 1280×720 有声播放持续前进，`ffprobe` 确认 H.264/AAC。历史为 4 条唯一消息，两次 stop 均为 `cancelled`，最终 FFmpeg 为 0；控制台 0 error/0 warning、无意外 4xx/5xx、无历史生成资源请求，trace 敏感信息扫描为 0。最终结果为 `PASS_REAL`，证据位于 `output/playwright/digital-human-live-recovery-2026-07-17/`。
+
+- 2026-07-17 首次数字人真实链接与交互重验记录：`enableMock=false` 且数字人对话/在线虚拟人健康配置为 `ok`，定向测试 `26 passed in 3.51s`；第一轮真实对话当时被 backend 容器 DNS 的 `[Errno -3] Temporary failure in name resolution` 阻塞，按门禁未重试、未发送第二轮、未回退 mock、未启动虚拟人或 FFmpeg，结果记为 `BLOCKED`。该首次失败记录与证据继续保留在 `docs/digital-human-live-verification-2026-07-17.md` 和 `output/playwright/digital-human-live-2026-07-17/`，后续冷重启恢复结果见上一条。
+
+- 2026-07-17 完成知识点下拉栏固定排序与选中项置顶：顶部章节/知识点选择器与资源工具页知识点选择器统一按章节 `orderIndex`、章内节点 `orderIndex` 稳定排列，资源页并行读取章节与节点；下拉面板展开后只调整滚动位置，使当前选中项成为第一条可见选项，不重排选项或键盘导航顺序。列表末尾选项使用仅在弹层展开期间生效的滚动余量，关闭后自动清理；无选中项时从课程目录首项展开。前端生产构建和 Docker 前端重建通过，Playwright 验证顶部章节总览、顶部末尾节点、资源页中间/末尾节点均准确置顶，85 个资源页节点保持 `0.1` 至 `16.3` 的原始顺序，清空后滚动位置回到顶部。
+
+- 2026-07-16 完成资源工具详情收敛与资源隔离：资源中心、思维导图和数字人解答共用页删除历史资源大卡片网格与工具页“推荐资源”Tab，改用当前节点资源接口并在前端按当前课程、知识点、工具类型、成功状态和审核通过状态二次过滤；资源中心仅展示讲解文档/拓展阅读，思维导图仅展示导图，旧视频深链接仅展示对应视频，数字人解答完全不请求或渲染资源详情。合格历史资源按时间倒序进入详情标题栏的键盘可操作下拉框，默认最新项，节点/工具切换会先清空旧详情并以请求序号防止过期响应覆盖；同步修复 `nodeId` 深链接首次进入时的全局节点状态。首页、悬浮侧栏和后端推荐能力保持不变。前端生产构建、Docker 前端重建、页面/组件无直接 `fetch`/`axios` 检查与 `git diff --check` 通过；Playwright 使用真实“栈”历史资源验证类型隔离、最新项、键盘切换、数字人零资源请求、375/768/1024/1440px 无横向溢出，控制台 0 error/0 warning。
+
+- 2026-07-16 完成知识节点入口收拢与图谱总览重置：课程管理不再展开章节/知识节点树，只保留知识库管理和单一“知识节点”入口；新增仅前端内存使用的 `graphOverviewRequestId` 导航信号，使该入口从其他页面或当前图谱页重复激活时都能清空章节/节点选择、筛选、展开、缩放和平移并恢复 20 章/19 条顺序边总览。图谱章节和节点点击只更新详情，不直接打开正文；节点详情提供“查看正文 / 课后测试 / 生成思维导图”，课后测试携带当前 `nodeId` 进入单选 Tab。前端生产构建、Docker 重建、页面/组件无直接 `fetch`/`axios` 检查与 `git diff --check` 通过，健康接口返回 HTTP 200；Playwright 验证真实画布章节点击、数组节点三条跳转、同页重复重置、移动抽屉及 375/768/1024/1440px 无横向溢出，控制台 0 error/0 warning。
+
+- 2026-07-16 完成学习工作台导航重组与资源入口拆分：侧栏固定为“课程信息 / 学习入口 / 学习工具 / 个性化管理 / 课程管理”五组，Hello 算法课程卡负责选择课程并进入首页，顶部课程选择器保持纯上下文切换；练习测评只保留在学习入口，知识节点树并入课程管理，点击真实节点先进入知识图谱并唯一高亮，再由图谱“查看正文”进入对应节点锚点。资源中心只开放讲解文档和拓展材料阅读的新生成入口，思维导图与数字人解答使用互斥 `action` 状态，数字人解答只保留实时问答；旧视频深链接、后端能力和全部历史资源记录继续兼容。同步修复显式节点正文定位与 ScrollSpy 的锚点竞争。前端生产构建、Docker 前端重建、页面/组件无直接 `fetch`/`axios` 检查与 `git diff --check` 通过；Playwright 验证五组顺序、单一强选中、资源模式反复切换无残留、节点图谱优先链路、折叠 Popover 与移动抽屉，375/768/1024/1440px 无横向溢出，控制台 0 error/0 warning。
+
+- 2026-07-16 修复课程阅读模式桌面展开态的滚动回归：根 Grid 行改为受视口约束的 `minmax(0, 1fr)`，学习工作台内部轨道同步允许收缩并独立滚动，避免 85 个知识节点把应用壳撑高；“0.3 小结”、课程来源和底部翻页栏可完整到达，课程目录、正文和学习工作台恢复互不影响的滚动边界。前端生产构建、页面/组件无直接 `fetch`/`axios` 检查、`git diff --check` 与 Docker 前后端重建通过；Playwright 在 1440×900 验证工作台滚轮、正文滚轮和目录互不联动，0.3 与底部翻页栏完整可见，并确认 375/768/1024/1200/1440px 无横向溢出、控制台 0 error/0 warning。
+
+- 2026-07-16 完成固定双侧栏与章节分页阅读：课程正文接口仍一次返回完整课程，前端每次只渲染当前章节总览及其小节，顶部和底部提供上下章导航；课程阅读模式将学习工作台、课程目录和正文拆为独立滚动区，保留章节/节点 hash、浏览器历史、ScrollSpy 与全局选中态同步。1200px 以上完整双侧栏常驻，768–1199px 使用 88px 工作台图标栏和 220px 固定目录，低于 768px 使用左侧抽屉。前端生产构建、`git diff --check`、页面/组件无直接 `fetch`/`axios` 检查与 Docker 重建通过，后端完整测试 `197 passed, 2 skipped`；Playwright 验证 20 章连续翻页仅请求正文接口 1 次、DOM 始终仅 1 章、深链接和无效 hash 状态正确，375/768/1024/1440px 无横向溢出且控制台 0 error/0 warning。
+
+- 2026-07-16 完成课程全文阅读链路：新增 `GET /api/v1/courses/{courseId}/content` 与 `/courses/:courseId/content`，学习入口可一次展示 20 个章节总览和 85 个小节正文；桌面端使用吸附目录，小屏使用目录抽屉，固定章节/节点锚点、ScrollSpy、顶部节点同步及旧节点正文 URL 重定向均已落地。`MarkdownContent` 在既有 `markdown-it + DOMPurify` 安全边界内支持 KaTeX、图片懒加载和仅含 C++/Python/Java 的键盘可操作代码 Tabs。
+- 2026-07-16 完成 Hello Algo 导入与生产数据迁移：以 `mkdocs.yml` 导航为唯一顺序，20 个 `index.md` 总览写入 `chapter.content` 并物理删除重名节点；规范化编号、提示块、表格编号、公式、图片和 133 个代码占位，展示正文与带 Source/Commit/License/Path 的原始阅读材料分离。执行前备份为 `output/db-backups/nodelearn-before-course-content-20260716-134120.dump`，迁移后生产库为 20 章、85 节点、68 条章内关系、0 个总览节点和 22 个章节资源；重复导入保持幂等。
+- 2026-07-16 本次回归结果：后端完整测试 `197 passed, 2 skipped`，前端生产构建、页面/组件无直接 `fetch`/`axios` 检查与 Docker 重建通过；真实接口返回 20 章/85 小节且不存在课程返回 404，506 个正文静态图片逐一请求均为成功。Playwright 验证登录深链接精确定位、165 组代码 Tabs 全局语言同步、1901 个 KaTeX 节点、375/768/1024/1440px 无横向溢出，浏览器控制台 0 error/0 warning。
+- 2026-07-16 完成章节总览导航、顺序图谱与精确选中态：每章总览作为 `Chapter.content` 的合成入口进入侧栏、顶部选择器和图谱快速跳转，不恢复重名知识节点；新增 `selectedChapterId` 与正文 ScrollSpy/图谱/工作台同步。章节概览按 `orderIndex` 使用蛇形固定网格和展示用顺序虚线，真实依赖保持实线；侧栏移除同路由 `router-link-active` 强选中，改为唯一节点 ID 精确高亮。回归确认生产库仍为 20 章、85 节点、68 条关系，图谱概览生成 19 条连续章节顺序边；前端生产构建、`git diff --check`、页面/组件无直接 `fetch`/`axios` 检查及 Docker 重建通过，后端完整测试 `197 passed, 2 skipped`。Playwright 验证章节总览与小节点始终仅一个强选中、图谱章节展开和“查看章节总览”锚点、顶部 20 个分组/105 个选项的键盘操作，375/768/1024/1440px 均无横向溢出且控制台 0 error/0 warning。
+
+- 2026-07-15 修复主 Docker 环境后端启动失败：先生成并验证完整 PostgreSQL 逻辑备份，再经带记录与引用数量断言的单事务清理 2 个独立 `real_verify_*` 验收课程、1 个验收章节、2 个无正文来源的空节点和 1 条自关联；未修改 Hello Algo 或其他学习数据，未放宽迁移规则，也未生成占位正文。
+- 2026-07-15 主数据卷 `knowledge_node.content` 迁移成功回填 105 行并设置为 `TEXT NOT NULL`，重复执行回填 0 行；105 个 Hello Algo 节点均有正文且与最新阅读材料一致。Docker backend/frontend/postgres 已运行，健康接口返回 HTTP 200 且数据库状态为 `ok`；Playwright 验证登录、105 节点、知识图谱及“数组”工作台联动请求均成功，控制台 0 error/0 warning。
+- 2026-07-15 完成固定式知识图谱与节点学习联动：ECharts 改为 `layout="none"`、节点不可拖动、章节固定网格与章节内稳定拓扑分层，保留画布平移/缩放和 ResizeObserver；工作台、顶部栏与图谱统一同步 `appState.selectedNodeId`，选中节点后自动展开章节并高亮，节点提供正文、统一练习和思维导图三个键盘可操作入口。
+- 2026-07-15 新增必填非空 `KnowledgeNode.content` / `knowledge_node.content TEXT NOT NULL`、安全回填迁移和独立正文页；Hello Algo 导入将带 Source、Commit、License、Path 的完整 Markdown 同步写入节点与阅读材料。隔离 PostgreSQL 实测导入 20 章、105 节点、85 关系、459 资源，模拟旧结构后首次迁移回填 105 行、重复执行回填 0 行，105 个节点正文与最新阅读材料全部一致、来源信息完整且最终列为非空。
+- 2026-07-15 合并练习入口为单选、简答、真实 Judge0 编程题和错题本四个 Tabs；总生成按三类顺序执行，单步失败不影响后续步骤并支持单独重试；`/programming` 保留携带 `nodeId` 的兼容重定向，资源页思维导图跳转会自动预选节点、通用模式和 `mind_map`，不自动触发生成。
+- 2026-07-15 本次回归结果：后端完整测试 `194 passed, 2 skipped`，Python `compileall`、前端生产构建、页面/组件无直接 `fetch`/`axios` 检查和 `git diff --check` 通过。Playwright 使用真实 105 节点库验证工作台选中“数组”后图谱同步、完整 Markdown 正文、键盘 Enter 跳转、思维导图预选、三步生成成功/部分失败继续/单步重试、图谱缩放与平移产生预期画布变化、375/768/1024/1440px 无横向溢出；浏览器正常链路控制台 0 error/0 warning。
+- 2026-07-15 完成算法题真实代码执行与案例判题专项验收：固定“两数求和”题通过真实 Judge0 1.13.1 执行 C++、C、Python，11 项 API 矩阵覆盖 AC、WA、PE、CE、RE、TLE、隐藏案例失败、不存在题目和超长源码，结果 11/11 符合预期；公开 WA/PE 的实际输出与失败索引正确，隐藏输入、期望输出和索引未泄露。
+- 2026-07-15 在 `ENABLE_MOCK=false` 下对真实数组节点执行一次 DeepSeek 出题，生成“循环左移数组”；正确 Python 解法通过公开样例本地核对、真实 Judge0 API 和浏览器提交，均为 AC。Playwright CLI 验证固定题 AC/CE、编译信息、mock=false 真题 AC 和刷新恢复，浏览器业务请求全部 200、控制台 0 error，仅有 3 条 Element Plus radio 弃用 warning；证据位于 `output/playwright/programming-judge0-2026-07-15/`。
+- 2026-07-15 算法题专项回归结果：编程服务/API/Judge0 契约 `8 passed`，后端完整测试 `189 passed, 2 skipped`，前端生产构建和 `git diff --check` 通过。完整报告位于 `docs/programming-judge0-verification-2026-07-15.md`；本次未修改公开接口、类型、数据库结构或业务实现。
+
+- 2026-07-14 完成真实前后端联调与全模块验收：Docker Nginx 前端和 FastAPI 均以 mock=false 运行，连接 PostgreSQL、Redis、Neo4j、Chroma、Judge0 及现有外部 provider；契约与 FastAPI 精确对应 108 个唯一 HTTP 方法/路径，无重复、无遗漏。首次全接口扫描为 `48 PASS_REAL / 50 PASS_PLACEHOLDER / 7 BLOCKED / 3 FAIL`，修复课程关系验收数据、编程题难度枚举和生成题读取后定向复测，最终为 `51 / 50 / 7 / 0`。
+- 2026-07-14 完成全模块真实能力代表链：DeepSeek 画像 JSON、RAG 问答、资源/思维导图、练习、无视频工作流和编程题生成通过；Judge0 1.13.1 完成 AC/WA/编译错误且不返回隐藏用例；讯飞实时数字人完成两轮驱动、HLS 播放、心跳、幂等 stop 和零 FFmpeg 残留；独立数字人讲解保持阻塞且未回退 mock。
+- 2026-07-14 显式运行豆包 TTS 与 Remotion 真实视频回归，结果 `1 passed in 300.17s`；任务 `resource_task_9afaa026cbf5` 的双资源均为 `success/passed` 并共享 H.264/AAC、1920×1080、30fps、63.658667 秒 MP4。新增受控 TTS 时长归一化后，视频针对性测试 19 项通过。
+- 2026-07-14 修复知识图谱 ECharts 配置、练习答案键/多选提交、编程题生成超时/刷新恢复/AC 显示和页面 Tab 激活；增加 Nginx History API fallback、108 路由唯一性及未覆盖模块/SSE/Judge0 测试。最终后端完整测试 `189 passed, 2 skipped, 1 warning`，Python compileall、前端生产构建、Remotion 类型检查、15 场景 smoke、API 层静态检查和 `git diff --check` 均通过。
+- 2026-07-14 使用 Playwright CLI 完成 11 个页面、全局浮窗和 10 页面 × 4 视口响应式验收；40 个响应式检查均无横向溢出，浏览器无 page error。完整报告、原始/修正后接口矩阵、trace、网络、控制台和截图位于 `docs/real-flow-verification-2026-07-14.md` 与 `output/playwright/real-flow-2026-07-14/`。
+
+- 2026-07-13 完成 AI 个性化知识点教学视频十二阶段重构：新增严格内部 Context/Strategy/Narrative/Scene DSL/Timeline/Media Probe 模型，接入完整教学相关画像、同节点真实练习与错因、RAG 和前置节点；公共 HTTP、资源、画像和 `AnimationScriptContent v2` 契约保持不变。
+- 2026-07-13 新增后端/Remotion 双层 Scene Registry 和 15 个独立 renderer、确定性帧动画 primitives、逐场景豆包 TTS、phrase 字幕、动态 aspect/quality Composition、完整 H.264/AAC/尺寸/30fps/时长校验；旧 `UniversalExplainerVideoRenderer` 继续兼容历史资源。
+- 2026-07-13 哈希强制验收改为六场景 `problem_hook/direct_mapping_demo/zoom_focus/compare_race/collision_demo/summary_recall`，覆盖 12836 `% 100 = 36`、#36 定位、平均情况下接近 O(1)、16750/20950 在 #50 的链地址冲突与四步回忆；目标时长只参与规划，不再补静止画面。
+- 2026-07-13 付费真实链通过：真实 Hello Algo 节点 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4`、DeepSeek、豆包逐场景 TTS、Remotion 和双重 audit 生成任务 `resource_task_81437f4da76d`，资源 `resource_video_script_7b0433a24d53` / `resource_animation_script_0d10f53f553d` 为 `success/passed`；最终 MP4 63.296 秒、1897 帧、1920×1080、30fps、H.264/AAC、5,802,112 bytes，关键帧与完整 probe 位于 `output/real-video-verification/` 和 `output/video-debug/`。
+- 2026-07-13 视频重构回归结果：后端完整测试 `169 passed, 2 skipped`、契约测试 `25 passed`、fixture 音轨真实 MP4 E2E `1 passed`、15 模板 `renderStill` smoke、renderer TypeScript、Python compileall、十二阶段进度组件独立 SFC 解析、前端页面/组件直接 `fetch/axios` 静态检查和 `git diff --check` 均通过；付费真实测试 `1 passed in 139.83s`。前端完整构建仍仅被未修改的 `KnowledgeGraphPage.vue:136` 既有 `TS1005: ')' expected` 阻塞。
+- 2026-07-13 完成知识科普视频版式与信息密度升级：v2 Visual Director 将 beat 正文从固定单句扩展为 1-3 条短句且总计不超过 40 字，并按 hook、定义、类比、机制、对比、过程、案例和总结选择中心聚焦、左右分栏、横向映射、主视觉侧栏、双栏对照、时间线、案例板和总结卡片；三套主题 token、事实来源和审核链路保持不变。
+- 2026-07-13 Remotion 导出与前端 JSON 预览已同步多短句层级和差异化构图，数据结构组件的持续呼吸高亮改为入场后稳定停留，哈希表复杂度正确高亮平均 `O(1)`，冲突链显示真实 key/桶标签并统一中文教学标签。
+- 2026-07-13 视频密度升级验证：视频/契约针对性测试 `31 passed`，后端完整测试 `155 passed, 1 skipped`，Python `compileall`、`video-renderer` `npx tsc --noEmit`、`VideoLessonPlayer.vue` 独立 SFC 解析与 `git diff --check` 通过；使用已有本地音频渲染 24.043 秒、1920×1080、H.264/AAC 的八版式 fixture 并完成六位置抽帧检查，样片、输入和联系表保存在 `output/video-layout-*`。前端完整构建被未修改的 `KnowledgeGraphPage.vue:136` 既有 `TS1005` 语法错误阻塞。
 - 2026-07-12 完成“哈希表为什么能快速查找”真实科普视频验收：基于节点 `node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4` 和 3 个 Hello Algo 来源，使用真实 DeepSeek、豆包 `zh_female_vv_uranus_bigtts` 与 Remotion 生成任务 `multimodal_video_task_c112e78067a0`、资源 `resource_knowledge_video_2ed8d2df1a93`；资源为 `success/passed`、v2 暖白学院主题、8 scene/22 beat/22 段音频，所有 factual beat 来源均可解析。
 - 2026-07-12 真实视频媒体与视觉验收通过：最终 MP4 为 1920×1080、30fps、H.264/AAC、120.512 秒、11,954,889 bytes，目标时长误差约 0.43%；hook、机制、对比、示例和总结抽帧确认字幕可读、无常驻进度条/场景号，并修正 `key 12836 → bucket #36`、数组/链表/哈希表复杂度和 `bucket #50` 冲突链标签。验收文件保存在 `backend/storage/generated_resources/multimodal_video_task_c112e78067a0/`。
 - 2026-07-12 为真实视频链路补齐 hook 拆分边界、单 beat 屏幕文字收敛、豆包传输异常单次重试、非 hook beat 目标时长对齐和哈希 Visual Director 事实标签测试；最终后端完整测试 `153 passed, 1 skipped`，针对性视频测试 `36 passed`，`video-renderer` `npx tsc --noEmit` 通过。
@@ -160,7 +206,7 @@
 
 ### 进行中
 
-- 继续扩展真实演示链路之外的业务模块。
+- 继续将验收中标记为 `PASS_PLACEHOLDER` 的画像、学习路径、笔记、学习记录和报告模块推进为真实持久化业务。
 - 项目状态和 Codex 同步文档维护。
 
 ### 未开始
@@ -170,10 +216,10 @@
 - 学习路径规划的完整图搜索逻辑。
 - 资源推荐排序的真实行为数据融合。
 - 结合图谱和错题上下文的增强智能答疑。
-- 超出当前真实题目生成范围的批改、错因分析、代码运行沙箱和反馈。
+- 超出当前真实题目生成与 Judge0 客观执行范围的主观批改、错因分析和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
-- 浮窗笔记界面和笔记/错题复习流程。
-- 生产迁移和真实持久化发布流程。
+- 笔记持久化和完整笔记/错题复习业务流程。
+- 通用版本化迁移管理、自动回滚编排和真实持久化发布流水线。
 
 ### 阻塞
 
@@ -183,7 +229,9 @@
 - 宿主机真实视频链路已安装 `ffmpeg` 和 `ffprobe`；`backend/.env` 仍需保持豆包 `TTS_API_KEY` 与兼容 `TTS_RESOURCE_ID` 的 `TTS_VOICE_NAME`。`seed-tts-2.0` 已验证可使用 `zh_female_vv_uranus_bigtts`；普通测试继续跳过付费真实视频测试。
 - 真实视频的 storyboard schema 对齐阻塞已由 v2 Visual Director 解除；暖白学院主题已完成真实 DeepSeek、豆包 TTS 与 Remotion 付费回归。黑板讲解和技术蓝图主题仍只完成 renderer fixture/类型与常规测试，后续凭证或主题实现变化时再显式运行付费回归。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
-- 本机 Docker Desktop 已在 2026-06-04 手动启动并验证 PostgreSQL、Hello Algo 导入、`ENABLE_MOCK=false` 后端健康检查和真实视频生成链路；若后续桌面重启或 Docker 停止，需要重新启动 `docker compose -f docker/docker-compose.yml up -d postgres`。
+- 文件上传/删除存储、在线知识库构建和 embedding provider 仍未配置，真实模式按契约返回明确 501/404；独立数字人讲解没有对应 provider，真实模式返回明确错误，不允许回退 mock。
+- 普通问答 `chat_session` / `chat_message` 已在真实模式接入 PostgreSQL，并于 2026-07-17 验证后端重启后可恢复；画像、学习路径、笔记、学习记录、评估和报告仍包含内存或固定占位实现，相关存储能力不得作为生产持久化能力宣传。
+- 编程题与提交记录当前仍保存在后端进程内存中；同一进程内刷新可以恢复，但后端重启会丢失。2026-07-15 已确认真实 DeepSeek 出题和 Judge0 执行为 `PASS_REAL`，存储能力仍为 `PASS_PLACEHOLDER`。
 
 ## 功能待办
 

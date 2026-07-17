@@ -1,0 +1,11 @@
+import { request } from "/src/api/client.ts";
+export const usersApi = {
+  getCurrentUser() {
+    return request({ method: "GET", url: "/users/me" });
+  },
+  updateCurrentUser(payload) {
+    return request({ method: "PUT", url: "/users/me", data: payload });
+  }
+};
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInVzZXJzLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHJlcXVlc3QgfSBmcm9tIFwiQC9hcGkvY2xpZW50XCI7XHJcbmltcG9ydCB0eXBlIHsgVXNlciwgVXNlclVwZGF0ZVJlcXVlc3QgfSBmcm9tIFwiQC90eXBlcy9hdXRoXCI7XHJcblxyXG5leHBvcnQgY29uc3QgdXNlcnNBcGkgPSB7XHJcbiAgZ2V0Q3VycmVudFVzZXIoKSB7XHJcbiAgICByZXR1cm4gcmVxdWVzdDxVc2VyPih7IG1ldGhvZDogXCJHRVRcIiwgdXJsOiBcIi91c2Vycy9tZVwiIH0pO1xyXG4gIH0sXHJcbiAgdXBkYXRlQ3VycmVudFVzZXIocGF5bG9hZDogVXNlclVwZGF0ZVJlcXVlc3QpIHtcclxuICAgIHJldHVybiByZXF1ZXN0PFVzZXI+KHsgbWV0aG9kOiBcIlBVVFwiLCB1cmw6IFwiL3VzZXJzL21lXCIsIGRhdGE6IHBheWxvYWQgfSk7XHJcbiAgfVxyXG59O1xyXG5cclxuIl0sIm1hcHBpbmdzIjoiQUFBQSxTQUFTLGVBQWU7QUFHakIsYUFBTSxXQUFXO0FBQUEsRUFDdEIsaUJBQWlCO0FBQ2YsV0FBTyxRQUFjLEVBQUUsUUFBUSxPQUFPLEtBQUssWUFBWSxDQUFDO0FBQUEsRUFDMUQ7QUFBQSxFQUNBLGtCQUFrQixTQUE0QjtBQUM1QyxXQUFPLFFBQWMsRUFBRSxRQUFRLE9BQU8sS0FBSyxhQUFhLE1BQU0sUUFBUSxDQUFDO0FBQUEsRUFDekU7QUFDRjsiLCJuYW1lcyI6W119

@@ -8,6 +8,7 @@ import type {
   ChatRequest,
   ChatResult,
   ChatSession,
+  ChatSessionQuery,
   MultiAgentWorkflowRequest,
   MultiAgentWorkflowResult
 } from "@/types/agent";
@@ -313,7 +314,7 @@ export const agentApi = {
   createChatSession(payload: Partial<ChatSession>) {
     return request<ChatSession>({ method: "POST", url: "/chat/sessions", data: payload });
   },
-  listChatSessions(params: PageRequest) {
+  listChatSessions(params: ChatSessionQuery) {
     return request<PageResult<ChatSession>>({ method: "GET", url: "/chat/sessions", params });
   },
   getChatSession(sessionId: string) {

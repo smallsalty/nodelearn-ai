@@ -1,0 +1,61 @@
+{
+  "title": "哈希表：高效键值映射",
+  "sections": [
+    {
+      "role": "hook",
+      "title": "⚡ 学号查姓名，你猜要多久？",
+      "teaching_objective": "激发学习兴趣：引入快速查询问题，对比数组/链表效率",
+      "key_points": [
+        "如何从10万学生数据中瞬间找到姓名？",
+        "数组和链表需要遍历，耗时O(n)",
+        "哈希表宣称O(1)，它是怎么做到的？"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "definition",
+      "title": "📦 什么是哈希表？",
+      "teaching_objective": "理解哈希表的定义：通过键key直接访问值value的数据结构",
+      "key_points": [
+        "哈希表存储键值对（key-value）",
+        "核心思想：建立映射，实现直接寻址",
+        "支持增删查改，且理想时间复杂度为O(1)"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "mechanism",
+      "title": "⚙️ 哈希表如何实现O(1)？",
+      "teaching_objective": "掌握哈希函数与桶索引的原理，理解直接访问过程",
+      "key_points": [
+        "哈希函数将key转换为数组索引（桶）",
+        "通过索引直接定位存储位置，无需遍历",
+        "理想情况无冲突时，一次计算即可访问"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "example",
+      "title": "💻 动手实践：学生信息查询",
+      "teaching_objective": "通过学号-姓名映射实例，演示哈希表的增查删操作",
+      "key_points": [
+        "初始化空哈希表",
+        "添加键值对：hmap[12836] = '小哈'等",
+        "查询操作：输入15937，瞬间得到'小啰'",
+        "删除操作：移除10583并验证"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "summary",
+      "title": "🎯 总结：哈希表的优势",
+      "teaching_objective": "巩固知识点，强化O(1)高效性与适用场景",
+      "key_points": [
+        "哈希表实现O(1)的增、查、删、改",
+        "相比数组/链表的O(n)查询，性能大幅提升",
+        "适用于需要快速访问的键值映射场景"
+      ],
+      "evidence_mistake": null
+    }
+  ]
+}

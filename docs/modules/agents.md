@@ -5,6 +5,7 @@
 ## 类型
 
 - `ChatSession`
+- `ChatSessionQuery`
 - `ChatMessage`
 - `ChatRequest`
 - `ChatResult`
@@ -54,6 +55,9 @@
 - `workflowType="resource_generate"` 在 Hello Algo 检索后运行 `qa_agent`，并将问答结果交给最终输出。
 - 完整资源工作流固定为：`profile_agent -> planner_agent -> Hello Algo retrieval -> qa_agent -> resource_agent -> practice_agent -> multimodal_agent -> safety_agent`。
 - 最终输出复用现有契约字段组合：`answer`、`questions`、`generatedResources`、`retrievedDocuments`、`safetyAudit`。
+- 用户界面统一使用“问答助手”名称；页面只保留“开始问答”和“问答历史”，不再重复展示知识节点面板或引用步骤面板。
+- `ChatRepository` 在真实模式将普通问答的 user/assistant 消息、课程引用和唯一消息 ID 写入 PostgreSQL；问答助手页面与学习侧栏按 `userId` 读取同一会话历史。
+- 普通问答固定执行 DeepSeek/RAG → audit/safety → 持久化；模型失败、回答为空或审核未通过时不得写入伪造回答，也不得回退 mock。
 
 ## 开发验收页
 

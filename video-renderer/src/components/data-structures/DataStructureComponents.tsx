@@ -30,8 +30,8 @@ const panelStyle = (index = 0): React.CSSProperties => {
 };
 
 const cellStyle = (active: boolean, index = 0): React.CSSProperties => {
-  const { frame, action } = stageProgress(index);
-  const pulse = active ? 0.72 + Math.sin(frame / 8) * 0.2 : 0;
+  const { action } = stageProgress(index);
+  const highlight = active ? 0.28 + action * 0.22 : 0;
   return {
     display: "grid",
     placeItems: "center",
@@ -40,7 +40,7 @@ const cellStyle = (active: boolean, index = 0): React.CSSProperties => {
     padding: "0 16px",
     borderRadius: 16,
     border: `2px solid ${active ? palette.amber : palette.border}`,
-    background: active ? `rgba(255,200,87,${0.28 + pulse * 0.28})` : palette.surfaceStrong,
+    background: active ? `rgba(255,200,87,${highlight})` : palette.surfaceStrong,
     color: active ? palette.amber : palette.text,
     fontSize: 26,
     fontWeight: 760,
@@ -54,8 +54,8 @@ export const HashTableBuckets: React.FC<{ element: ElementOf<"hash_table_buckets
   return (
     <div style={{ ...panelStyle(index), display: "grid", gap: 18, minWidth: 520 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: palette.muted, fontSize: 24 }}>
-        <span>hash buckets</span>
-        {element.keyLabel ? <strong style={{ color: palette.cyan }}>key: {element.keyLabel}</strong> : null}
+        <span>哈希桶</span>
+        {element.keyLabel ? <strong style={{ color: palette.cyan }}>键：{element.keyLabel}</strong> : null}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(6, element.buckets.length)}, minmax(72px, 1fr))`, gap: 12 }}>
         {element.buckets.slice(0, 12).map((bucket, bucketIndex) => {
@@ -64,7 +64,7 @@ export const HashTableBuckets: React.FC<{ element: ElementOf<"hash_table_buckets
           return (
             <div key={`${bucket}-${bucketIndex}`} style={{ ...cellStyle(active || colliding, bucketIndex), height: 92 }}>
               <span style={{ fontSize: 18, color: palette.muted }}>#{bucket}</span>
-              <span>{active ? "target" : colliding ? "chain" : "empty"}</span>
+              <span>{active ? "目标" : colliding ? "冲突链" : "空"}</span>
               {active ? <span style={{ width: `${Math.max(18, action * 100)}%`, height: 4, borderRadius: 999, background: palette.cyan }} /> : null}
             </div>
           );
@@ -78,11 +78,11 @@ export const HashFunctionPanel: React.FC<{ element: ElementOf<"hash_function_pan
   const { action } = stageProgress(index);
   return (
     <div style={{ ...panelStyle(index), display: "grid", gridTemplateColumns: "1fr 72px 1fr 72px 1fr", alignItems: "center", gap: 18, minWidth: 760 }}>
-      <StepBox label="input" value={element.inputKey} active={action > 0.12} />
+      <StepBox label="输入键" value={element.inputKey} active={action > 0.12} />
       <FlowArrow active={action > 0.2} />
-      <StepBox label="rule" value={element.expression} active={action > 0.42} />
+      <StepBox label="计算规则" value={element.expression} active={action > 0.42} />
       <FlowArrow active={action > 0.58} />
-      <StepBox label="index" value={String(element.outputIndex)} active={action > 0.72} />
+      <StepBox label="桶索引" value={String(element.outputIndex)} active={action > 0.72} />
     </div>
   );
 };
@@ -91,11 +91,11 @@ export const CollisionChain: React.FC<{ element: ElementOf<"collision_chain">; i
   const { action } = stageProgress(index);
   return (
     <div style={{ ...panelStyle(index), display: "grid", gap: 20, minWidth: 620 }}>
-      <strong style={{ color: palette.amber, fontSize: 28 }}>bucket #{element.bucketIndex} collision chain</strong>
+      <strong style={{ color: palette.amber, fontSize: 28 }}>桶 #{element.bucketIndex} · 冲突链</strong>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         {element.nodes.map((node, nodeIndex) => (
           <React.Fragment key={`${node}-${nodeIndex}`}>
-            <StepBox label={`node ${nodeIndex}`} value={node} active={nodeIndex <= Math.round(action * Math.max(1, element.nodes.length - 1)) || nodeIndex === element.activeNodeIndex} />
+            <StepBox label={`节点 ${nodeIndex}`} value={node} active={nodeIndex <= Math.round(action * Math.max(1, element.nodes.length - 1)) || nodeIndex === element.activeNodeIndex} />
             {nodeIndex < element.nodes.length - 1 ? <FlowArrow active={action > nodeIndex / Math.max(1, element.nodes.length)} /> : null}
           </React.Fragment>
         ))}
@@ -124,7 +124,7 @@ export const LinkedListNodes: React.FC<{ element: ElementOf<"linked_list_nodes">
   <div style={{ ...panelStyle(index), display: "flex", alignItems: "center", gap: 18 }}>
     {element.nodes.map((node, nodeIndex) => (
       <React.Fragment key={`${node}-${nodeIndex}`}>
-        <StepBox label={nodeIndex === 0 ? "head" : nodeIndex === element.nodes.length - 1 ? "tail" : `node ${nodeIndex}`} value={node} active={nodeIndex === (element.activeIndex ?? 0)} />
+        <StepBox label={nodeIndex === 0 ? "头结点" : nodeIndex === element.nodes.length - 1 ? "尾结点" : `节点 ${nodeIndex}`} value={node} active={nodeIndex === (element.activeIndex ?? 0)} />
         {nodeIndex < element.nodes.length - 1 ? <FlowArrow active label={element.pointerLabel ?? "next"} /> : null}
       </React.Fragment>
     ))}
@@ -160,7 +160,7 @@ export const QueueLine: React.FC<{ element: ElementOf<"queue_line">; index?: num
       <div style={{ display: "flex", gap: 10 }}>
         {element.items.map((item, itemIndex) => (
           <div key={`${item}-${itemIndex}`} style={{ display: "grid", justifyItems: "center", gap: 8 }}>
-            <span style={{ color: itemIndex === head || itemIndex === tail ? palette.amber : palette.muted, fontSize: 18 }}>{itemIndex === head ? "head" : itemIndex === tail ? "tail" : itemIndex}</span>
+            <span style={{ color: itemIndex === head || itemIndex === tail ? palette.amber : palette.muted, fontSize: 18 }}>{itemIndex === head ? "队头" : itemIndex === tail ? "队尾" : itemIndex}</span>
             <div style={cellStyle(itemIndex === head || itemIndex === tail, itemIndex)}>{item}</div>
           </div>
         ))}
@@ -219,9 +219,9 @@ export const CodeTracePanel: React.FC<{ element: ElementOf<"code_trace_panel">; 
 
 export const PointerArrow: React.FC<{ element: ElementOf<"pointer_arrow">; index?: number }> = ({ element, index = 0 }) => (
   <div style={{ ...panelStyle(index), display: "flex", alignItems: "center", gap: 16 }}>
-    <StepBox label="from" value={element.fromLabel} active />
+    <StepBox label="来源" value={element.fromLabel} active />
     <FlowArrow active label={element.label} />
-    <StepBox label="to" value={element.toLabel} active />
+    <StepBox label="去向" value={element.toLabel} active />
   </div>
 );
 

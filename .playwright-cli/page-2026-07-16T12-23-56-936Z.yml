@@ -1,0 +1,666 @@
+- generic [ref=f2e2]:
+  - link "跳到主内容" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f2e4]:
+    - complementary "项目导航" [ref=f2e5]:
+      - generic [ref=f2e6]:
+        - link "NodeLearn 首页" [ref=f2e7] [cursor=pointer]:
+          - /url: /home
+          - generic [ref=f2e8]: "N"
+          - generic [ref=f2e9]:
+            - strong [ref=f2e10]: NodeLearn
+            - generic [ref=f2e11]: 学习工作台
+        - button [ref=f2e12] [cursor=pointer]
+      - generic [ref=f2e16]:
+        - generic [ref=f2e17]:
+          - button "课程入口 1" [expanded] [ref=f2e18] [cursor=pointer]:
+            - generic [ref=f2e23]: 课程入口
+            - generic [ref=f2e24]: "1"
+          - button "H Hello 算法 HELLO_ALGO" [ref=f2e29] [cursor=pointer]:
+            - generic [ref=f2e30]: H
+            - strong [ref=f2e31]: Hello 算法
+            - generic [ref=f2e32]: HELLO_ALGO
+        - generic [ref=f2e33]:
+          - button "学习入口 5" [expanded] [ref=f2e34] [cursor=pointer]:
+            - generic [ref=f2e40]: 学习入口
+            - generic [ref=f2e41]: "5"
+          - generic [ref=f2e45]:
+            - link "课程正文 全文与目录" [ref=f2e46] [cursor=pointer]:
+              - /url: /courses/course_ds_001/content
+              - generic [ref=f2e52]:
+                - strong [ref=f2e53]: 课程正文
+                - generic [ref=f2e54]: 全文与目录
+            - link "首页 学习概览" [ref=f2e55] [cursor=pointer]:
+              - /url: /home
+              - generic [ref=f2e60]:
+                - strong [ref=f2e61]: 首页
+                - generic [ref=f2e62]: 学习概览
+            - link "对话学习 课程问答" [ref=f2e63] [cursor=pointer]:
+              - /url: /chat
+              - generic [ref=f2e69]:
+                - strong [ref=f2e70]: 对话学习
+                - generic [ref=f2e71]: 课程问答
+            - link "学生画像 偏好与薄弱点" [ref=f2e72] [cursor=pointer]:
+              - /url: /profile
+              - generic [ref=f2e77]:
+                - strong [ref=f2e78]: 学生画像
+                - generic [ref=f2e79]: 偏好与薄弱点
+            - link "学习路径 阶段任务" [ref=f2e80] [cursor=pointer]:
+              - /url: /learning-path
+              - generic [ref=f2e86]:
+                - strong [ref=f2e87]: 学习路径
+                - generic [ref=f2e88]: 阶段任务
+        - generic [ref=f2e89]:
+          - button "学习工具 3" [expanded] [ref=f2e90] [cursor=pointer]:
+            - generic [ref=f2e96]: 学习工具
+            - generic [ref=f2e97]: "3"
+          - generic [ref=f2e101]:
+            - link "资源中心 生成与预览" [ref=f2e102] [cursor=pointer]:
+              - /url: /resources
+              - generic [ref=f2e108]:
+                - strong [ref=f2e109]: 资源中心
+                - generic [ref=f2e110]: 生成与预览
+            - link "知识图谱 节点依赖" [ref=f2e111] [cursor=pointer]:
+              - /url: /knowledge-graph
+              - generic [ref=f2e116]:
+                - strong [ref=f2e117]: 知识图谱
+                - generic [ref=f2e118]: 节点依赖
+            - link "练习测评 题目与错因" [ref=f2e119] [cursor=pointer]:
+              - /url: /practice
+              - generic [ref=f2e124]:
+                - strong [ref=f2e125]: 练习测评
+                - generic [ref=f2e126]: 题目与错因
+        - generic [ref=f2e127]:
+          - button "项目管理 2" [expanded] [ref=f2e128] [cursor=pointer]:
+            - generic [ref=f2e133]: 项目管理
+            - generic [ref=f2e134]: "2"
+          - generic [ref=f2e138]:
+            - link "学习报告 评估与建议" [ref=f2e139] [cursor=pointer]:
+              - /url: /reports
+              - generic [ref=f2e144]:
+                - strong [ref=f2e145]: 学习报告
+                - generic [ref=f2e146]: 评估与建议
+            - link "知识库管理 课程材料" [ref=f2e147] [cursor=pointer]:
+              - /url: /admin/knowledge-base
+              - generic [ref=f2e152]:
+                - strong [ref=f2e153]: 知识库管理
+                - generic [ref=f2e154]: 课程材料
+        - generic [ref=f2e155]:
+          - button "知识节点 85" [expanded] [ref=f2e231] [cursor=pointer]:
+            - generic [ref=f2e162]: 知识节点
+            - generic [ref=f2e163]: "85"
+          - generic [ref=f2e167]:
+            - article [ref=f2e168]:
+              - generic [ref=f2e172]: Hello 算法
+            - generic [ref=f2e233]:
+              - link "序 0 个子节点" [ref=f2e234] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_hello_algo_b60eb0a58969
+                - generic [ref=f2e240]:
+                  - strong [ref=f2e241]: 序
+                  - generic [ref=f2e242]: 0 个子节点
+              - button "展开序子节点" [ref=f2e243] [cursor=pointer]
+            - generic [ref=f2e247]:
+              - generic [ref=f2e248]:
+                - link "第 0 章 前言 3 个子节点" [ref=f2e249] [cursor=pointer]:
+                  - /url: /courses/course_ds_001/content#chapter-chapter_chapter_preface_889b7ef0964a
+                  - generic [ref=f2e255]:
+                    - strong [ref=f2e256]: 第 0 章 前言
+                    - generic [ref=f2e257]: 3 个子节点
+                - button "收起第 0 章 前言子节点" [expanded] [ref=f2e258] [cursor=pointer]
+              - generic [ref=f2e262]:
+                - link "总览 章节导读" [ref=f2e263] [cursor=pointer]:
+                  - /url: /courses/course_ds_001/content#chapter-chapter_chapter_preface_889b7ef0964a
+                  - generic [ref=f2e269]:
+                    - strong [ref=f2e270]: 总览
+                    - generic [ref=f2e271]: 章节导读
+                - link "0.1 关于本书 concept · 基础" [ref=f2e272] [cursor=pointer]:
+                  - /url: /knowledge-graph
+                  - generic [ref=f2e278]:
+                    - strong [ref=f2e279]: 0.1 关于本书
+                    - generic [ref=f2e280]: concept · 基础
+                - link "0.2 如何使用本书 concept · 基础" [ref=f2e281] [cursor=pointer]:
+                  - /url: /knowledge-graph
+                  - generic [ref=f2e287]:
+                    - strong [ref=f2e288]: 0.2 如何使用本书
+                    - generic [ref=f2e289]: concept · 基础
+                - link "0.3 小结 concept · 基础" [ref=f2e290] [cursor=pointer]:
+                  - /url: /knowledge-graph
+                  - generic [ref=f2e296]:
+                    - strong [ref=f2e297]: 0.3 小结
+                    - generic [ref=f2e298]: concept · 基础
+            - generic [ref=f2e300]:
+              - link "第 1 章 初识算法 3 个子节点" [ref=f2e301] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_introduction_5e9827530c8a
+                - generic [ref=f2e307]:
+                  - strong [ref=f2e308]: 第 1 章 初识算法
+                  - generic [ref=f2e309]: 3 个子节点
+              - button "展开第 1 章 初识算法子节点" [ref=f2e310] [cursor=pointer]
+            - generic [ref=f2e315]:
+              - link "第 2 章 复杂度分析 5 个子节点" [ref=f2e316] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_computational_complexity_7804fea82dfa
+                - generic [ref=f2e322]:
+                  - strong [ref=f2e323]: 第 2 章 复杂度分析
+                  - generic [ref=f2e324]: 5 个子节点
+              - button "展开第 2 章 复杂度分析子节点" [ref=f2e325] [cursor=pointer]
+            - generic [ref=f2e330]:
+              - link "第 3 章 数据结构 5 个子节点" [ref=f2e331] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_data_structure_8a1d56bfec0b
+                - generic [ref=f2e337]:
+                  - strong [ref=f2e338]: 第 3 章 数据结构
+                  - generic [ref=f2e339]: 5 个子节点
+              - button "展开第 3 章 数据结构子节点" [ref=f2e340] [cursor=pointer]
+            - generic [ref=f2e345]:
+              - link "第 4 章 数组与链表 5 个子节点" [ref=f2e346] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_array_and_linkedlist_ac01d17f9620
+                - generic [ref=f2e352]:
+                  - strong [ref=f2e353]: 第 4 章 数组与链表
+                  - generic [ref=f2e354]: 5 个子节点
+              - button "展开第 4 章 数组与链表子节点" [ref=f2e355] [cursor=pointer]
+            - generic [ref=f2e360]:
+              - link "第 5 章 栈与队列 4 个子节点" [ref=f2e361] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_stack_and_queue_434c5c422996
+                - generic [ref=f2e367]:
+                  - strong [ref=f2e368]: 第 5 章 栈与队列
+                  - generic [ref=f2e369]: 4 个子节点
+              - button "展开第 5 章 栈与队列子节点" [ref=f2e370] [cursor=pointer]
+            - generic [ref=f2e375]:
+              - link "第 6 章 哈希表 4 个子节点" [ref=f2e376] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_hashing_76bc58565929
+                - generic [ref=f2e382]:
+                  - strong [ref=f2e383]: 第 6 章 哈希表
+                  - generic [ref=f2e384]: 4 个子节点
+              - button "展开第 6 章 哈希表子节点" [ref=f2e385] [cursor=pointer]
+            - generic [ref=f2e390]:
+              - link "第 7 章 树 6 个子节点" [ref=f2e391] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_tree_59c66a15225b
+                - generic [ref=f2e397]:
+                  - strong [ref=f2e398]: 第 7 章 树
+                  - generic [ref=f2e399]: 6 个子节点
+              - button "展开第 7 章 树子节点" [ref=f2e400] [cursor=pointer]
+            - generic [ref=f2e405]:
+              - link "第 8 章 堆 4 个子节点" [ref=f2e406] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_heap_b7fb0f5e784b
+                - generic [ref=f2e412]:
+                  - strong [ref=f2e413]: 第 8 章 堆
+                  - generic [ref=f2e414]: 4 个子节点
+              - button "展开第 8 章 堆子节点" [ref=f2e415] [cursor=pointer]
+            - generic [ref=f2e420]:
+              - link "第 9 章 图 4 个子节点" [ref=f2e421] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_graph_3d207cd07d4f
+                - generic [ref=f2e427]:
+                  - strong [ref=f2e428]: 第 9 章 图
+                  - generic [ref=f2e429]: 4 个子节点
+              - button "展开第 9 章 图子节点" [ref=f2e430] [cursor=pointer]
+            - generic [ref=f2e435]:
+              - link "第 10 章 搜索 6 个子节点" [ref=f2e436] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_searching_7a72ec670728
+                - generic [ref=f2e442]:
+                  - strong [ref=f2e443]: 第 10 章 搜索
+                  - generic [ref=f2e444]: 6 个子节点
+              - button "展开第 10 章 搜索子节点" [ref=f2e445] [cursor=pointer]
+            - generic [ref=f2e450]:
+              - link "第 11 章 排序 11 个子节点" [ref=f2e451] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_sorting_d7a90c28c510
+                - generic [ref=f2e457]:
+                  - strong [ref=f2e458]: 第 11 章 排序
+                  - generic [ref=f2e459]: 11 个子节点
+              - button "展开第 11 章 排序子节点" [ref=f2e460] [cursor=pointer]
+            - generic [ref=f2e465]:
+              - link "第 12 章 分治 5 个子节点" [ref=f2e466] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_divide_and_conquer_05a2f76eba40
+                - generic [ref=f2e472]:
+                  - strong [ref=f2e473]: 第 12 章 分治
+                  - generic [ref=f2e474]: 5 个子节点
+              - button "展开第 12 章 分治子节点" [ref=f2e475] [cursor=pointer]
+            - generic [ref=f2e480]:
+              - link "第 13 章 回溯 5 个子节点" [ref=f2e481] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_backtracking_e017f90217e8
+                - generic [ref=f2e487]:
+                  - strong [ref=f2e488]: 第 13 章 回溯
+                  - generic [ref=f2e489]: 5 个子节点
+              - button "展开第 13 章 回溯子节点" [ref=f2e490] [cursor=pointer]
+            - generic [ref=f2e495]:
+              - link "第 14 章 动态规划 7 个子节点" [ref=f2e496] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_dynamic_programming_6ba37164d332
+                - generic [ref=f2e502]:
+                  - strong [ref=f2e503]: 第 14 章 动态规划
+                  - generic [ref=f2e504]: 7 个子节点
+              - button "展开第 14 章 动态规划子节点" [ref=f2e505] [cursor=pointer]
+            - generic [ref=f2e510]:
+              - link "第 15 章 贪心 5 个子节点" [ref=f2e511] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_greedy_fedbcae4fb01
+                - generic [ref=f2e517]:
+                  - strong [ref=f2e518]: 第 15 章 贪心
+                  - generic [ref=f2e519]: 5 个子节点
+              - button "展开第 15 章 贪心子节点" [ref=f2e520] [cursor=pointer]
+            - generic [ref=f2e525]:
+              - link "第 16 章 附录 3 个子节点" [ref=f2e526] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_appendix_72bfe4aed27b
+                - generic [ref=f2e532]:
+                  - strong [ref=f2e533]: 第 16 章 附录
+                  - generic [ref=f2e534]: 3 个子节点
+              - button "展开第 16 章 附录子节点" [ref=f2e535] [cursor=pointer]
+            - generic [ref=f2e540]:
+              - link "参考文献 0 个子节点" [ref=f2e541] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_reference_2ab7c17b58e4
+                - generic [ref=f2e547]:
+                  - strong [ref=f2e548]: 参考文献
+                  - generic [ref=f2e549]: 0 个子节点
+              - button "展开参考文献子节点" [ref=f2e550] [cursor=pointer]
+            - generic [ref=f2e555]:
+              - link "纸质书 0 个子节点" [ref=f2e556] [cursor=pointer]:
+                - /url: /courses/course_ds_001/content#chapter-chapter_chapter_paperbook_6921e4011a09
+                - generic [ref=f2e562]:
+                  - strong [ref=f2e563]: 纸质书
+                  - generic [ref=f2e564]: 0 个子节点
+              - button "展开纸质书子节点" [ref=f2e565] [cursor=pointer]
+    - generic [ref=f2e174]:
+      - generic [ref=f2e175]:
+        - generic [ref=f2e177]:
+          - paragraph [ref=f2e178]: NodeLearn 学习平台
+          - heading "课程正文" [level=1] [ref=f2e179]
+        - generic [ref=f2e180]:
+          - generic [ref=f2e182]:
+            - generic:
+              - combobox "选择课程" [ref=f2e184]
+              - generic [ref=f2e185]: Hello 算法
+          - generic [ref=f2e191]:
+            - generic:
+              - combobox "选择章节总览或知识点" [ref=f2e193]
+              - generic [ref=f2e194]: 0.2 如何使用本书
+          - generic [ref=f2e199]: demo_student
+          - button "Hello 算法 0.2 如何使用本书" [ref=f2e569] [cursor=pointer]:
+            - generic [ref=f2e204]:
+              - strong [ref=f2e205]: Hello 算法
+              - generic [ref=f2e206]: 0.2 如何使用本书
+          - button "退出" [ref=f2e207] [cursor=pointer]
+      - main [ref=f2e213]:
+        - generic [ref=f2e570]:
+          - complementary "课程目录" [ref=f2e571]:
+            - generic [ref=f2e572]:
+              - strong [ref=f2e573]: 课程目录
+              - generic [ref=f2e574]: 第 2 章，共 20 章
+            - navigation [ref=f2e575]:
+              - button "序" [ref=f2e577] [cursor=pointer]
+              - generic [ref=f2e578]:
+                - button "第 0 章 前言" [ref=f2e579] [cursor=pointer]
+                - button "0.1 关于本书" [ref=f2e580] [cursor=pointer]
+                - button "0.2 如何使用本书" [ref=f2e581] [cursor=pointer]
+                - button "0.3 小结" [active] [ref=f2e582] [cursor=pointer]
+              - generic [ref=f2e583]:
+                - button "第 1 章 初识算法" [ref=f2e584] [cursor=pointer]
+                - button "1.1 算法无处不在" [ref=f2e585] [cursor=pointer]
+                - button "1.2 算法是什么" [ref=f2e586] [cursor=pointer]
+                - button "1.3 小结" [ref=f2e587] [cursor=pointer]
+              - generic [ref=f2e588]:
+                - button "第 2 章 复杂度分析" [ref=f2e589] [cursor=pointer]
+                - button "2.1 算法效率评估" [ref=f2e590] [cursor=pointer]
+                - button "2.2 迭代与递归" [ref=f2e591] [cursor=pointer]
+                - button "2.3 时间复杂度" [ref=f2e592] [cursor=pointer]
+                - button "2.4 空间复杂度" [ref=f2e593] [cursor=pointer]
+                - button "2.5 小结" [ref=f2e594] [cursor=pointer]
+              - generic [ref=f2e595]:
+                - button "第 3 章 数据结构" [ref=f2e596] [cursor=pointer]
+                - button "3.1 数据结构分类" [ref=f2e597] [cursor=pointer]
+                - button "3.2 基本数据类型" [ref=f2e598] [cursor=pointer]
+                - button "3.3 数字编码 *" [ref=f2e599] [cursor=pointer]
+                - button "3.4 字符编码 *" [ref=f2e600] [cursor=pointer]
+                - button "3.5 小结" [ref=f2e601] [cursor=pointer]
+              - generic [ref=f2e602]:
+                - button "第 4 章 数组与链表" [ref=f2e603] [cursor=pointer]
+                - button "4.1 数组" [ref=f2e604] [cursor=pointer]
+                - button "4.2 链表" [ref=f2e605] [cursor=pointer]
+                - button "4.3 列表" [ref=f2e606] [cursor=pointer]
+                - button "4.4 内存与缓存 *" [ref=f2e607] [cursor=pointer]
+                - button "4.5 小结" [ref=f2e608] [cursor=pointer]
+              - generic [ref=f2e609]:
+                - button "第 5 章 栈与队列" [ref=f2e610] [cursor=pointer]
+                - button "5.1 栈" [ref=f2e611] [cursor=pointer]
+                - button "5.2 队列" [ref=f2e612] [cursor=pointer]
+                - button "5.3 双向队列" [ref=f2e613] [cursor=pointer]
+                - button "5.4 小结" [ref=f2e614] [cursor=pointer]
+              - generic [ref=f2e615]:
+                - button "第 6 章 哈希表" [ref=f2e616] [cursor=pointer]
+                - button "6.1 哈希表" [ref=f2e617] [cursor=pointer]
+                - button "6.2 哈希冲突" [ref=f2e618] [cursor=pointer]
+                - button "6.3 哈希算法" [ref=f2e619] [cursor=pointer]
+                - button "6.4 小结" [ref=f2e620] [cursor=pointer]
+              - generic [ref=f2e621]:
+                - button "第 7 章 树" [ref=f2e622] [cursor=pointer]
+                - button "7.1 二叉树" [ref=f2e623] [cursor=pointer]
+                - button "7.2 二叉树遍历" [ref=f2e624] [cursor=pointer]
+                - button "7.3 二叉树数组表示" [ref=f2e625] [cursor=pointer]
+                - button "7.4 二叉搜索树" [ref=f2e626] [cursor=pointer]
+                - button "7.5 AVL 树 *" [ref=f2e627] [cursor=pointer]
+                - button "7.6 小结" [ref=f2e628] [cursor=pointer]
+              - generic [ref=f2e629]:
+                - button "第 8 章 堆" [ref=f2e630] [cursor=pointer]
+                - button "8.1 堆" [ref=f2e631] [cursor=pointer]
+                - button "8.2 建堆操作" [ref=f2e632] [cursor=pointer]
+                - button "8.3 Top-k 问题" [ref=f2e633] [cursor=pointer]
+                - button "8.4 小结" [ref=f2e634] [cursor=pointer]
+              - generic [ref=f2e635]:
+                - button "第 9 章 图" [ref=f2e636] [cursor=pointer]
+                - button "9.1 图" [ref=f2e637] [cursor=pointer]
+                - button "9.2 图基础操作" [ref=f2e638] [cursor=pointer]
+                - button "9.3 图的遍历" [ref=f2e639] [cursor=pointer]
+                - button "9.4 小结" [ref=f2e640] [cursor=pointer]
+              - generic [ref=f2e641]:
+                - button "第 10 章 搜索" [ref=f2e642] [cursor=pointer]
+                - button "10.1 二分查找" [ref=f2e643] [cursor=pointer]
+                - button "10.2 二分查找插入点" [ref=f2e644] [cursor=pointer]
+                - button "10.3 二分查找边界" [ref=f2e645] [cursor=pointer]
+                - button "10.4 哈希优化策略" [ref=f2e646] [cursor=pointer]
+                - button "10.5 重识搜索算法" [ref=f2e647] [cursor=pointer]
+                - button "10.6 小结" [ref=f2e648] [cursor=pointer]
+              - generic [ref=f2e649]:
+                - button "第 11 章 排序" [ref=f2e650] [cursor=pointer]
+                - button "11.1 排序算法" [ref=f2e651] [cursor=pointer]
+                - button "11.2 选择排序" [ref=f2e652] [cursor=pointer]
+                - button "11.3 冒泡排序" [ref=f2e653] [cursor=pointer]
+                - button "11.4 插入排序" [ref=f2e654] [cursor=pointer]
+                - button "11.5 快速排序" [ref=f2e655] [cursor=pointer]
+                - button "11.6 归并排序" [ref=f2e656] [cursor=pointer]
+                - button "11.7 堆排序" [ref=f2e657] [cursor=pointer]
+                - button "11.8 桶排序" [ref=f2e658] [cursor=pointer]
+                - button "11.9 计数排序" [ref=f2e659] [cursor=pointer]
+                - button "11.10 基数排序" [ref=f2e660] [cursor=pointer]
+                - button "11.11 小结" [ref=f2e661] [cursor=pointer]
+              - generic [ref=f2e662]:
+                - button "第 12 章 分治" [ref=f2e663] [cursor=pointer]
+                - button "12.1 分治算法" [ref=f2e664] [cursor=pointer]
+                - button "12.2 分治搜索策略" [ref=f2e665] [cursor=pointer]
+                - button "12.3 构建树问题" [ref=f2e666] [cursor=pointer]
+                - button "12.4 汉诺塔问题" [ref=f2e667] [cursor=pointer]
+                - button "12.5 小结" [ref=f2e668] [cursor=pointer]
+              - generic [ref=f2e669]:
+                - button "第 13 章 回溯" [ref=f2e670] [cursor=pointer]
+                - button "13.1 回溯算法" [ref=f2e671] [cursor=pointer]
+                - button "13.2 全排列问题" [ref=f2e672] [cursor=pointer]
+                - button "13.3 子集和问题" [ref=f2e673] [cursor=pointer]
+                - button "13.4 N 皇后问题" [ref=f2e674] [cursor=pointer]
+                - button "13.5 小结" [ref=f2e675] [cursor=pointer]
+              - generic [ref=f2e676]:
+                - button "第 14 章 动态规划" [ref=f2e677] [cursor=pointer]
+                - button "14.1 初探动态规划" [ref=f2e678] [cursor=pointer]
+                - button "14.2 DP 问题特性" [ref=f2e679] [cursor=pointer]
+                - button "14.3 DP 解题思路" [ref=f2e680] [cursor=pointer]
+                - button "14.4 0-1 背包问题" [ref=f2e681] [cursor=pointer]
+                - button "14.5 完全背包问题" [ref=f2e682] [cursor=pointer]
+                - button "14.6 编辑距离问题" [ref=f2e683] [cursor=pointer]
+                - button "14.7 小结" [ref=f2e684] [cursor=pointer]
+              - generic [ref=f2e685]:
+                - button "第 15 章 贪心" [ref=f2e686] [cursor=pointer]
+                - button "15.1 贪心算法" [ref=f2e687] [cursor=pointer]
+                - button "15.2 分数背包问题" [ref=f2e688] [cursor=pointer]
+                - button "15.3 最大容量问题" [ref=f2e689] [cursor=pointer]
+                - button "15.4 最大切分乘积问题" [ref=f2e690] [cursor=pointer]
+                - button "15.5 小结" [ref=f2e691] [cursor=pointer]
+              - generic [ref=f2e692]:
+                - button "第 16 章 附录" [ref=f2e693] [cursor=pointer]
+                - button "16.1 编程环境安装" [ref=f2e694] [cursor=pointer]
+                - button "16.2 一起参与创作" [ref=f2e695] [cursor=pointer]
+                - button "16.3 术语表" [ref=f2e696] [cursor=pointer]
+              - button "参考文献" [ref=f2e698] [cursor=pointer]
+              - button "纸质书" [ref=f2e700] [cursor=pointer]
+          - region "课程章节正文" [ref=f2e701]:
+            - generic [ref=f2e702]:
+              - generic [ref=f2e704]:
+                - paragraph [ref=f2e705]: Course Reader
+                - heading "Hello 算法" [level=2] [ref=f2e706]
+                - paragraph [ref=f2e707]: 按章节分页阅读总览与小节；目录、工作台和正文分别滚动。
+              - navigation "章节顶部翻页" [ref=f2e708]:
+                - button "上一章：序" [ref=f2e709] [cursor=pointer]:
+                  - generic [ref=f2e714]:
+                    - generic [ref=f2e715]: 上一章
+                    - strong [ref=f2e716]: 序
+                - strong [ref=f2e717]: 第 2 章，共 20 章
+                - button "下一章：第 1 章 初识算法" [ref=f2e718] [cursor=pointer]:
+                  - generic [ref=f2e720]:
+                    - generic [ref=f2e721]: 下一章
+                    - strong [ref=f2e722]: 第 1 章 初识算法
+              - article [ref=f2e727]:
+                - generic [ref=f2e728]:
+                  - generic [ref=f2e729]: "02"
+                  - heading "第 0 章 前言" [level=2] [ref=f2e730]
+                - article [ref=f2e731]:
+                  - paragraph:
+                    - img "前言"
+                  - blockquote [ref=f2e732]:
+                    - paragraph [ref=f2e733]:
+                      - strong [ref=f2e734]: 摘要
+                    - paragraph [ref=f2e735]: 算法犹如美妙的交响乐，每一行代码都像韵律般流淌。
+                    - paragraph [ref=f2e736]: 愿这本书在你的脑海中轻轻响起，留下独特而深刻的旋律。
+                - generic [ref=f2e737]:
+                  - generic [ref=f2e739]:
+                    - paragraph [ref=f2e740]: Section 1
+                    - heading "0.1 关于本书" [level=3] [ref=f2e741]
+                  - article [ref=f2e745]:
+                    - paragraph [ref=f2e746]: 本项目旨在创建一本开源、免费、对新手友好的数据结构与算法入门教程。
+                    - list [ref=f2e747]:
+                      - listitem [ref=f2e748]: 全书采用动画图解，内容清晰易懂、学习曲线平滑，引导初学者探索数据结构与算法的知识地图。
+                      - listitem [ref=f2e749]: 源代码可一键运行，帮助读者在练习中提升编程技能，了解算法工作原理和数据结构底层实现。
+                      - listitem [ref=f2e750]: 提倡读者互助学习，欢迎大家在评论区提出问题与分享见解，在交流讨论中共同进步。
+                    - heading "读者对象" [level=2] [ref=f2e751]
+                    - paragraph [ref=f2e752]: 若你是算法初学者，从未接触过算法，或者已经有一些刷题经验，对数据结构与算法有模糊的认识，在会与不会之间反复横跳，那么本书正是为你量身定制的！
+                    - paragraph [ref=f2e753]: 如果你已经积累一定的刷题量，熟悉大部分题型，那么本书可助你回顾与梳理算法知识体系，仓库源代码可以当作“刷题工具库”或“算法字典”来使用。
+                    - paragraph [ref=f2e754]:
+                      - text: 若你是算法“大神”，我们期待收到你的宝贵建议，或者
+                      - link "一起参与创作" [ref=f2e755] [cursor=pointer]:
+                        - /url: https://www.hello-algo.com/chapter_appendix/contribution/
+                      - text: 。
+                    - blockquote [ref=f2e756]:
+                      - paragraph [ref=f2e757]:
+                        - strong [ref=f2e758]: 前置条件
+                      - paragraph [ref=f2e759]: 你需要至少具备任一语言的编程基础，能够阅读和编写简单代码。
+                    - heading "内容结构" [level=2] [ref=f2e760]
+                    - paragraph [ref=f2e761]: 本书的主要内容如下图所示。
+                    - list [ref=f2e762]:
+                      - listitem [ref=f2e763]:
+                        - strong [ref=f2e764]: 复杂度分析
+                        - text: ：数据结构和算法的评价维度与方法。时间复杂度和空间复杂度的推算方法、常见类型、示例等。
+                      - listitem [ref=f2e765]:
+                        - strong [ref=f2e766]: 数据结构
+                        - text: ：基本数据类型和数据结构的分类方法。数组、链表、栈、队列、哈希表、树、堆、图等数据结构的定义、优缺点、常用操作、常见类型、典型应用、实现方法等。
+                      - listitem [ref=f2e767]:
+                        - strong [ref=f2e768]: 算法
+                        - text: ：搜索、排序、分治、回溯、动态规划、贪心等算法的定义、优缺点、效率、应用场景、解题步骤和示例问题等。
+                    - paragraph [ref=f2e769]:
+                      - img "本书主要内容" [ref=f2e770]
+                    - heading "致谢" [level=2] [ref=f2e771]
+                    - paragraph [ref=f2e772]: 本书在开源社区众多贡献者的共同努力下不断完善。感谢每一位投入时间与精力的撰稿人，他们是（按照 GitHub 自动生成的顺序）：krahets、coderonion、Gonglja、nuomi1、Reanon、justin-tse、hpstory、danielsss、curtishd、night-cruise、S-N-O-R-L-A-X、rongyi、msk397、gvenusleo、khoaxuantu、rivertwilight、K3v123、gyt95、zhuoqinyue、yuelinxin、Zuoxun、mingXta、Phoenix0415、FangYuan33、GN-Yu、longsizhuo、pengchzn、QiLOL、Cathay-Chen、guowei-gong、xBLACKICEx、IsChristina、JoseHung、qualifier1024、hello-ikun、magentaqin、Guanngxu、thomasq0、sunshinesDL、L-Super、Transmigration-zhou、WSL0809、Slone123c、lhxsm、yuan0221、what-is-me、theNefelibatas、Shyam-Chen、sangxiaai、longranger2、codeberg-user、xiongsp、JeffersonHuang、prinpal、seven1240、Wonderdch、malone6、xiaomiusa87、gaofer、bluebean-cloud、a16su、SamJin98、hongyun-robot、nanlei、XiaChuerwu、yd-j、iron-irax、mgisr、steventimes、junminhong、heshuyue、danny900714、Nigh、Dr-XYZ、MolDuM、XC-Zero、reeswell、PXG-XPG、NI-SW、Horbin-Magician、Enlightenus、YangXuanyi、xjr7670、beatrix-chan、DullSword、qq909244296、iStig、boloboloda、hts0000、gledfish、fbigm、echo1937、jiaxianhua、wenjianmin、keshida、kilikilikid、lclc6、lwbaptx、linyejoe2、liuxjerry、szu17dmy、dshlstarr、Yucao-cy、coderlef、czruby、bongbongbakudan、beintentional、ZongYangL、ZhongYuuu、ZhongGuanbin、hezhizhen、linzeyan、ZJKung、JTCPOWI、KawaiiAsh、luluxia、xb534、ztkuaikuai、yw-1021、ElaBosak233、baagod、zhouLion、yishangzhang、yi427、yanedie、yabo083、weibk、wangwang105、th1nk3r-ing、tao363、4yDX3906、syd168、sslmj2020、smilelsb、siqyka、selear、sdshaoda、Xi-Row、popozhu、nuquist19、noobcodemaker、XiaoK29、chadyi、lyl625760、lucaswangdev、llql1211、0130w、shanghai-Jerry、EJackYang、Javesun99、eltociear、lipusheng、KNChiu、BlindTerran、ShiMaRing、lovelock、FreddieLi、FloranceYeh、fanchenggang、gltianwen、goerll、nedchu、curly210102、CuB3y0nd、KraHsu、CarrotDLaw、youshaoXG、bubble9um、Asashishi、Asa0oo0o0o、fanenr、eagleanurag、akshiterate、52coder、foursevenlove、KorsChen、hopkings2008、yang-le、realwujing、Evilrabbit520、Umer-Jahangir、Turing-1024-Lee、Suremotoo、paoxiaomooo、Chieko-Seren、Senrian、Allen-Scai、19santosh99、ymmmas、Risuntsy、Richard-Zhang1019、RafaelCaso、qingpeng9802、primexiao、Urbaner3、codetypess、nidhoggfgg、MwumLi、CreatorMetaSky、martinx、ZnYang2018、hugtyftg、logan-qiu、psychelzh、Kunchen-Luo、Keynman 和 KeiichiKasai。
+                    - paragraph [ref=f2e773]: 本书的代码审阅工作由 coderonion、curtishd、Gonglja、gvenusleo、hpstory、justin-tse、khoaxuantu、krahets、night-cruise、nuomi1、Reanon 和 rongyi 完成（按照首字母顺序排列）。感谢他们付出的时间与精力，正是他们确保了各语言代码的规范与统一。
+                    - paragraph [ref=f2e774]: 本书的英文版由 yuelinxin、K3v123、magentaqin、QiLOL、Phoenix0415、SamJin98、yanedie、RafaelCaso、pengchzn 和 thomasq0 审阅；日文版由 eltociear 审阅；俄文版由 И. А. Шевкун 和 Yuyan Huang 审阅；繁体中文版由 Shyam-Chen 和 Dr-XYZ 审阅。正是因为他们的贡献，这本书才能够服务于更广泛的读者群体，感谢他们。
+                    - paragraph [ref=f2e775]: 本书的 ePub 电子书生成工具由 zhongfq 开发。感谢他的贡献，为读者提供了更灵活的阅读方式。
+                    - paragraph [ref=f2e776]: 在本书的创作过程中，我得到了许多人的帮助。
+                    - list [ref=f2e777]:
+                      - listitem [ref=f2e778]: 感谢我在公司的导师李汐博士，在一次畅谈中你鼓励我“快行动起来”，坚定了我写这本书的决心；
+                      - listitem [ref=f2e779]: 感谢我的女朋友泡泡作为本书的首位读者，从算法小白的角度提出许多宝贵建议，使得本书更适合新手阅读；
+                      - listitem [ref=f2e780]: 感谢腾宝、琦宝、飞宝为本书起了一个富有创意的名字，唤起大家写下第一行代码“Hello World!”的美好回忆；
+                      - listitem [ref=f2e781]: 感谢校铨在知识产权方面提供的专业帮助，这对本开源书的完善起到了重要作用；
+                      - listitem [ref=f2e782]: 感谢苏潼为本书设计了精美的封面和 logo ，并在我的强迫症的驱使下多次耐心修改；
+                      - listitem [ref=f2e783]:
+                        - text: 感谢 @squidfunk 提供的排版建议，以及他开发的开源文档主题
+                        - link "Material-for-MkDocs" [ref=f2e784] [cursor=pointer]:
+                          - /url: https://github.com/squidfunk/mkdocs-material
+                        - text: 。
+                    - paragraph [ref=f2e785]: 在写作过程中，我阅读了许多关于数据结构与算法的教材和文章。这些作品为本书提供了优秀的范本，确保了本书内容的准确性与品质。在此感谢所有老师和前辈的杰出贡献！
+                    - paragraph [ref=f2e786]:
+                      - text: 本书倡导手脑并用的学习方式，在这一点上我深受
+                      - link "《动手学深度学习》" [ref=f2e787] [cursor=pointer]:
+                        - /url: https://github.com/d2l-ai/d2l-zh
+                      - text: 的启发。在此向各位读者强烈推荐这本优秀的著作。
+                    - paragraph [ref=f2e788]:
+                      - strong [ref=f2e789]: 衷心感谢我的父母，正是你们一直以来的支持与鼓励，让我有机会做这件富有趣味的事
+                      - text: 。
+                  - generic "0.1 关于本书 学习操作" [ref=f2e790]:
+                    - button "返回图谱" [ref=f2e791] [cursor=pointer]
+                    - button "进入练习" [ref=f2e793] [cursor=pointer]
+                    - button [ref=f2e795] [cursor=pointer]
+                - generic [ref=f2e800]:
+                  - generic [ref=f2e802]:
+                    - paragraph [ref=f2e803]: Section 2
+                    - heading "0.2 如何使用本书" [level=3] [ref=f2e804]
+                  - article [ref=f2e808]:
+                    - blockquote [ref=f2e809]:
+                      - paragraph [ref=f2e810]:
+                        - strong [ref=f2e811]: 提示
+                      - paragraph [ref=f2e812]: 为了获得最佳的阅读体验，建议你通读本节内容。
+                    - heading "行文风格约定" [level=2] [ref=f2e813]
+                    - list [ref=f2e814]:
+                      - listitem [ref=f2e815]:
+                        - text: 标题后标注
+                        - code [ref=f2e816]: "*"
+                        - text: 的是选读章节，内容相对困难。如果你的时间有限，可以先跳过。
+                      - listitem [ref=f2e817]:
+                        - text: 专业术语会使用黑体（纸质版和 PDF 版）或添加下划线（网页版），例如
+                        - strong [ref=f2e818]: 数组（array）
+                        - text: 。建议记住它们，以便阅读文献。
+                      - listitem [ref=f2e819]:
+                        - text: 重点内容和总结性语句会
+                        - strong [ref=f2e820]: 加粗
+                        - text: ，这类文字值得特别关注。
+                      - listitem [ref=f2e821]: 有特指含义的词句会使用“引号”标注，以避免歧义。
+                      - listitem [ref=f2e822]:
+                        - text: 当涉及编程语言之间不一致的名词时，本书均以 Python 为准，例如使用
+                        - code [ref=f2e823]: None
+                        - text: 来表示“空”。
+                      - listitem [ref=f2e824]: 本书部分放弃了编程语言的注释规范，以换取更加紧凑的内容排版。注释主要分为三种类型：标题注释、内容注释、多行注释。
+                    - generic [ref=f2e825]:
+                      - tablist "代码语言" [ref=f2e826]:
+                        - tab "C++" [selected] [ref=f2e827] [cursor=pointer]
+                        - tab "Python" [ref=f2e828] [cursor=pointer]
+                        - tab "Java" [ref=f2e829] [cursor=pointer]
+                      - tabpanel "C++" [ref=f2e830]:
+                        - code [ref=f2e832]: /* 标题注释，用于标注函数、类、测试样例等 */ // 内容注释，用于详解代码 /** * 多行 * 注释 */
+                    - heading "在动画图解中高效学习" [level=2] [ref=f2e833]
+                    - paragraph [ref=f2e834]:
+                      - text: 相较于文字，视频和图片具有更高的信息密度和结构化程度，更易于理解。在本书中，
+                      - strong [ref=f2e835]: 重点和难点知识将主要通过动画以图解形式展示
+                      - text: ，而文字则作为解释与补充。
+                    - paragraph [ref=f2e836]:
+                      - text: 如果你在阅读本书时，发现某段内容提供了如下图所示的动画图解，
+                      - strong [ref=f2e837]: 请以图为主、以文字为辅
+                      - text: ，综合两者来理解内容。
+                    - paragraph [ref=f2e838]:
+                      - img "动画图解示例" [ref=f2e839]
+                    - heading "在代码实践中加深理解" [level=2] [ref=f2e840]
+                    - paragraph [ref=f2e841]:
+                      - text: 本书的配套代码托管在
+                      - link "GitHub 仓库" [ref=f2e842] [cursor=pointer]:
+                        - /url: https://github.com/krahets/hello-algo
+                      - text: 。如下图所示，
+                      - strong [ref=f2e843]: 源代码附有测试样例，可一键运行
+                      - text: 。
+                    - paragraph [ref=f2e844]:
+                      - text: 如果时间允许，
+                      - strong [ref=f2e845]: 建议你参照代码自行敲一遍
+                      - text: 。如果学习时间有限，请至少通读并运行所有代码。
+                    - paragraph [ref=f2e846]:
+                      - text: 与阅读代码相比，编写代码的过程往往能带来更多收获。
+                      - strong [ref=f2e847]: 动手学，才是真的学
+                      - text: 。
+                    - paragraph [ref=f2e848]:
+                      - img "运行代码示例" [ref=f2e849]
+                    - paragraph [ref=f2e850]: 运行代码的前置工作主要分为三步。
+                    - paragraph [ref=f2e851]:
+                      - strong [ref=f2e852]: 第一步：安装本地编程环境
+                      - text: 。请参照附录所示的
+                      - link "教程" [ref=f2e853] [cursor=pointer]:
+                        - /url: https://www.hello-algo.com/chapter_appendix/installation/
+                      - text: 进行安装，如果已安装，则可跳过此步骤。
+                    - paragraph [ref=f2e854]:
+                      - strong [ref=f2e855]: 第二步：克隆或下载代码仓库
+                      - text: 。前往
+                      - link "GitHub 仓库" [ref=f2e856] [cursor=pointer]:
+                        - /url: https://github.com/krahets/hello-algo
+                      - text: 。如果已经安装
+                      - link "Git" [ref=f2e857] [cursor=pointer]:
+                        - /url: https://git-scm.com/downloads
+                      - text: ，可以通过以下命令克隆本仓库：
+                    - code [ref=f2e859]: git clone https://github.com/krahets/hello-algo.git
+                    - paragraph [ref=f2e860]: 当然，你也可以在下图所示的位置，点击“Download ZIP”按钮直接下载代码压缩包，然后在本地解压即可。
+                    - paragraph [ref=f2e861]:
+                      - img "克隆仓库与下载代码" [ref=f2e862]
+                    - paragraph [ref=f2e863]:
+                      - strong [ref=f2e864]: 第三步：运行源代码
+                      - text: 。如下图所示，对于顶部标有文件名称的代码块，我们可以在仓库的
+                      - code [ref=f2e865]: codes
+                      - text: 文件夹内找到对应的源代码文件。源代码文件可一键运行，将帮助你节省不必要的调试时间，让你能够专注于学习内容。
+                    - paragraph [ref=f2e866]:
+                      - img "代码块与对应的源代码文件" [ref=f2e867]
+                    - paragraph [ref=f2e868]:
+                      - text: 除了本地运行代码，
+                      - strong [ref=f2e869]: 网页版还支持 Python 代码的可视化运行
+                      - text: （基于
+                      - link "pythontutor" [ref=f2e870] [cursor=pointer]:
+                        - /url: https://pythontutor.com/
+                      - text: 实现）。如下图所示，你可以点击代码块下方的“可视化运行”来展开视图，观察算法代码的执行过程；也可以点击“全屏观看”，以获得更好的阅览体验。
+                    - paragraph [ref=f2e871]:
+                      - img "Python 代码的可视化运行" [ref=f2e872]
+                    - heading "在提问讨论中共同成长" [level=2] [ref=f2e873]
+                    - paragraph [ref=f2e874]:
+                      - text: 在阅读本书时，请不要轻易跳过那些没学明白的知识点。
+                      - strong [ref=f2e875]: 欢迎在评论区提出你的问题
+                      - text: ，我和小伙伴们将竭诚为你解答，一般情况下可在两天内回复。
+                    - paragraph [ref=f2e876]: 如下图所示，网页版每个章节的底部都配有评论区。希望你能多关注评论区的内容。一方面，你可以了解大家遇到的问题，从而查漏补缺，激发更深入的思考。另一方面，期待你能慷慨地回答其他小伙伴的问题，分享你的见解，帮助他人进步。
+                    - paragraph [ref=f2e877]:
+                      - img "评论区示例" [ref=f2e878]
+                    - heading "算法学习路线" [level=2] [ref=f2e879]
+                    - paragraph [ref=f2e880]: 从总体上看，我们可以将学习数据结构与算法的过程划分为三个阶段。
+                    - list [ref=f2e881]:
+                      - listitem [ref=f2e882]:
+                        - strong [ref=f2e883]: 阶段一：算法入门
+                        - text: 。我们需要熟悉各种数据结构的特点和用法，学习不同算法的原理、流程、用途和效率等方面的内容。
+                      - listitem [ref=f2e884]:
+                        - strong [ref=f2e885]: 阶段二：刷算法题
+                        - text: 。建议从热门题目开刷，先积累至少 100 道题目，熟悉主流的算法问题。初次刷题时，“知识遗忘”可能是一个挑战，但请放心，这是很正常的。我们可以按照“艾宾浩斯遗忘曲线”来复习题目，通常在进行 3～5 轮的重复后，就能将其牢记在心。推荐的题单和刷题计划请见此
+                        - link "GitHub 仓库" [ref=f2e886] [cursor=pointer]:
+                          - /url: https://github.com/krahets/LeetCode-Book
+                        - text: 。
+                      - listitem [ref=f2e887]:
+                        - strong [ref=f2e888]: 阶段三：搭建知识体系
+                        - text: 。在学习方面，我们可以阅读算法专栏文章、解题框架和算法教材，以不断丰富知识体系。在刷题方面，可以尝试采用进阶刷题策略，如按专题分类、一题多解、一解多题等，相关的刷题心得可以在各个社区找到。
+                    - paragraph [ref=f2e889]: 如下图所示，本书内容主要涵盖“阶段一”，旨在帮助你更高效地展开阶段二和阶段三的学习。
+                    - paragraph [ref=f2e890]:
+                      - img "算法学习路线" [ref=f2e891]
+                  - generic "0.2 如何使用本书 学习操作" [ref=f2e892]:
+                    - button "返回图谱" [ref=f2e893] [cursor=pointer]
+                    - button "进入练习" [ref=f2e895] [cursor=pointer]
+                    - button [ref=f2e897] [cursor=pointer]
+                - generic [ref=f2e902]:
+                  - generic [ref=f2e904]:
+                    - paragraph [ref=f2e905]: Section 3
+                    - heading "0.3 小结" [level=3] [ref=f2e906]
+                  - article [ref=f2e910]:
+                    - heading "重点回顾" [level=3] [ref=f2e911]
+                    - list [ref=f2e912]:
+                      - listitem [ref=f2e913]: 本书的主要受众是算法初学者。如果你已有一定基础，本书能帮助你系统回顾算法知识，书中源代码也可作为“刷题工具库”使用。
+                      - listitem [ref=f2e914]: 书中内容主要包括复杂度分析、数据结构和算法三部分，涵盖了该领域的大部分主题。
+                      - listitem [ref=f2e915]: 对于算法新手，在初学阶段阅读一本入门书至关重要，可以少走许多弯路。
+                      - listitem [ref=f2e916]: 书中的动画图解通常用于介绍重点和难点知识。阅读本书时，应给予这些内容更多关注。
+                      - listitem [ref=f2e917]: 实践乃学习编程之最佳途径。强烈建议运行源代码并亲自敲代码。
+                      - listitem [ref=f2e918]: 本书网页版的每个章节都设有评论区，欢迎随时分享你的疑惑与见解。
+                  - generic "0.3 小结 学习操作" [ref=f2e919]:
+                    - button "返回图谱" [ref=f2e920] [cursor=pointer]
+                    - button "进入练习" [ref=f2e922] [cursor=pointer]
+                    - button [ref=f2e924] [cursor=pointer]
+              - generic [ref=f2e929]:
+                - text: 本课程正文整理自
+                - link "Hello 算法" [ref=f2e930] [cursor=pointer]:
+                  - /url: https://github.com/krahets/hello-algo/tree/1f9eaee5be4f5e85ad562fb57878d939104d21ea
+                - text: ， 依照
+                - link "CC BY-NC-SA 4.0" [ref=f2e931] [cursor=pointer]:
+                  - /url: https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans
+                - text: 许可使用。
+              - navigation "章节底部翻页" [ref=f2e932]:
+                - button "上一章：序" [ref=f2e933] [cursor=pointer]:
+                  - generic [ref=f2e938]:
+                    - generic [ref=f2e939]: 上一章
+                    - strong [ref=f2e940]: 序
+                - strong [ref=f2e941]: 第 2 章，共 20 章
+                - button "下一章：第 1 章 初识算法" [ref=f2e942] [cursor=pointer]:
+                  - generic [ref=f2e944]:
+                    - generic [ref=f2e945]: 下一章
+                    - strong [ref=f2e946]: 第 1 章 初识算法
+  - button [ref=f2e226] [cursor=pointer]

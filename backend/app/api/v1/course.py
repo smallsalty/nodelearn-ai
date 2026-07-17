@@ -1,4 +1,7 @@
 from fastapi import APIRouter, Path, Query
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import TypeAdapter, ValidationError
 
 from app.core.config import settings
 from app.core.response import error_response, page_result, success_response
@@ -7,11 +10,16 @@ from app.schemas.course import (
     Chapter,
     ChapterCreateRequest,
     Course,
+    CourseContent,
+    CourseContentAttribution,
+    CourseContentChapter,
+    CourseContentSection,
     CourseCreateRequest,
     CourseUpdateRequest,
     KnowledgeNode,
     KnowledgeNodeCreateRequest,
     KnowledgeRelation,
+    NodeContent,
 )
 from app.services.course_service import CourseService
 
@@ -19,6 +27,7 @@ router = APIRouter()
 
 MOCK_TIME = "2026-05-19T10:00:00Z"
 course_service = CourseService()
+node_content_adapter = TypeAdapter(NodeContent)
 
 
 def mock_course(course_id: str = "course_ds_001") -> Course:
@@ -40,6 +49,7 @@ def mock_chapter(course_id: str = "course_ds_001") -> Chapter:
         course_id=course_id,
         title="Linear List",
         order_index=1,
+        content="# Linear List\n\nChapter overview.",
         created_at=MOCK_TIME,
         updated_at=MOCK_TIME,
     )
@@ -51,6 +61,9 @@ def mock_node(course_id: str = "course_ds_001", node_id: str = "node_array_001")
         course_id=course_id,
         name="Array",
         node_type=NodeType.concept,
+        description="Array stores elements in contiguous memory and supports indexed access.",
+        content="# Array\n\nArray stores elements in contiguous memory and supports indexed access.",
+        order_index=1,
         difficulty=DifficultyLevel.easy,
         learning_value=80,
         prerequisite_node_ids=[],
@@ -78,6 +91,36 @@ def mock_relation(course_id: str = "course_ds_001") -> KnowledgeRelation:
     )
 
 
+def mock_course_content(course_id: str = "course_ds_001") -> CourseContent:
+    chapter = mock_chapter(course_id)
+    node = mock_node(course_id)
+    return CourseContent(
+        course_id=course_id,
+        course_name="Data Structures",
+        attribution=CourseContentAttribution(
+            name="Hello 算法",
+            url="https://github.com/krahets/hello-algo",
+            license="CC BY-NC-SA 4.0",
+        ),
+        chapters=[
+            CourseContentChapter(
+                id=chapter.id,
+                title=chapter.title,
+                order_index=chapter.order_index,
+                content=chapter.content,
+                sections=[
+                    CourseContentSection(
+                        node_id=node.id,
+                        title=node.name,
+                        order_index=node.order_index,
+                        content=node.content,
+                    )
+                ],
+            )
+        ],
+    )
+
+
 @router.get("/courses")
 def list_courses(
     page: int = 1,
@@ -86,6 +129,9 @@ def list_courses(
     sort_by: str | None = Query(None, alias="sortBy"),
     sort_order: str | None = Query(None, alias="sortOrder"),
 ):
+    if settings.enable_mock:
+        items = [mock_course()]
+        return success_response(page_result(items, len(items), page, page_size))
     try:
         items, total = course_service.list_courses(page=page, page_size=page_size, keyword=keyword)
         if items or not settings.enable_mock:
@@ -93,12 +139,13 @@ def list_courses(
     except Exception as exc:
         if not settings.enable_mock:
             return error_response(f"database query failed: {exc}")
-    items = [mock_course()]
-    return success_response(page_result(items, len(items), page, page_size))
+    return success_response(page_result([], 0, page, page_size))
 
 
 @router.post("/courses")
 def create_course(payload: CourseCreateRequest):
+    if settings.enable_mock:
+        return success_response(mock_course())
     try:
         return success_response(course_service.create_course(payload))
     except Exception as exc:
@@ -109,6 +156,8 @@ def create_course(payload: CourseCreateRequest):
 
 @router.get("/courses/{courseId}")
 def get_course(course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response(mock_course(course_id))
     try:
         course = course_service.get_course(course_id)
         if course is not None:
@@ -123,6 +172,8 @@ def get_course(course_id: str = Path(alias="courseId")):
 
 @router.put("/courses/{courseId}")
 def update_course(payload: CourseUpdateRequest, course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response(mock_course(course_id))
     try:
         course = course_service.update_course(course_id, payload)
         if course is not None:
@@ -137,6 +188,8 @@ def update_course(payload: CourseUpdateRequest, course_id: str = Path(alias="cou
 
 @router.delete("/courses/{courseId}")
 def delete_course(course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response(True)
     try:
         return success_response(course_service.delete_course(course_id))
     except Exception as exc:
@@ -147,6 +200,8 @@ def delete_course(course_id: str = Path(alias="courseId")):
 
 @router.get("/courses/{courseId}/chapters")
 def list_chapters(course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response([mock_chapter(course_id)])
     try:
         chapters = course_service.list_chapters(course_id)
         if chapters or not settings.enable_mock:
@@ -159,6 +214,8 @@ def list_chapters(course_id: str = Path(alias="courseId")):
 
 @router.post("/courses/{courseId}/chapters")
 def create_chapter(payload: ChapterCreateRequest, course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response(mock_chapter(course_id))
     try:
         return success_response(course_service.create_chapter(course_id, payload))
     except Exception as exc:
@@ -167,8 +224,23 @@ def create_chapter(payload: ChapterCreateRequest, course_id: str = Path(alias="c
     return success_response(mock_chapter(course_id))
 
 
+@router.get("/courses/{courseId}/content")
+def get_course_content(course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response(mock_course_content(course_id))
+    try:
+        content = course_service.get_course_content(course_id)
+        if content is not None:
+            return success_response(content)
+        return JSONResponse(status_code=404, content=error_response(f"course not found: {course_id}", code=404))
+    except Exception as exc:
+        return error_response(f"database query failed: {exc}")
+
+
 @router.get("/courses/{courseId}/nodes")
 def list_nodes(course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response([mock_node(course_id)])
     try:
         nodes = course_service.list_nodes(course_id)
         if nodes or not settings.enable_mock:
@@ -181,6 +253,8 @@ def list_nodes(course_id: str = Path(alias="courseId")):
 
 @router.post("/courses/{courseId}/nodes")
 def create_node(payload: KnowledgeNodeCreateRequest, course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response(mock_node(course_id))
     try:
         return success_response(course_service.create_node(course_id, payload))
     except Exception as exc:
@@ -191,6 +265,8 @@ def create_node(payload: KnowledgeNodeCreateRequest, course_id: str = Path(alias
 
 @router.get("/nodes/{nodeId}")
 def get_node(node_id: str = Path(alias="nodeId")):
+    if settings.enable_mock:
+        return success_response(mock_node(node_id=node_id))
     try:
         node = course_service.get_node(node_id)
         if node is not None:
@@ -205,6 +281,13 @@ def get_node(node_id: str = Path(alias="nodeId")):
 
 @router.put("/nodes/{nodeId}")
 def update_node(payload: dict, node_id: str = Path(alias="nodeId")):
+    if "content" in payload:
+        try:
+            payload["content"] = node_content_adapter.validate_python(payload["content"])
+        except ValidationError as exc:
+            raise RequestValidationError(exc.errors()) from exc
+    if settings.enable_mock:
+        return success_response(mock_node(node_id=node_id))
     try:
         node = course_service.update_node(node_id, payload)
         if node is not None:
@@ -219,6 +302,8 @@ def update_node(payload: dict, node_id: str = Path(alias="nodeId")):
 
 @router.delete("/nodes/{nodeId}")
 def delete_node(node_id: str = Path(alias="nodeId")):
+    if settings.enable_mock:
+        return success_response(True)
     try:
         return success_response(course_service.delete_node(node_id))
     except Exception as exc:
@@ -229,6 +314,8 @@ def delete_node(node_id: str = Path(alias="nodeId")):
 
 @router.get("/courses/{courseId}/relations")
 def list_relations(course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response([mock_relation(course_id)])
     try:
         relations = course_service.list_relations(course_id)
         if relations or not settings.enable_mock:
@@ -241,6 +328,8 @@ def list_relations(course_id: str = Path(alias="courseId")):
 
 @router.post("/courses/{courseId}/relations")
 def create_relation(payload: KnowledgeRelation, course_id: str = Path(alias="courseId")):
+    if settings.enable_mock:
+        return success_response(payload)
     try:
         return success_response(course_service.create_relation(course_id, payload))
     except Exception as exc:

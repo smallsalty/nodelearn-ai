@@ -30,7 +30,10 @@ async function login() {
     localStorage.setItem("refreshToken", tokenResponse.data.refreshToken);
     const userResponse = await usersApi.getCurrentUser();
     setCurrentUser(userResponse.data);
-    await router.push((route.query.redirect as string | undefined) ?? "/home");
+    const redirect = typeof route.query.redirect === "string" && route.query.redirect.startsWith("/")
+      ? route.query.redirect
+      : "/home";
+    await router.push(redirect);
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {

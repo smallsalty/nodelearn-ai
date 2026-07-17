@@ -1,0 +1,9 @@
+import { createApp } from "/node_modules/.vite/deps/vue.js?v=19c73d71";
+import ElementPlus from "/node_modules/.vite/deps/element-plus.js?v=8a83f27a";
+import "/node_modules/element-plus/dist/index.css";
+import App from "/src/App.vue";
+import router from "/src/router/index.ts";
+import "/src/styles/index.css";
+createApp(App).use(router).use(ElementPlus).mount("#app");
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIm1haW4udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgY3JlYXRlQXBwIH0gZnJvbSBcInZ1ZVwiO1xuaW1wb3J0IEVsZW1lbnRQbHVzIGZyb20gXCJlbGVtZW50LXBsdXNcIjtcbmltcG9ydCBcImVsZW1lbnQtcGx1cy9kaXN0L2luZGV4LmNzc1wiO1xuaW1wb3J0IEFwcCBmcm9tIFwiLi9BcHAudnVlXCI7XG5pbXBvcnQgcm91dGVyIGZyb20gXCIuL3JvdXRlclwiO1xuaW1wb3J0IFwiLi9zdHlsZXMvaW5kZXguY3NzXCI7XG5cbmNyZWF0ZUFwcChBcHApLnVzZShyb3V0ZXIpLnVzZShFbGVtZW50UGx1cykubW91bnQoXCIjYXBwXCIpO1xuIl0sIm1hcHBpbmdzIjoiQUFBQSxTQUFTLGlCQUFpQjtBQUMxQixPQUFPLGlCQUFpQjtBQUN4QixPQUFPO0FBQ1AsT0FBTyxTQUFTO0FBQ2hCLE9BQU8sWUFBWTtBQUNuQixPQUFPO0FBRVAsVUFBVSxHQUFHLEVBQUUsSUFBSSxNQUFNLEVBQUUsSUFBSSxXQUFXLEVBQUUsTUFBTSxNQUFNOyIsIm5hbWVzIjpbXX0=

@@ -6,6 +6,7 @@ import json
 import logging
 import re
 import shutil
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from collections.abc import Callable
@@ -18,10 +19,27 @@ import httpx
 from app.core.config import settings
 from app.schemas.common import AuditStatus, VideoAspect, VideoGenerationStage, VideoQualityPreset, VideoTheme
 from app.schemas.course import KnowledgeNode
+from app.schemas.practice import PracticeRecord
+from app.schemas.profile import StudentProfile
 from app.schemas.report import AuditResult
 from app.schemas.resource import RetrievedDocument, VideoGenerateOptions
 from app.schemas.video import AnimationScriptContent, VideoLessonOutput, VideoLessonScene
 from app.services.llm_service import LLMService
+from app.services.video_pipeline.artifacts import DebugArtifactStore
+from app.services.video_pipeline.context import VideoContextBuilder
+from app.services.video_pipeline.media import MediaValidator, render_dimensions
+from app.services.video_pipeline.models import (
+    ResolvedScenePlan,
+    SceneAudio,
+    TeachingStrategy,
+    ValidatedStoryboard,
+    VideoGenerationContext,
+    VideoNarrative,
+)
+from app.services.video_pipeline.planning import NarrativePlanner, StoryboardPlanner, TeachingStrategyPlanner
+from app.services.video_pipeline.projection import build_render_manifest, project_public_v2
+from app.services.video_pipeline.registry import SceneTemplateRegistry
+from app.services.video_pipeline.timeline import resolve_timeline
 
 logger = logging.getLogger(__name__)
 
@@ -438,7 +456,7 @@ class AnimationSpecSkill:
             duration = max(3.0, min(10.0, round(len(chunk) / 4, 1)))
             if scene_type == "hook":
                 duration = min(duration, 4.0)
-            screen_text = self._screen_text(scene, title, chunk, beat_index)
+            screen_text = self._screen_text(scene, title, chunk, beat_index, scene_type)
             beats.append(
                 {
                     "beatId": f"scene_{index:03d}_beat_{beat_index:02d}",
@@ -475,15 +493,56 @@ class AnimationSpecSkill:
             return [narration.strip() or "继续观察这个知识点的状态变化。"]
         return chunks[:3]
 
-    def _screen_text(self, scene: dict[str, Any], title: str, narration: str, beat_index: int) -> list[str]:
+    def _screen_text(self, scene: dict[str, Any], title: str, narration: str, beat_index: int, scene_type: str) -> list[str]:
         raw = scene.get("screenText")
         candidates = [str(item).strip() for item in raw if str(item).strip()] if isinstance(raw, list) else []
+        candidates.extend(self._narration_screen_phrases(narration))
         if not candidates:
             candidates = [title]
-        result = [item[:20] for item in candidates[:3] if item[:20]]
-        if not result:
-            result = [narration[:20]]
-        return [result[min(beat_index - 1, len(result) - 1)]]
+        start = min(beat_index - 1, len(candidates) - 1)
+        ordered = candidates[start:] + candidates[:start]
+        max_items = 2 if scene_type == "hook" else 3
+        result = self._compact_screen_text(ordered, max_items=max_items)
+        return result or [self._clean_screen_phrase(narration)[:16] or title[:16]]
+
+    def _narration_screen_phrases(self, narration: str) -> list[str]:
+        normalized = re.sub(r"\s+", "", narration)
+        parts = [part for part in re.split(r"[，,；;。！？!?：:]", normalized) if part]
+        phrases = []
+        for part in parts:
+            part = re.sub(r"^(先|再|然后|接着|观察|通过|我们|可以|如果|当)", "", part)
+            part = re.sub(r"(这个|一个|一种)", "", part)
+            if len(part) >= 3:
+                phrases.append(part)
+        return phrases[:4]
+
+    def _compact_screen_text(
+        self,
+        candidates: list[str],
+        max_items: int = 3,
+        per_item_limit: int = 16,
+        total_limit: int = 40,
+    ) -> list[str]:
+        result: list[str] = []
+        total = 0
+        seen: set[str] = set()
+        for candidate in candidates:
+            phrase = self._clean_screen_phrase(candidate)[:per_item_limit]
+            if not phrase or phrase in seen:
+                continue
+            if total + len(phrase) > total_limit:
+                continue
+            result.append(phrase)
+            seen.add(phrase)
+            total += len(phrase)
+            if len(result) >= max_items:
+                break
+        return result
+
+    def _clean_screen_phrase(self, value: str) -> str:
+        compact = re.sub(r"\s+", "", str(value))
+        compact = compact.strip("。！？!?，,；;：:、 ")
+        return compact
 
     def _v2_visual_plan(
         self,
@@ -493,15 +552,30 @@ class AnimationSpecSkill:
         beat_index: int,
         narration_context: str = "",
     ) -> dict[str, Any]:
+        label = screen_text[0][:16] if screen_text else "观察状态变化"
         if scene_type == "hook":
+            icon_name = "hash" if "哈希" in node_name or "hash" in node_name.lower() else "search"
+            focus_label = screen_text[1][:16] if len(screen_text) > 1 else "抓住关键关系"
+            elements = [{"type": "icon", "name": icon_name, "animation": "zoom_in"}]
+            elements = self._fit_visual_elements(
+                elements,
+                [{"type": "keyword", "content": focus_label, "animation": "pop_in"}],
+            )
             return {
                 "layout": "center_focus",
-                "elements": [{"type": "text", "content": screen_text[0], "animation": "pop_in"}],
+                "elements": elements,
             }
         if scene_type == "summary":
-            labels = (screen_text + ["理解对象", "看清规则", "跟踪变化"])[:3]
-            while len(labels) < 3:
-                labels.append(["理解对象", "看清规则", "跟踪变化"][len(labels)])
+            labels = self._compact_screen_text(
+                screen_text + ["定位规则", "平均成本", "冲突处理"],
+                max_items=3,
+                per_item_limit=12,
+            )
+            for fallback in ("定位规则", "平均成本", "冲突处理"):
+                if len(labels) >= 3:
+                    break
+                if fallback not in labels:
+                    labels.append(fallback)
             return {
                 "layout": "summary_cards",
                 "elements": [
@@ -515,13 +589,67 @@ class AnimationSpecSkill:
             screen_label=screen_text[0] if screen_text else "",
             narration_context=narration_context,
         )
-        domain["animation"] = ["draw", "highlight", "slide_in_right"][beat_index % 3]
-        elements = [domain]
-        label = screen_text[0][:16] if screen_text else "观察状态变化"
-        if len(self._element_visible_text(domain)) + len(label) <= 40:
-            elements.append({"type": "keyword", "content": label, "animation": "fade_in"})
-        layout = "comparison" if scene_type == "comparison" else "timeline" if scene_type == "process" else "grid_focus"
+        domain["animation"] = self._scene_animation(scene_type, beat_index)
+        support: list[dict[str, Any]] = []
+        layout = "grid_focus"
+        if scene_type == "definition":
+            layout = "left_right"
+            support = [{"type": "keyword", "content": label, "animation": "fade_in"}]
+        elif scene_type == "analogy":
+            layout = "pipeline"
+            support = [
+                {"type": "arrow", "label": "映射", "animation": "draw"},
+                {"type": "keyword", "content": label, "animation": "fade_in"},
+            ]
+        elif scene_type == "comparison":
+            layout = "comparison"
+            support = [{"type": "card", "content": label[:12], "animation": "slide_in_right"}]
+        elif scene_type == "process":
+            layout = "timeline"
+            support = [
+                {
+                    "type": "timeline",
+                    "items": self._process_step_labels(node_name, screen_text),
+                    "animation": "stagger_in",
+                }
+            ]
+        elif scene_type == "example":
+            layout = "left_right" if beat_index % 2 else "grid_focus"
+            support = [{"type": "keyword", "content": label, "animation": "fade_in"}]
+        else:
+            layout = "grid_focus" if beat_index % 2 else "left_right"
+            support = [{"type": "keyword", "content": label, "animation": "fade_in"}]
+        elements = self._fit_visual_elements([domain], support)
         return {"layout": layout, "elements": elements}
+
+    def _scene_animation(self, scene_type: str, beat_index: int) -> str:
+        by_scene = {
+            "definition": ["draw", "highlight"],
+            "analogy": ["slide_in_left", "draw"],
+            "mechanism": ["highlight", "draw"],
+            "comparison": ["highlight", "slide_in_right"],
+            "process": ["stagger_in", "draw"],
+            "example": ["slide_in_right", "highlight"],
+        }
+        choices = by_scene.get(scene_type, ["draw", "highlight", "slide_in_right"])
+        return choices[(beat_index - 1) % len(choices)]
+
+    def _process_step_labels(self, node_name: str, screen_text: list[str]) -> list[str]:
+        fallbacks = ["取键", "算桶", "查链"] if "哈希" in node_name or "hash" in node_name.lower() else ["对象", "规则", "变化"]
+        return self._compact_screen_text(
+            screen_text + fallbacks,
+            max_items=3,
+            per_item_limit=6,
+            total_limit=18,
+        ) or fallbacks
+
+    def _fit_visual_elements(self, base: list[dict[str, Any]], optional: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        elements = list(base)
+        for element in optional:
+            visible_text = "".join(self._element_visible_text(item) for item in [*elements, element])
+            if len(visible_text) <= 40:
+                elements.append(element)
+        return elements
 
     def _element_visible_text(self, element: dict[str, Any]) -> str:
         values = []
@@ -653,7 +781,7 @@ class AnimationSpecSkill:
                 "type": "complexity_chart",
                 "label": "\u67e5\u627e\u6210\u672c",
                 "items": ["\u6570\u7ec4\u7d22\u5f15 O(1)", "\u94fe\u8868\u67e5\u627e O(n)", "\u54c8\u5e0c\u8868\u5e73\u5747 O(1)"],
-                "activeIndex": 1,
+                "activeIndex": 2,
                 "animation": "highlight",
             }
         if is_hash_topic and scene_type == "mechanism":
@@ -671,10 +799,15 @@ class AnimationSpecSkill:
         if is_hash_topic and scene_type in {"process", "example"}:
             numbers = [int(value) for value in re.findall(r"\d+", f"{screen_label} {narration_context}")]
             bucket_index = (numbers[-1] % 100) if numbers else 2
+            node_labels = [str(value) for value in numbers[:3] if value != bucket_index]
+            for fallback in ("keyA", "keyB"):
+                if len(node_labels) >= 2:
+                    break
+                node_labels.append(fallback)
             return {
                 "type": "collision_chain",
                 "bucketIndex": bucket_index,
-                "nodes": ["keyA", "keyB"],
+                "nodes": node_labels[:2],
                 "activeNodeIndex": 1,
                 "animation": "stagger_in",
             }
@@ -820,7 +953,14 @@ class TtsSkill:
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
         self._client = client
 
-    async def synthesize(self, narration: str, scene_id: str, output_dir: Path) -> SynthesizedAudio:
+    async def synthesize(
+        self,
+        narration: str,
+        scene_id: str,
+        output_dir: Path,
+        *,
+        max_duration_seconds: float | None = None,
+    ) -> SynthesizedAudio:
         ffprobe = self._validate_configuration()
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"{scene_id}.{settings.tts_audio_format}"
@@ -846,8 +986,57 @@ class TtsSkill:
             raise RuntimeError("Doubao TTS returned no audio data")
         path.write_bytes(audio)
         duration = await self._probe_duration(ffprobe, path)
+        if max_duration_seconds is not None and duration > max_duration_seconds:
+            duration = await self._normalize_audio_duration(
+                ffprobe,
+                path,
+                duration_seconds=duration,
+                max_duration_seconds=max_duration_seconds,
+            )
         relative_path = path.relative_to(Path(settings.file_storage_path).resolve())
         return SynthesizedAudio(path=path, url=_storage_url(relative_path), duration_seconds=duration)
+
+    async def _normalize_audio_duration(
+        self,
+        ffprobe: str,
+        path: Path,
+        *,
+        duration_seconds: float,
+        max_duration_seconds: float,
+    ) -> float:
+        # Keep a small margin for MP3 encoder padding and frame rounding. A
+        # larger correction would make speech unnaturally fast and therefore
+        # remains a hard failure instead of silently weakening the pacing gate.
+        tempo = duration_seconds / max_duration_seconds * 1.02
+        if tempo > 1.25:
+            raise RuntimeError("TTS narration exceeds the safe tempo-normalization range")
+        ffmpeg = _command_path(settings.ffmpeg_binary)
+        if ffmpeg is None:
+            raise RuntimeError(f"ffmpeg is not available: {settings.ffmpeg_binary}")
+        normalized_path = path.with_name(f"{path.stem}.normalized{path.suffix}")
+        process = await asyncio.create_subprocess_exec(
+            ffmpeg,
+            "-y",
+            "-i",
+            str(path),
+            "-filter:a",
+            f"atempo={tempo:.6f}",
+            "-vn",
+            str(normalized_path),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, stderr = await process.communicate()
+        if process.returncode != 0 or not normalized_path.exists():
+            normalized_path.unlink(missing_ok=True)
+            raise RuntimeError(
+                f"ffmpeg failed to normalize TTS pacing: {stderr.decode(errors='replace').strip()}"
+            )
+        normalized_path.replace(path)
+        normalized_duration = await self._probe_duration(ffprobe, path)
+        if normalized_duration > max_duration_seconds + 0.05:
+            raise RuntimeError("normalized TTS audio still exceeds the scene pacing limit")
+        return normalized_duration
 
     def _validate_configuration(self) -> str:
         if settings.tts_provider != "doubao_v3_http_chunked":
@@ -974,51 +1163,59 @@ class VideoRenderSkill:
         lesson: AnimationScriptContent,
         output_dir: Path,
         quality_preset: VideoQualityPreset | str = VideoQualityPreset.high,
+        render_manifest: dict[str, Any] | None = None,
     ) -> RenderedVideo:
         quality_value = quality_preset.value if hasattr(quality_preset, "value") else str(quality_preset)
         render_input = {
             "lesson": self._validate_lesson_for_render(lesson),
             "qualityPreset": quality_value,
         }
+        if render_manifest is not None:
+            render_input["renderManifest"] = render_manifest
         node = self._validate_configuration()
         output_dir.mkdir(parents=True, exist_ok=True)
-        render_input_path = output_dir / "render-input.json"
         output_path = output_dir / "lesson.mp4"
-        render_input_path.write_text(json.dumps(render_input, ensure_ascii=False), encoding="utf-8")
         project_path = Path(settings.video_render_project_path).resolve()
-        command = [
-            node,
-            str(project_path / "render.mjs"),
-            "--input",
-            str(render_input_path),
-            "--output",
-            str(output_path),
-        ]
-        if settings.video_render_browser_executable:
-            command.extend(["--browser-executable", settings.video_render_browser_executable])
-        process = await asyncio.create_subprocess_exec(
-            *command,
-            cwd=str(project_path),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        try:
-            stdout, stderr = await asyncio.wait_for(
-                process.communicate(),
-                timeout=settings.video_render_timeout_seconds,
+        with tempfile.TemporaryDirectory(prefix="nodelearn-video-render-") as input_dir:
+            render_input_path = Path(input_dir) / "render-input.json"
+            render_input_path.write_text(json.dumps(render_input, ensure_ascii=False), encoding="utf-8")
+            command = [
+                node,
+                str(project_path / "render.mjs"),
+                "--input",
+                str(render_input_path),
+                "--output",
+                str(output_path),
+            ]
+            if settings.video_render_browser_executable:
+                command.extend(["--browser-executable", settings.video_render_browser_executable])
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                cwd=str(project_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
-        except TimeoutError as exc:
-            process.kill()
-            await process.communicate()
-            raise RuntimeError("Remotion render timed out") from exc
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(),
+                    timeout=settings.video_render_timeout_seconds,
+                )
+            except TimeoutError as exc:
+                process.kill()
+                await process.communicate()
+                raise RuntimeError("Remotion render timed out") from exc
         if process.returncode != 0:
             details = stderr.decode(errors="replace").strip() or stdout.decode(errors="replace").strip()
             raise RuntimeError(f"Remotion render failed: {details}")
         if not output_path.is_file() or output_path.stat().st_size == 0:
             raise RuntimeError("Remotion did not create an MP4 file")
         await self._validate_video_streams(output_path)
-        relative_path = output_path.relative_to(Path(settings.file_storage_path).resolve())
-        return RenderedVideo(path=output_path, url=_storage_url(relative_path))
+        try:
+            relative_path = output_path.relative_to(Path(settings.file_storage_path).resolve())
+            url = _storage_url(relative_path)
+        except ValueError:
+            url = ""
+        return RenderedVideo(path=output_path, url=url)
 
     def _validate_lesson_for_render(self, lesson: AnimationScriptContent) -> dict[str, Any]:
         validated = AnimationScriptContent.model_validate(lesson.model_dump(by_alias=True, mode="json"))
@@ -1104,6 +1301,7 @@ class SafetyAuditSkill:
         async with httpx.AsyncClient(
             base_url=settings.audit_api_base_url,
             timeout=settings.audit_timeout_seconds,
+            trust_env=False,
         ) as client:
             return await self._post(client, payload)
 
@@ -1117,7 +1315,7 @@ class SafetyAuditSkill:
         return AuditResult(**parsed["data"])
 
 
-class VideoGenerationService:
+class LegacyVideoGenerationService:
     def __init__(
         self,
         llm_service: LLMService | None = None,
@@ -1251,7 +1449,6 @@ class VideoGenerationService:
                 audio_urls.append(audio.url)
                 scene.duration_seconds = sum(item.duration_seconds for item in scene.beats)
                 scene.narration = "\n".join(item.narration for item in scene.beats)
-            self._align_to_target_duration(lesson, target_duration_seconds)
             lesson.duration_seconds = sum(scene.duration_seconds for scene in lesson.scenes)
             lesson.output.audio_urls = audio_urls
             emit(VideoGenerationStage.render, 78)
@@ -1268,35 +1465,385 @@ class VideoGenerationService:
             shutil.rmtree(output_dir, ignore_errors=True)
             raise
 
-    @staticmethod
-    def _align_to_target_duration(
-        lesson: AnimationScriptContent,
-        target_duration_seconds: float | None,
+@dataclass(slots=True)
+class _PreparedVideoPipeline:
+    context: VideoGenerationContext
+    strategy: TeachingStrategy
+    narrative: VideoNarrative
+    validated_storyboard: ValidatedStoryboard
+    scene_plans: list[ResolvedScenePlan]
+
+
+class VideoGenerationService:
+    """Twelve-stage Scene DSL pipeline with a v2 public compatibility projection."""
+
+    def __init__(
+        self,
+        llm_service: LLMService | None = None,
+        video_script_skill: VideoScriptSkill | None = None,
+        storyboard_skill: StoryboardSkill | None = None,
+        animation_spec_skill: AnimationSpecSkill | None = None,
+        quality_audit_skill: QualityAuditSkill | None = None,
+        tts_skill: TtsSkill | None = None,
+        video_render_skill: VideoRenderSkill | None = None,
+        safety_audit_skill: SafetyAuditSkill | None = None,
     ) -> None:
-        if not target_duration_seconds:
-            return
-        current_duration = sum(beat.duration_seconds for scene in lesson.scenes for beat in scene.beats)
-        remaining = max(0.0, target_duration_seconds - current_duration)
-        eligible = [
-            beat
-            for scene in lesson.scenes
-            if scene.scene_type != "hook"
-            for beat in scene.beats
-            if beat.duration_seconds < 15
-        ]
-        while remaining > 0.001 and eligible:
-            share = remaining / len(eligible)
-            distributed = 0.0
-            next_eligible = []
-            for beat in eligible:
-                addition = min(share, 15 - beat.duration_seconds)
-                beat.duration_seconds += addition
-                distributed += addition
-                if beat.duration_seconds < 15 - 0.001:
-                    next_eligible.append(beat)
-            if distributed <= 0.001:
-                break
-            remaining -= distributed
-            eligible = next_eligible
-        for scene in lesson.scenes:
-            scene.duration_seconds = sum(beat.duration_seconds for beat in scene.beats)
+        llm_service = llm_service or LLMService()
+        # Historical collaborators remain available for callers importing the
+        # façade, but new tasks are planned through the strict internal DSL.
+        self.video_script_skill = video_script_skill or VideoScriptSkill(llm_service)
+        self.storyboard_skill = storyboard_skill or StoryboardSkill(llm_service)
+        self.animation_spec_skill = animation_spec_skill or AnimationSpecSkill()
+        self.quality_audit_skill = quality_audit_skill or QualityAuditSkill()
+        self.context_builder = VideoContextBuilder()
+        self.strategy_planner = TeachingStrategyPlanner(llm_service)
+        self.narrative_planner = NarrativePlanner(llm_service)
+        self.storyboard_planner = StoryboardPlanner(llm_service)
+        self.scene_registry = SceneTemplateRegistry()
+        self.tts_skill = tts_skill or TtsSkill()
+        self.video_render_skill = video_render_skill or VideoRenderSkill()
+        self.media_validator = MediaValidator()
+        self.safety_audit_skill = safety_audit_skill or SafetyAuditSkill()
+
+    async def prepare_lesson(
+        self,
+        *,
+        target_id: str,
+        user_id: str,
+        course_id: str,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        documents: list[RetrievedDocument],
+        video_options: VideoGenerateOptions | None = None,
+        learner_profile_summary: str | None = None,
+        target_duration_seconds: float | None = None,
+        run_safety_audit: bool = True,
+        progress_callback: Callable[[VideoGenerationStage, float, str | None], None] | None = None,
+        profile: StudentProfile | None = None,
+        practice_records: list[PracticeRecord] | None = None,
+        available_nodes: list[KnowledgeNode] | None = None,
+        course_name: str | None = None,
+        custom_requirement: str | None = None,
+        detail_callback: Callable[[str, float], None] | None = None,
+    ) -> AnimationScriptContent:
+        options = video_options or VideoGenerateOptions()
+        prepared = await self._prepare_internal(
+            target_id=target_id,
+            user_id=user_id,
+            course_id=course_id,
+            node=node,
+            target_goal=target_goal,
+            documents=documents,
+            options=options,
+            learner_profile_summary=learner_profile_summary,
+            run_safety_audit=run_safety_audit,
+            progress_callback=progress_callback,
+            profile=profile,
+            practice_records=practice_records or [],
+            available_nodes=available_nodes or ([node] if node else []),
+            course_name=course_name,
+            custom_requirement=custom_requirement,
+            artifacts=None,
+            detail_callback=detail_callback,
+        )
+        audio = self._estimated_audio(prepared)
+        timeline = resolve_timeline(prepared.validated_storyboard.storyboard, audio)
+        return project_public_v2(
+            context=prepared.context,
+            storyboard=prepared.validated_storyboard.storyboard,
+            timeline=timeline,
+            audio_by_scene=audio,
+            theme=options.theme or VideoTheme.warm_academic,
+            aspect_ratio=options.aspect_ratio or VideoAspect.landscape,
+            subtitle_enabled=options.subtitle_enabled is not False,
+            learner_profile_summary=learner_profile_summary,
+            target_duration_seconds=target_duration_seconds,
+        )
+
+    async def generate(
+        self,
+        task_id: str,
+        target_id: str,
+        user_id: str,
+        course_id: str,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        documents: list[RetrievedDocument],
+        video_options: VideoGenerateOptions | None = None,
+        learner_profile_summary: str | None = None,
+        target_duration_seconds: float | None = None,
+        progress_callback: Callable[[VideoGenerationStage, float, str | None], None] | None = None,
+        profile: StudentProfile | None = None,
+        practice_records: list[PracticeRecord] | None = None,
+        available_nodes: list[KnowledgeNode] | None = None,
+        course_name: str | None = None,
+        custom_requirement: str | None = None,
+        detail_callback: Callable[[str, float], None] | None = None,
+    ) -> AnimationScriptContent:
+        if settings.enable_mock:
+            raise RuntimeError("video generation requires ENABLE_MOCK=false")
+
+        options = video_options or VideoGenerateOptions()
+        aspect = options.aspect_ratio or VideoAspect.landscape
+        quality = options.quality_preset or VideoQualityPreset.high
+        theme = options.theme or VideoTheme.warm_academic
+        aspect_value = aspect.value if hasattr(aspect, "value") else str(aspect)
+        quality_value = quality.value if hasattr(quality, "value") else str(quality)
+        width, height = render_dimensions(aspect_value, quality_value)
+        storage_root = Path(settings.file_storage_path).resolve()
+        publication_dir = storage_root / "generated_resources" / task_id
+        artifacts = DebugArtifactStore(task_id)
+        temporary_staging: tempfile.TemporaryDirectory[str] | None = None
+        if artifacts.enabled:
+            staging_dir = artifacts.directory / "render"
+        else:
+            temporary_staging = tempfile.TemporaryDirectory(prefix="nodelearn-video-staging-")
+            staging_dir = Path(temporary_staging.name)
+
+        def emit(stage: VideoGenerationStage, progress: float, error: str | None = None) -> None:
+            if progress_callback is not None:
+                progress_callback(stage, progress, error)
+
+        try:
+            prepared = await self._prepare_internal(
+                target_id=target_id,
+                user_id=user_id,
+                course_id=course_id,
+                node=node,
+                target_goal=target_goal,
+                documents=documents,
+                options=options,
+                learner_profile_summary=learner_profile_summary,
+                run_safety_audit=True,
+                progress_callback=progress_callback,
+                profile=profile,
+                practice_records=practice_records or [],
+                available_nodes=available_nodes or ([node] if node else []),
+                course_name=course_name,
+                custom_requirement=custom_requirement,
+                artifacts=artifacts,
+                detail_callback=detail_callback,
+            )
+            storyboard = prepared.validated_storyboard.storyboard
+            audio_by_scene: dict[str, SceneAudio] = {}
+            for index, scene in enumerate(storyboard.scenes):
+                if detail_callback is not None:
+                    detail_callback("tts_generation", 50 + index / max(1, len(storyboard.scenes)) * 16)
+                emit(VideoGenerationStage.tts, 50 + index / max(1, len(storyboard.scenes)) * 16)
+                synthesized = await self.tts_skill.synthesize(
+                    scene.narration,
+                    scene.id,
+                    publication_dir / "audio",
+                    max_duration_seconds=7.45 if scene.narrative_role == "hook" else 14.45,
+                )
+                audio_by_scene[scene.id] = SceneAudio(
+                    scene_id=scene.id,
+                    path=str(synthesized.path),
+                    url=synthesized.url,
+                    duration_seconds=synthesized.duration_seconds,
+                )
+            emit(VideoGenerationStage.tts, 68)
+            if detail_callback is not None:
+                detail_callback("audio_duration_analysis", 68)
+            artifacts.write(
+                "scene-durations.json",
+                [item.model_dump(mode="json") for item in audio_by_scene.values()],
+            )
+
+            timeline = resolve_timeline(storyboard, audio_by_scene, fps=30)
+            emit(VideoGenerationStage.tts, 72)
+            if detail_callback is not None:
+                detail_callback("animation_timing_resolution", 72)
+            artifacts.write("resolved-timeline.json", timeline)
+            lesson = project_public_v2(
+                context=prepared.context,
+                storyboard=storyboard,
+                timeline=timeline,
+                audio_by_scene=audio_by_scene,
+                theme=theme,
+                aspect_ratio=aspect,
+                subtitle_enabled=options.subtitle_enabled is not False,
+                learner_profile_summary=learner_profile_summary,
+                target_duration_seconds=target_duration_seconds,
+            )
+            manifest = build_render_manifest(
+                context=prepared.context,
+                storyboard=storyboard,
+                plans=prepared.scene_plans,
+                timeline=timeline,
+                audio_by_scene=audio_by_scene,
+                theme=theme.value if hasattr(theme, "value") else str(theme),
+                aspect_ratio=aspect_value,
+                quality_preset=quality_value,
+                width=width,
+                height=height,
+                subtitle_enabled=options.subtitle_enabled is not False,
+            )
+            artifacts.write("render-manifest.json", manifest)
+
+            emit(VideoGenerationStage.render, 78)
+            if detail_callback is not None:
+                detail_callback("remotion_rendering", 78)
+            rendered = await self.video_render_skill.render(
+                lesson,
+                staging_dir,
+                quality_preset=quality,
+                render_manifest=manifest,
+            )
+            emit(VideoGenerationStage.audit, 88)
+            if detail_callback is not None:
+                detail_callback("video_validation", 88)
+            probe = await self.media_validator.probe_and_validate(
+                rendered.path,
+                timeline=timeline,
+                width=width,
+                height=height,
+                fps=30,
+            )
+            artifacts.write("media-probe.json", probe)
+
+            final_content = json.dumps(lesson.model_dump(by_alias=True, mode="json"), ensure_ascii=False)
+            final_audit = await self.safety_audit_skill.check(final_content, target_id, user_id, course_id)
+            if final_audit.audit_status != AuditStatus.passed:
+                raise VideoAuditError(AuditStatus(final_audit.audit_status))
+
+            emit(VideoGenerationStage.persist, 96)
+            if detail_callback is not None:
+                detail_callback("persistence", 96)
+            publication_dir.mkdir(parents=True, exist_ok=True)
+            final_path = publication_dir / "lesson.mp4"
+            shutil.copy2(rendered.path, final_path)
+            lesson.output.video_url = _storage_url(final_path.relative_to(storage_root))
+            return lesson
+        except Exception as exc:
+            artifacts.write(
+                "error.json",
+                {"errorType": exc.__class__.__name__, "message": str(exc) or exc.__class__.__name__},
+            )
+            emit(VideoGenerationStage.error, 100, str(exc) or exc.__class__.__name__)
+            shutil.rmtree(publication_dir, ignore_errors=True)
+            raise
+        finally:
+            if temporary_staging is not None:
+                temporary_staging.cleanup()
+
+    async def _prepare_internal(
+        self,
+        *,
+        target_id: str,
+        user_id: str,
+        course_id: str,
+        node: KnowledgeNode | None,
+        target_goal: str,
+        documents: list[RetrievedDocument],
+        options: VideoGenerateOptions,
+        learner_profile_summary: str | None,
+        run_safety_audit: bool,
+        progress_callback: Callable[[VideoGenerationStage, float, str | None], None] | None,
+        profile: StudentProfile | None,
+        practice_records: list[PracticeRecord],
+        available_nodes: list[KnowledgeNode],
+        course_name: str | None,
+        custom_requirement: str | None,
+        artifacts: DebugArtifactStore | None,
+        detail_callback: Callable[[str, float], None] | None,
+    ) -> _PreparedVideoPipeline:
+        def emit(stage: VideoGenerationStage, progress: float) -> None:
+            if progress_callback is not None:
+                progress_callback(stage, progress, None)
+
+        emit(VideoGenerationStage.script, 5)
+        if detail_callback is not None:
+            detail_callback("context_building", 5)
+        context = self.context_builder.build(
+            course_id=course_id,
+            course_name=course_name,
+            node=node,
+            profile=profile,
+            practice_records=practice_records,
+            documents=documents,
+            available_nodes=available_nodes,
+            learning_goal=target_goal,
+            custom_requirement=custom_requirement,
+        )
+        if profile is None and learner_profile_summary:
+            context.learner.profile_summary = learner_profile_summary
+        if artifacts:
+            artifacts.write("context.json", context)
+
+        emit(VideoGenerationStage.script, 12)
+        if detail_callback is not None:
+            detail_callback("teaching_strategy", 12)
+        strategy = await self.strategy_planner.plan(context)
+        if artifacts:
+            artifacts.write("teaching-strategy.json", strategy)
+
+        emit(VideoGenerationStage.script, 20)
+        if detail_callback is not None:
+            detail_callback("narrative_planning", 20)
+        narrative = await self.narrative_planner.plan(context, strategy)
+        if artifacts:
+            artifacts.write("narrative.json", narrative)
+
+        emit(VideoGenerationStage.storyboard, 30)
+        if detail_callback is not None:
+            detail_callback("storyboard_generation", 30)
+        raw_storyboard, validated = await self.storyboard_planner.generate(context, strategy, narrative)
+        if artifacts:
+            artifacts.write("storyboard-raw.json", raw_storyboard)
+            artifacts.write("storyboard-validated.json", validated)
+
+        emit(VideoGenerationStage.quality_audit, 40)
+        if detail_callback is not None:
+            detail_callback("storyboard_validation", 40)
+        scene_plans = self.scene_registry.resolve_all(validated.storyboard.scenes)
+        if artifacts:
+            artifacts.write(
+                "resolved-scene-plans.json",
+                [item.model_dump(mode="json") for item in scene_plans],
+            )
+        emit(VideoGenerationStage.quality_audit, 46)
+        if detail_callback is not None:
+            detail_callback("scene_template_resolution", 46)
+
+        if run_safety_audit:
+            estimated_audio = self._estimated_audio(
+                _PreparedVideoPipeline(context, strategy, narrative, validated, scene_plans)
+            )
+            estimated_timeline = resolve_timeline(validated.storyboard, estimated_audio)
+            preflight = project_public_v2(
+                context=context,
+                storyboard=validated.storyboard,
+                timeline=estimated_timeline,
+                audio_by_scene=estimated_audio,
+                theme=options.theme or VideoTheme.warm_academic,
+                aspect_ratio=options.aspect_ratio or VideoAspect.landscape,
+                subtitle_enabled=options.subtitle_enabled is not False,
+                learner_profile_summary=learner_profile_summary,
+                target_duration_seconds=None,
+            )
+            audit = await self.safety_audit_skill.check(
+                json.dumps(preflight.model_dump(by_alias=True, mode="json"), ensure_ascii=False),
+                target_id,
+                user_id,
+                course_id,
+            )
+            if audit.audit_status != AuditStatus.passed:
+                raise VideoAuditError(AuditStatus(audit.audit_status))
+
+        return _PreparedVideoPipeline(context, strategy, narrative, validated, scene_plans)
+
+    @staticmethod
+    def _estimated_audio(prepared: _PreparedVideoPipeline) -> dict[str, SceneAudio]:
+        result: dict[str, SceneAudio] = {}
+        for scene in prepared.validated_storyboard.storyboard.scenes:
+            estimate = max(2.8, min(14.0, len(scene.narration) / 5))
+            if scene.narrative_role == "hook":
+                estimate = min(7.5, estimate)
+            result[scene.id] = SceneAudio(
+                scene_id=scene.id,
+                path="",
+                url="",
+                duration_seconds=estimate,
+            )
+        return result
