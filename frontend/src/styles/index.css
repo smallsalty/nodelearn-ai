@@ -1769,6 +1769,36 @@ a:focus-visible,
   line-height: 1.7;
 }
 
+.floating-qa-history {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.floating-answer header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.floating-answer header time {
+  color: var(--nl-text-subtle);
+  font-size: 11px;
+}
+
+.floating-answer p {
+  margin: 0;
+}
+
+.floating-answer.user {
+  border-color: var(--nl-primary);
+  background: var(--nl-primary-tint);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

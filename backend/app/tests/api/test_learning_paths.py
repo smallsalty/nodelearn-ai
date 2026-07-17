@@ -50,6 +50,7 @@ def test_generate_learning_path_returns_api_response_learning_path():
             "targetGoal": "准备数据结构期末考试",
             "timeBudget": "每天30分钟",
             "weakNodeIds": ["node_linked_list_001"],
+            "additionalRequirements": "每项任务安排建议完成时间，并提供学习工具提示词。",
         },
     ).json()
 
@@ -82,6 +83,7 @@ def test_learning_path_read_routes_return_same_mock_path_and_tasks():
     assert detail["id"] == path_id
     assert tasks
     assert all(set(task.keys()) == LEARNING_TASK_FIELDS for task in tasks)
+    assert all(task["dueAt"] for task in tasks)
 
 
 def test_update_learning_task_status_uses_contract_status():

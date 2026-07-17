@@ -23,13 +23,14 @@ class PlannerAgent(BaseAgent):
             if suggested_minutes:
                 time_budget = f"每天{suggested_minutes}分钟"
 
-        plan = self.learning_path_service.generate_learning_path(
+        plan = await self.learning_path_service.generate_learning_path(
             LearningPathGenerateRequest(
                 user_id=request.user_id,
                 course_id=request.course_id or "course_ds_001",
                 target_goal=target_goal,
                 time_budget=time_budget,
                 weak_node_ids=weak_node_ids,
+                additional_requirements=request.input.get("additionalRequirements"),
             ),
             profile=profile,
         )

@@ -33,7 +33,7 @@
 - 页面：`frontend/src/pages/ReportPage.vue`
 - API：`frontend/src/api/modules/report.ts`
 - 类型：`frontend/src/types/report.ts`
-- 学习报告与对话学习、学生画像、学习路径统一归入侧栏“个性化管理”。
+- 学习报告与问答助手、学生画像、学习路径统一归入侧栏“个性化管理”。
 
 ## 后端
 

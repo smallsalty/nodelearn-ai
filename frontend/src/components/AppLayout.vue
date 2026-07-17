@@ -97,8 +97,8 @@ const navGroups = computed<SidebarNavGroup[]>(() => [
       {
         id: "chat",
         to: "/chat",
-        label: "对话学习",
-        description: "课程问答",
+        label: "问答助手",
+        description: "提问与历史",
         icon: ChatLineRound,
         match: { path: "/chat" }
       },

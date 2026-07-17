@@ -127,5 +127,5 @@ def test_qa_workflow_runs_only_qa_agent():
 
     assert result.status == "success"
     assert step_agent_types(result) == ["qa_agent"]
-    assert result.final_output["answer"] == "mock"
+    assert result.final_output["answer"] == "这是演示模式下的课程问答。"
     assert result.final_output["usedAgentTypes"] == ["qa_agent", "resource_agent", "profile_agent"]

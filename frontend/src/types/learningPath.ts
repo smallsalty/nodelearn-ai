@@ -38,6 +38,7 @@ export interface LearningPathGenerateRequest {
   targetGoal?: string;
   timeBudget?: string;
   weakNodeIds?: string[];
+  additionalRequirements?: string;
 }
 
 export interface LearningTaskStatusUpdateRequest {

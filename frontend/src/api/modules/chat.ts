@@ -1,12 +1,12 @@
 import { request, requestSseEvent } from "@/api/client";
-import type { PageRequest, PageResult } from "@/types/contracts";
-import type { ChatMessage, ChatRequest, ChatResult, ChatSession, ChatStreamEvent } from "@/types/agent";
+import type { PageResult } from "@/types/contracts";
+import type { ChatMessage, ChatRequest, ChatResult, ChatSession, ChatSessionQuery, ChatStreamEvent } from "@/types/agent";
 
 export const chatApi = {
   createSession(payload: Partial<ChatSession>) {
     return request<ChatSession>({ method: "POST", url: "/chat/sessions", data: payload });
   },
-  getSessions(params: PageRequest = { page: 1, pageSize: 20 }) {
+  getSessions(params: ChatSessionQuery = { page: 1, pageSize: 20 }) {
     return request<PageResult<ChatSession>>({ method: "GET", url: "/chat/sessions", params });
   },
   getSession(sessionId: string) {

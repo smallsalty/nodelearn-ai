@@ -88,7 +88,7 @@ docs/interface-contract.md
 6. nodes             知识节点
 7. graph             知识图谱
 8. knowledge-base    知识库构建与检索
-9. chat              对话学习与实时问答
+9. chat              问答助手与实时问答
 10. agents           多智能体编排
 11. resources        个性化资源生成
 12. multimodal       稳定视频、数字人讲解与数字人对话
@@ -1066,7 +1066,7 @@ interface RetrievedDocument {
 
 ---
 
-# 9. 对话学习与实时问答接口
+# 9. 问答助手与实时问答接口
 
 ## 9.1 ChatSession
 
@@ -1163,6 +1163,16 @@ interface ChatRequest {
 }
 ```
 
+问答助手页面和学习侧栏共用 `ChatSession` 与 `ChatMessage` 历史；未显式传入 `sessionId` 时，服务端复用该用户当前课程最近的 `qa` 会话，找不到时才创建新会话。DeepSeek 回答必须先通过 audit/safety，再将一组 user/assistant 消息写入 `chat_session`、`chat_message`。
+
+## 9.3.1 ChatSessionQuery
+
+```ts
+interface ChatSessionQuery extends PageRequest {
+  userId?: string;
+}
+```
+
 ## 9.4 ChatResult
 
 ```ts
@@ -1192,7 +1202,7 @@ interface ChatStreamEvent {
 | 方法 | 路径 | 说明 | 请求体 | 返回 |
 |---|---|---|---|---|
 | POST | `/api/v1/chat/sessions` | 创建对话会话 | `Partial<ChatSession>` | `ApiResponse<ChatSession>` |
-| GET | `/api/v1/chat/sessions` | 获取对话会话列表 | `PageRequest` | `ApiResponse<PageResult<ChatSession>>` |
+| GET | `/api/v1/chat/sessions` | 获取问答会话列表 | `ChatSessionQuery` | `ApiResponse<PageResult<ChatSession>>` |
 | GET | `/api/v1/chat/sessions/{sessionId}` | 获取会话详情 | 无 | `ApiResponse<ChatSession>` |
 | GET | `/api/v1/chat/sessions/{sessionId}/messages` | 获取消息列表 | 无 | `ApiResponse<ChatMessage[]>` |
 | POST | `/api/v1/chat/send` | 发送消息 | `ChatRequest` | `ApiResponse<ChatResult>` |
@@ -2110,8 +2120,11 @@ interface LearningPathGenerateRequest {
   targetGoal?: string;
   timeBudget?: string;
   weakNodeIds?: string[];
+  additionalRequirements?: string;
 }
 ```
+
+真实模式下，规划服务通过统一 `LLMService` 调用 DeepSeek 生成中文路径标题、说明、阶段、任务顺序和任务标题；每个 `LearningTask.dueAt` 必须根据 `timeBudget` 排入建议完成时间。前端不得直接展示 `taskType`、`nodeId` 等内部值，应映射为中文任务类型和知识点名称，并为每项任务展示学习工具建议及可直接复制的中文提示词。
 
 ## 13.4 LearningTaskStatusUpdateRequest
 
@@ -2740,7 +2753,7 @@ const routes = [
 |---|---|
 | 登录页 | `/api/v1/auth/login`, `/api/v1/auth/register` |
 | 首页 | `/api/v1/courses`, `/api/v1/users/me` |
-| 对话学习页 | `/api/v1/chat/send`, `/api/v1/chat/stream`, `/api/v1/profiles/extract` |
+| 问答助手页 | `/api/v1/chat/sessions`, `/api/v1/chat/sessions/{sessionId}/messages`, `/api/v1/chat/send` |
 | 学生画像页 | `/api/v1/profiles/{userId}` |
 | 学习路径页 | `/api/v1/learning-paths/generate`, `/api/v1/users/{userId}/learning-paths` |
 | 资源生成页 | `/api/v1/resources/generate`, `/api/v1/users/{userId}/resources`, `/api/v1/multimodal/videos/generate`, `/api/v1/multimodal/digital-human/explain`, `/api/v1/multimodal/digital-human/chat` |
@@ -2749,7 +2762,7 @@ const routes = [
 | 知识节点正文兼容入口 | `/api/v1/nodes/{nodeId}`，读取后重定向至课程全文锚点 |
 | 学习报告页 | `/api/v1/reports/generate`, `/api/v1/users/{userId}/reports` |
 | 练习测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit`, `/api/v1/programming/questions/generate`, `/api/v1/programming/submissions` |
-| 浮窗菜单 | `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
+| 学习侧栏 | `/api/v1/chat/sessions`, `/api/v1/chat/sessions/{sessionId}/messages`, `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
 | 知识库管理页 | `/api/v1/files/upload`, `/api/v1/knowledge-base/build`, `/api/v1/courses/{courseId}/nodes` |
 
 课程正文页继续一次读取完整 `CourseContent`，但客户端每次只渲染一个 `CourseContentChapter` 及其 `sections`。`#chapter-{chapterId}` 打开章节顶部并清空 `selectedNodeId`，`#node-{nodeId}` 打开所属章节后定位真实小节；显式目录和上下章操作写入浏览器历史，正文 ScrollSpy 只替换当前 hash。课程阅读模式下学习工作台、课程目录和正文使用相互独立的滚动区域。

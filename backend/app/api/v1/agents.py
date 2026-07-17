@@ -8,10 +8,7 @@ from app.core.response import error_response, page_result, success_response
 from app.agents.workflow import MultiAgentWorkflowRunner, get_task_events, get_task_result
 from app.schemas.agent import (
     AgentRunRequest,
-    ChatMessage,
     ChatRequest,
-    ChatResult,
-    ChatSession,
     ChatStreamEvent,
     MultiAgentWorkflowRequest,
     MultiAgentWorkflowResult,
@@ -22,14 +19,9 @@ from app.services.chat_service import ChatService
 
 router = APIRouter()
 
-MOCK_TIME = "2026-05-19T10:00:00Z"
 agent_service = AgentService()
 workflow_runner = MultiAgentWorkflowRunner(agent_service)
 chat_service = ChatService()
-
-
-def mock_session(session_id: str = "session_demo_001") -> ChatSession:
-    return ChatSession(id=session_id, user_id="user_demo_001", title="Demo Session", session_type="qa", created_at=MOCK_TIME, updated_at=MOCK_TIME)
 
 
 def mock_workflow(task_id: str = "workflow_task_demo_001") -> MultiAgentWorkflowResult:
@@ -38,24 +30,28 @@ def mock_workflow(task_id: str = "workflow_task_demo_001") -> MultiAgentWorkflow
 
 @router.post("/chat/sessions")
 def create_chat_session(payload: dict):
-    return success_response(mock_session())
+    return success_response(chat_service.create_session(payload))
 
 
 @router.get("/chat/sessions")
-def list_chat_sessions(page: int = 1, page_size: int = Query(10, alias="pageSize"), keyword: str | None = None, sort_by: str | None = Query(None, alias="sortBy"), sort_order: str | None = Query(None, alias="sortOrder")):
-    items = [mock_session()]
-    return success_response(page_result(items, len(items), page, page_size))
+def list_chat_sessions(page: int = 1, page_size: int = Query(10, alias="pageSize"), user_id: str | None = Query(None, alias="userId"), keyword: str | None = None, sort_by: str | None = Query(None, alias="sortBy"), sort_order: str | None = Query(None, alias="sortOrder")):
+    items, total = chat_service.list_sessions(page=page, page_size=page_size, user_id=user_id, keyword=keyword)
+    return success_response(page_result(items, total, page, page_size))
 
 
 @router.get("/chat/sessions/{sessionId}")
 def get_chat_session(session_id: str = Path(alias="sessionId")):
-    return success_response(mock_session(session_id))
+    session = chat_service.get_session(session_id)
+    if session is None:
+        return error_response("问答会话不存在", code=404)
+    return success_response(session)
 
 
 @router.get("/chat/sessions/{sessionId}/messages")
 def list_chat_messages(session_id: str = Path(alias="sessionId")):
-    message = ChatMessage(id="message_demo_001", session_id=session_id, user_id="user_demo_001", role="assistant", content="mock", content_type="text", created_at=MOCK_TIME)
-    return success_response([message])
+    if chat_service.get_session(session_id) is None:
+        return error_response("问答会话不存在", code=404)
+    return success_response(chat_service.list_messages(session_id))
 
 
 @router.post("/chat/send")

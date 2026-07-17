@@ -100,8 +100,10 @@ const rendered = computed(() => {
     html = html.replace(placeholder, renderCodeTabs(panels, index));
   });
   mathBlocks.forEach((formula, index) => {
-    const placeholder = `<p>NODELEARN_MATH_BLOCK_${index}</p>`;
-    html = html.replace(placeholder, `<div class="markdown-math-block" data-math-source="${escapeAttribute(formula)}"></div>`);
+    const placeholder = `NODELEARN_MATH_BLOCK_${index}`;
+    html = html.split(placeholder).join(
+      `<span class="markdown-math-block" data-math-source="${escapeAttribute(formula)}"></span>`
+    );
   });
   return DOMPurify.sanitize(html, { ADD_ATTR: ["role", "aria-label", "aria-controls", "aria-selected", "aria-labelledby", "tabindex", "data-code-language", "data-code-tabs", "data-math-source"] });
 });

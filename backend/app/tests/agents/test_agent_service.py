@@ -48,7 +48,7 @@ def test_agent_service_dispatches_qa_agent():
 
     assert result.agent_type == "qa_agent"
     assert result.status == "success"
-    assert result.output["answer"] == "mock"
+    assert result.output["answer"] == "这是演示模式下的课程问答。"
     assert result.output["usedAgentTypes"] == ["qa_agent", "resource_agent", "profile_agent"]
 
 

@@ -6,12 +6,24 @@ import type {
   LearningTaskStatusUpdateRequest
 } from "@/types/learningPath";
 
+const learningPathGenerateTimeout = 3 * 60 * 1000;
+
 export const learningPathApi = {
   generateLearningPath(payload: LearningPathGenerateRequest) {
-    return request<LearningPath>({ method: "POST", url: "/learning-paths/generate", data: payload });
+    return request<LearningPath>({
+      method: "POST",
+      url: "/learning-paths/generate",
+      data: payload,
+      timeout: learningPathGenerateTimeout
+    });
   },
   generatePath(payload: LearningPathGenerateRequest) {
-    return request<LearningPath>({ method: "POST", url: "/learning-paths/generate", data: payload });
+    return request<LearningPath>({
+      method: "POST",
+      url: "/learning-paths/generate",
+      data: payload,
+      timeout: learningPathGenerateTimeout
+    });
   },
   getUserLearningPaths(userId: string) {
     return request<LearningPath[]>({ method: "GET", url: `/users/${userId}/learning-paths` });

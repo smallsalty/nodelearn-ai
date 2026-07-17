@@ -14,19 +14,25 @@ def assert_api_response(response):
     return payload["data"]
 
 
-def test_chat_session_placeholder_contracts():
+def test_chat_session_crud_and_empty_history_contracts():
     session = assert_api_response(
         client.post(
             "/api/v1/chat/sessions",
             json={"userId": "user_contract_001", "title": "契约会话", "sessionType": "qa"},
         )
     )
-    assert session["id"] == "session_demo_001"
-    sessions = assert_api_response(client.get("/api/v1/chat/sessions", params={"page": 1, "pageSize": 5}))
+    assert session["id"].startswith("session_chat_")
+    assert session["userId"] == "user_contract_001"
+    sessions = assert_api_response(
+        client.get(
+            "/api/v1/chat/sessions",
+            params={"page": 1, "pageSize": 5, "userId": "user_contract_001"},
+        )
+    )
     assert sessions["total"] == 1
-    assert assert_api_response(client.get("/api/v1/chat/sessions/session_contract_001"))["id"] == "session_contract_001"
-    messages = assert_api_response(client.get("/api/v1/chat/sessions/session_contract_001/messages"))
-    assert messages[0]["sessionId"] == "session_contract_001"
+    assert assert_api_response(client.get(f"/api/v1/chat/sessions/{session['id']}"))["id"] == session["id"]
+    messages = assert_api_response(client.get(f"/api/v1/chat/sessions/{session['id']}/messages"))
+    assert messages == []
 
 
 def test_note_placeholder_crud_and_relation_contracts():

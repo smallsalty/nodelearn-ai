@@ -25,11 +25,17 @@
 - 智能辅导答疑：结合课程上下文、学生画像、RAG 检索结果和错题历史回答问题。
 - 学习评估与报告：评估完成率、正确率、薄弱节点、掌握分数、进步趋势和改进建议。
 - 浮窗笔记模块：支持记笔记、题目标记、错题复习、节点或资源关联和快捷问答。
-- 前端页面：登录/首页、对话、画像、学习路径、资源、知识图谱、报告、练习、浮窗菜单和知识库管理。
+- 前端页面：登录/首页、问答助手、画像、学习路径、资源、知识图谱、报告、练习、学习侧栏和知识库管理。
 
 ## 当前进度
 
 ### 已完成
+
+- 2026-07-17 完成问答助手、共享历史、画像中文化与个性化学习路径真实改造：界面将“对话学习”统一改为“问答助手”，删除问答页知识节点和引用步骤面板，改为“开始问答 / 问答历史”；问答助手与学习侧栏复用同一个 PostgreSQL 会话，显式复用时校验会话归属。`ENABLE_MOCK=false`、`LLM_PROVIDER=deepseek`、`LLM_MODEL_NAME=deepseek-v4-pro` 下完成两轮真实问答，会话 `session_chat_71868202e9c1` 含 4 条唯一消息，两条回答各保存 3 条课程引用，后端重启后仍可读取；真实学习路径 `path_236b5e908d5d` 生成 6 个中文任务，覆盖栈、递归、哈希表及必要薄弱点/前置节点，全部写入逐日 20:00 建议完成时间，每个任务展示 3 种学习工具及可直接复制的中文提示词。学生画像不再直接显示内部节点编号和英文枚举。后端完整测试 `201 passed, 2 skipped, 1 warning`、前端生产构建、Python 编译、直接请求静态检查和 `git diff --check` 通过；独立 Playwright 洁净会话控制台 0 error/0 warning、业务请求全部 200，375px 无横向溢出。问答与问答历史为 `PASS_REAL`，学习路径生成为 `PASS_REAL`，路径存储仍为 `PASS_PLACEHOLDER`；报告见 `docs/qa-learning-path-real-verification-2026-07-17.md`，证据见 `output/playwright/qa-learning-path-real-2026-07-17/`。
+
+- 2026-07-17 完成 Docker DNS 冷重启恢复与实时数字人最终复验：保持 Clash 和 Windows 系统代理，优雅停止 Docker Desktop 后执行 `wsl --shutdown`，重启 11 秒后 Docker Desktop 为 `running` 且 Engine API 可用；使用原 Compose 直接 `up -d`，未删除卷、未覆盖 DNS、未修改项目代码。backend 容器对两个讯飞域名连续解析达到 `40/40`，真实接口服务模型冒烟返回非空回答，定向测试 `26 passed in 1.41s`。Playwright CLI 在 `enableMock=false` 下完成“5.1 栈”两轮真实问答，两轮均为 `ApiResponse` success 且各带 3 条课程引用，复用同一 `sessionId`、`videoUrl`、`startedAt` 与单个 FFmpeg；HLS manifest/分片均为 200，5 秒心跳推进，浏览器 1280×720 有声播放持续前进，`ffprobe` 确认 H.264/AAC。历史为 4 条唯一消息，两次 stop 均为 `cancelled`，最终 FFmpeg 为 0；控制台 0 error/0 warning、无意外 4xx/5xx、无历史生成资源请求，trace 敏感信息扫描为 0。最终结果为 `PASS_REAL`，证据位于 `output/playwright/digital-human-live-recovery-2026-07-17/`。
+
+- 2026-07-17 首次数字人真实链接与交互重验记录：`enableMock=false` 且数字人对话/在线虚拟人健康配置为 `ok`，定向测试 `26 passed in 3.51s`；第一轮真实对话当时被 backend 容器 DNS 的 `[Errno -3] Temporary failure in name resolution` 阻塞，按门禁未重试、未发送第二轮、未回退 mock、未启动虚拟人或 FFmpeg，结果记为 `BLOCKED`。该首次失败记录与证据继续保留在 `docs/digital-human-live-verification-2026-07-17.md` 和 `output/playwright/digital-human-live-2026-07-17/`，后续冷重启恢复结果见上一条。
 
 - 2026-07-17 完成知识点下拉栏固定排序与选中项置顶：顶部章节/知识点选择器与资源工具页知识点选择器统一按章节 `orderIndex`、章内节点 `orderIndex` 稳定排列，资源页并行读取章节与节点；下拉面板展开后只调整滚动位置，使当前选中项成为第一条可见选项，不重排选项或键盘导航顺序。列表末尾选项使用仅在弹层展开期间生效的滚动余量，关闭后自动清理；无选中项时从课程目录首项展开。前端生产构建和 Docker 前端重建通过，Playwright 验证顶部章节总览、顶部末尾节点、资源页中间/末尾节点均准确置顶，85 个资源页节点保持 `0.1` 至 `16.3` 的原始顺序，清空后滚动位置回到顶部。
 
@@ -224,7 +230,7 @@
 - 真实视频的 storyboard schema 对齐阻塞已由 v2 Visual Director 解除；暖白学院主题已完成真实 DeepSeek、豆包 TTS 与 Remotion 付费回归。黑板讲解和技术蓝图主题仍只完成 renderer fixture/类型与常规测试，后续凭证或主题实现变化时再显式运行付费回归。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 - 文件上传/删除存储、在线知识库构建和 embedding provider 仍未配置，真实模式按契约返回明确 501/404；独立数字人讲解没有对应 provider，真实模式返回明确错误，不允许回退 mock。
-- 画像、聊天 session、学习路径、笔记、学习记录、评估和报告仍包含内存或固定占位实现；2026-07-14 验收报告均标记为 `PASS_PLACEHOLDER`，不得作为生产持久化能力宣传。
+- 普通问答 `chat_session` / `chat_message` 已在真实模式接入 PostgreSQL，并于 2026-07-17 验证后端重启后可恢复；画像、学习路径、笔记、学习记录、评估和报告仍包含内存或固定占位实现，相关存储能力不得作为生产持久化能力宣传。
 - 编程题与提交记录当前仍保存在后端进程内存中；同一进程内刷新可以恢复，但后端重启会丢失。2026-07-15 已确认真实 DeepSeek 出题和 Judge0 执行为 `PASS_REAL`，存储能力仍为 `PASS_PLACEHOLDER`。
 
 ## 功能待办
