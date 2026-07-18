@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-07-17
+最后更新：2026-07-18
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -30,6 +30,10 @@
 ## 当前进度
 
 ### 已完成
+
+- 2026-07-18 完成腾讯云生产部署：新增仅公开 `80` 的服务器 Compose，前端 Nginx 同源代理 `/api/` 与 `/storage/`，后端、NodeLearn PostgreSQL、Judge0 server/worker 及其 PostgreSQL/Redis 仅使用 Docker 内网；代码通过 `ssh-manager` 从 `codex/测试` 分支稀疏 Git 克隆到 `/root/nodelearn-ai`，真实后端环境文件以 `600` 权限单独上传并生成服务器专用 `JWT_SECRET`。
+- 2026-07-18 完成部署构建适配：后端 Debian、Python 和前端/渲染器 npm 依赖改用区域镜像并保留重试；服务器持久挂载 `data_sources`，Hello Algo 数据源对齐提交 `4935d2d3877a6205008d89def8d2ba43f7e06275` 后导入真实 PostgreSQL，结果为 20 章、85 个节点、68 条关系和 318 个来源资源；导入器支持容器缺少 Git 二进制时使用显式校验过的提交号。
+- 2026-07-18 部署验收结果：本地前端构建通过，后端契约测试 `33 passed`，Hello Algo 定向测试 `6 passed`，服务器 Compose 校验通过；公网 `http://110.40.155.206/` 与 `/api/v1/system/health` 均返回 `200`，真实存储图片经 `/storage/` 返回 `200 image/png`，Judge0 Python 样例返回 `Accepted` 和 `42`；宿主机仅监听 `22/80`。旧 AuditPilot 容器、卷和目录已删除，数据库与上传文件备份保留于 `/root/backups/auditpilot-20260718T141210Z`。
 
 - 2026-07-17 完成问答助手、共享历史、画像中文化与个性化学习路径真实改造：界面将“对话学习”统一改为“问答助手”，删除问答页知识节点和引用步骤面板，改为“开始问答 / 问答历史”；问答助手与学习侧栏复用同一个 PostgreSQL 会话，显式复用时校验会话归属。`ENABLE_MOCK=false`、`LLM_PROVIDER=deepseek`、`LLM_MODEL_NAME=deepseek-v4-pro` 下完成两轮真实问答，会话 `session_chat_71868202e9c1` 含 4 条唯一消息，两条回答各保存 3 条课程引用，后端重启后仍可读取；真实学习路径 `path_236b5e908d5d` 生成 6 个中文任务，覆盖栈、递归、哈希表及必要薄弱点/前置节点，全部写入逐日 20:00 建议完成时间，每个任务展示 3 种学习工具及可直接复制的中文提示词。学生画像不再直接显示内部节点编号和英文枚举。后端完整测试 `201 passed, 2 skipped, 1 warning`、前端生产构建、Python 编译、直接请求静态检查和 `git diff --check` 通过；独立 Playwright 洁净会话控制台 0 error/0 warning、业务请求全部 200，375px 无横向溢出。问答与问答历史为 `PASS_REAL`，学习路径生成为 `PASS_REAL`，路径存储仍为 `PASS_PLACEHOLDER`；报告见 `docs/qa-learning-path-real-verification-2026-07-17.md`，证据见 `output/playwright/qa-learning-path-real-2026-07-17/`。
 
