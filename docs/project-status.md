@@ -35,7 +35,7 @@
 - 2026-07-18 完成部署构建适配：后端 Debian、Python 和前端/渲染器 npm 依赖改用区域镜像并保留重试；服务器持久挂载 `data_sources`，Hello Algo 数据源对齐提交 `4935d2d3877a6205008d89def8d2ba43f7e06275` 后导入真实 PostgreSQL，结果为 20 章、85 个节点、68 条关系和 318 个来源资源；导入器支持容器缺少 Git 二进制时使用显式校验过的提交号。
 - 2026-07-18 部署验收结果：本地前端构建通过，后端契约测试 `33 passed`，Hello Algo 定向测试 `6 passed`，服务器 Compose 校验通过；公网 `http://110.40.155.206/` 与 `/api/v1/system/health` 均返回 `200`，真实存储图片经 `/storage/` 返回 `200 image/png`，Judge0 Python 样例返回 `Accepted` 和 `42`；宿主机仅监听 `22/80`。旧 AuditPilot 容器、卷和目录已删除，数据库与上传文件备份保留于 `/root/backups/auditpilot-20260718T141210Z`。
 - 2026-07-18 完成腾讯云双域名 HTTPS 部署：服务器 Compose 新增固定版本 `caddy:2.11.4-alpine`，Caddy 接管公网 `80/443` 并将请求转发到仅在 Docker 内网暴露的前端 Nginx；`smalllightsalty.top` 与 `www.smalllightsalty.top` 均使用自动 HTTPS 且不互相跳转，公网 IP 的 HTTP 访问跳转至根域名。Caddy 显式限制为 HTTP/1.1 与 HTTP/2，证书和配置分别持久化在 `caddy_data`、`caddy_config` 卷；后端资源公网基址更新为 `https://smalllightsalty.top/storage`。
-- 2026-07-18 双域名 HTTPS 验收结果：Compose 静态校验、Caddyfile 真实镜像校验和前端 Nginx `nginx -t` 均通过；Let's Encrypt 分别为根域名与 `www` 域名成功签发有效证书，两个域名的 HTTP 均返回 `308` 并跳转到自身 HTTPS，HTTPS 首页与 `/api/v1/system/health` 均返回 `200`，真实存储图片在两个域名下均返回 `200 image/png`。宿主机最终仅监听 `22/80/443`，443 已可公网访问，因此无需修改腾讯云防火墙规则；本地 Docker Desktop 未运行，容器级配置校验改在腾讯云一次性容器中完成。
+- 2026-07-18 双域名 HTTPS 验收结果：Compose 静态校验、Caddyfile 真实镜像校验和前端 Nginx `nginx -t` 均通过；Let's Encrypt 分别为根域名与 `www` 域名成功签发有效证书，服务器本机访问两个域名的 HTTP 均返回 `308` 并跳转到自身 HTTPS，公网 HTTPS 首页与 `/api/v1/system/health` 均返回 `200`，真实存储图片在两个域名下均返回 `200 image/png`。宿主机最终仅监听 `22/80/443`，443 已可公网访问，因此无需修改腾讯云防火墙规则；但上海公网 HTTP 被腾讯云边界返回 `302` 并跳转至 DNSPod `webblock`，确认存在未备案或未在腾讯云接入备案拦截，域名长期稳定开放仍需完成 ICP 备案/接入备案。本地 Docker Desktop 未运行，容器级配置校验改在腾讯云一次性容器中完成。
 
 - 2026-07-17 完成问答助手、共享历史、画像中文化与个性化学习路径真实改造：界面将“对话学习”统一改为“问答助手”，删除问答页知识节点和引用步骤面板，改为“开始问答 / 问答历史”；问答助手与学习侧栏复用同一个 PostgreSQL 会话，显式复用时校验会话归属。`ENABLE_MOCK=false`、`LLM_PROVIDER=deepseek`、`LLM_MODEL_NAME=deepseek-v4-pro` 下完成两轮真实问答，会话 `session_chat_71868202e9c1` 含 4 条唯一消息，两条回答各保存 3 条课程引用，后端重启后仍可读取；真实学习路径 `path_236b5e908d5d` 生成 6 个中文任务，覆盖栈、递归、哈希表及必要薄弱点/前置节点，全部写入逐日 20:00 建议完成时间，每个任务展示 3 种学习工具及可直接复制的中文提示词。学生画像不再直接显示内部节点编号和英文枚举。后端完整测试 `201 passed, 2 skipped, 1 warning`、前端生产构建、Python 编译、直接请求静态检查和 `git diff --check` 通过；独立 Playwright 洁净会话控制台 0 error/0 warning、业务请求全部 200，375px 无横向溢出。问答与问答历史为 `PASS_REAL`，学习路径生成为 `PASS_REAL`，路径存储仍为 `PASS_PLACEHOLDER`；报告见 `docs/qa-learning-path-real-verification-2026-07-17.md`，证据见 `output/playwright/qa-learning-path-real-2026-07-17/`。
 
@@ -229,6 +229,7 @@
 
 ### 阻塞
 
+- `smalllightsalty.top` 与 `www.smalllightsalty.top` 已完成 Caddy HTTPS、证书和应用链路部署，但腾讯云上海地域 Lighthouse 对公网 HTTP 返回未备案 `webblock`；需根据域名当前备案状态在腾讯云完成首次 ICP 备案或接入备案，审核通过前不能将双域名稳定公网开放视为最终验收通过。
 - 新增 API 路径、字段、枚举值、数据库字段、页面状态变量或模拟字段时，必须同步更新 `docs/interface-contract.md`、后端、前端、测试和项目状态；不再因缺少既有契约定义而停止开发。
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
