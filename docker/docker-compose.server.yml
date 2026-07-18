@@ -33,6 +33,7 @@ services:
       FFPROBE_BINARY: /usr/bin/ffprobe
     volumes:
       - ../storage:/app/storage
+      - ../data_sources:/app/data_sources
     depends_on:
       postgres:
         condition: service_healthy
