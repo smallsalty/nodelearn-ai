@@ -3017,6 +3017,8 @@ VITE_ENABLE_STREAM=true
 VITE_GRAPH_RENDERER=react-flow
 ```
 
+生产环境使用前端同源代理时，`VITE_API_BASE_URL=/api/v1`；容器 Nginx 必须同时代理 `/api/` 和 `/storage/` 到后端。
+
 ## 24.3 Judge0 环境变量
 
 Docker Desktop 使用 cgroup v2，而当前固定的 Judge0 CE `1.13.1` 镜像内置 isolate `1.8.1` 仅能以 cgroup v1 的 `--cg` 路径工作。验收环境统一开启 isolate 的进程级 rlimit 模式，仍保留 Judge0 沙箱、CPU/墙钟时间、内存、文件大小与禁网限制。
