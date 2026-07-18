@@ -15,12 +15,33 @@ from app.db.base import Base
 from app.models import ChapterModel, GeneratedResourceModel, KnowledgeNodeModel, KnowledgeRelationModel
 from app.schemas.course import KnowledgeNodeCreateRequest
 from app.services.course_service import CourseService
+from app.services import hello_algo_import_service
 from app.services.hello_algo_import_service import (
+    get_repo_commit,
     import_hello_algo_dataset,
     parse_hello_algo_repo,
     publish_assets,
     stable_id,
 )
+
+
+def test_get_repo_commit_accepts_explicit_commit_when_git_is_unavailable(monkeypatch, tmp_path):
+    def raise_missing_git(*args, **kwargs):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(hello_algo_import_service, "run_git", raise_missing_git)
+
+    assert get_repo_commit(tmp_path, "ABCDEF1234567") == "abcdef1234567"
+
+
+def test_get_repo_commit_requires_explicit_commit_when_git_is_unavailable(monkeypatch, tmp_path):
+    def raise_missing_git(*args, **kwargs):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(hello_algo_import_service, "run_git", raise_missing_git)
+
+    with pytest.raises(RuntimeError, match="requires an explicit source commit"):
+        get_repo_commit(tmp_path)
 
 
 @pytest.fixture(scope="module")
