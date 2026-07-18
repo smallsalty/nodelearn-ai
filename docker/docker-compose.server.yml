@@ -1,12 +1,25 @@
 name: nodelearn-ai
 
 services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
   frontend:
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     depends_on:
       - backend
     restart: unless-stopped
@@ -26,7 +39,7 @@ services:
       JUDGE0_BASE_URL: http://judge0-server:2358
       JUDGE0_AUTH_TOKEN: ""
       FILE_STORAGE_PATH: /app/storage
-      FILE_STORAGE_PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://110.40.155.206}/storage
+      FILE_STORAGE_PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://smalllightsalty.top}/storage
       VIDEO_RENDER_PROJECT_PATH: /video-renderer
       VIDEO_RENDER_BROWSER_EXECUTABLE: /usr/bin/chromium
       FFMPEG_BINARY: /usr/bin/ffmpeg
@@ -102,5 +115,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  caddy_data:
+  caddy_config:
   postgres_data:
   judge0_postgres_data:

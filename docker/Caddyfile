@@ -1,0 +1,7 @@
+smalllightsalty.top, www.smalllightsalty.top {
+	reverse_proxy frontend:80
+}
+
+http://110.40.155.206 {
+	redir https://smalllightsalty.top{uri} permanent
+}
