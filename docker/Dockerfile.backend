@@ -4,9 +4,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN sed -i 's|http://deb.debian.org/debian|https://mirrors.cloud.tencent.com/debian|g' /etc/apt/sources.list.d/debian.sources \
-    && apt-get -o Acquire::Retries=5 update \
-    && apt-get -o Acquire::Retries=5 install -y --no-install-recommends chromium ffmpeg fonts-noto-cjk \
+RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.cloud.tencent.com/debian|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get -o Acquire::Retries=10 update \
+    && apt-get -o Acquire::Retries=10 install -y --no-install-recommends chromium ffmpeg fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
