@@ -1,3 +1,9 @@
+{
+	servers {
+		protocols h1 h2
+	}
+}
+
 smalllightsalty.top, www.smalllightsalty.top {
 	reverse_proxy frontend:80
 }
