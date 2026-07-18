@@ -858,7 +858,7 @@ interface CourseContent {
 }
 ```
 
-`chapters` 按 `orderIndex` 升序返回，`sections` 按所属章节内的 `orderIndex` 升序返回。课程不存在时返回 HTTP 404；课程存在但没有章节总览或小节正文时返回空 `chapters`，不得回退到其他课程。前端章节与小节锚点分别固定为 `chapter-{chapterId}`、`node-{nodeId}`。
+`chapters` 按 `orderIndex` 升序返回，`sections` 按所属章节内的 `orderIndex` 升序返回。课程不存在时返回 HTTP 404；课程存在但没有章节总览或小节正文时返回空 `chapters`，不得回退到其他课程。前端章节与小节锚点分别固定为 `chapter-{chapterId}`、`node-{nodeId}`。Hello Algo 导入正文中的内部图片必须使用 `FILE_STORAGE_URL_PREFIX` 生成同源 URL；`FILE_STORAGE_PUBLIC_BASE_URL` 仅用于必须返回绝对地址的生成资源。
 
 ## 6.10 接口列表
 
@@ -2220,6 +2220,8 @@ interface PracticeGenerationStep {
 ```
 
 统一练习页按 `single_choice -> short_answer -> coding` 顺序调用既有接口；单步失败不得清空已成功结果，也不得阻止后续步骤。
+
+统一练习页通过 `GET /api/v1/courses/{courseId}/nodes` 将内部 `nodeId` 映射为知识点名称。页头、普通题标签和错题列表不得直接展示内部 ID；未选择节点或节点不属于当前课程时显示中文状态，其中无效节点必须禁用生成。
 
 ## 14.3 PracticeSubmitRequest
 

@@ -65,4 +65,4 @@
 - 不重命名 `orderIndex`、`learningValue` 或节点 id 数组字段。
 - Hello Algo 的展示正文与来源材料分离：章节/节点 `content` 只保存规范化 Markdown；`reading_material.content` 保留原始 Markdown 以及 Source、Commit、License、Path。
 - Hello Algo 以 `mkdocs.yml` 的中文 `nav` 为唯一顺序来源；20 个 `index.md` 写入章节正文，不再生成重名总览节点，最终固定为 20 章、85 个节点和 68 条章内顺序关系。
-- 导入时只展开并保留 C++、Python、Java 替代实现，图片复制到版本化课程存储，公式、提示块、Tabs 与表格编号转换为可安全渲染的 Markdown；缺少源码、符号、图片或显式提交号时终止导入。
+- 导入时只展开并保留 C++、Python、Java 替代实现，图片复制到版本化课程存储并使用 `FILE_STORAGE_URL_PREFIX` 生成同源 URL，公式、提示块、Tabs 与表格编号转换为可安全渲染的 Markdown；缺少源码、符号、图片或显式提交号时终止导入。

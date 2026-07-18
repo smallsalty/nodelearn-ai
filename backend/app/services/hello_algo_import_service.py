@@ -185,7 +185,7 @@ def parse_hello_algo_repo(
     docs_root = resolve_docs_root(repo_path, doc_language)
     allowed_languages = normalize_code_languages(code_languages)
     nav_chapters = parse_mkdocs_navigation(repo_path, docs_root)
-    public_base = (asset_public_base_url or settings.file_storage_public_base_url).rstrip("/")
+    public_base = (asset_public_base_url or settings.file_storage_url_prefix).rstrip("/")
 
     course = CourseModel(
         id=HELLO_ALGO_COURSE_ID,

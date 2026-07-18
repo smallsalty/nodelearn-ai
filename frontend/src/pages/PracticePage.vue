@@ -2,11 +2,13 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import ProgrammingPracticePanel from "@/components/practice/ProgrammingPracticePanel.vue";
+import { courseApi } from "@/api/modules/course";
 import { practiceApi } from "@/api/modules/practice";
 import { profileApi } from "@/api/modules/profile";
 import { programmingApi } from "@/api/modules/programming";
 import { getErrorMessage } from "@/api/client";
 import { appState } from "@/stores";
+import type { KnowledgeNode } from "@/types/course";
 import type { PracticeGenerationStep, PracticeQuestion, PracticeRecord, UnifiedPracticeType } from "@/types/practice";
 import type { ProgrammingQuestion } from "@/types/programming";
 import { DEFAULT_COURSE_ID, DEFAULT_USER_ID, difficultyLabel, questionTypeLabel, statusLabel, statusTagType } from "@/utils/format";
@@ -17,6 +19,7 @@ const courseId = computed(() => appState.currentCourse?.id ?? DEFAULT_COURSE_ID)
 const selectedNodeId = ref(
   typeof route.query.nodeId === "string" ? route.query.nodeId : appState.selectedNodeId ?? ""
 );
+const nodes = ref<KnowledgeNode[]>([]);
 const questions = ref<PracticeQuestion[]>([]);
 const wrongQuestions = ref<PracticeQuestion[]>([]);
 const programmingQuestions = ref<ProgrammingQuestion[]>([]);
@@ -50,6 +53,12 @@ const selectedProgrammingQuestion = computed(
     programmingQuestions.value[0] ??
     null
 );
+const nodeNameMap = computed(() => new Map(nodes.value.map((node) => [node.id, node.name])));
+const selectedNodeName = computed(() => {
+  if (!selectedNodeId.value) return "请先从工作台选择知识节点";
+  return nodeNameMap.value.get(selectedNodeId.value) ?? "未找到对应知识点";
+});
+const hasValidSelectedNode = computed(() => Boolean(selectedNodeId.value && nodeNameMap.value.has(selectedNodeId.value)));
 const filteredWrongQuestions = computed(() =>
   wrongQuestions.value.filter(
     (question) =>
@@ -82,6 +91,7 @@ watch(
 );
 
 watch(courseId, () => {
+  nodes.value = [];
   resetSelections();
   if (mounted) void loadPage();
 });
@@ -108,11 +118,13 @@ async function loadPage() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const [questionResponse, wrongResponse, programmingResponse] = await Promise.all([
+    const [questionResponse, wrongResponse, programmingResponse, nodeResponse] = await Promise.all([
       practiceApi.getQuestions({ page: 1, pageSize: 100 }),
       practiceApi.getWrongQuestions(userId.value),
-      programmingApi.listQuestions({ page: 1, pageSize: 100 })
+      programmingApi.listQuestions({ page: 1, pageSize: 100 }),
+      courseApi.getNodes(courseId.value)
     ]);
+    nodes.value = nodeResponse.data;
     questions.value = questionResponse.data.list.filter(
       (question) =>
         question.courseId === courseId.value &&
@@ -159,6 +171,11 @@ function resetAnswer() {
 
 function optionAnswerValue(option: string) {
   return option.match(/^\s*([A-Za-z])(?:[.、:：)）]|\s)/)?.[1]?.toUpperCase() ?? option;
+}
+
+function nodeName(nodeId?: string) {
+  if (!nodeId) return "未关联知识点";
+  return nodeNameMap.value.get(nodeId) ?? "未找到对应知识点";
 }
 
 function selectQuestion(question: PracticeQuestion, type: "single_choice" | "short_answer") {
@@ -285,14 +302,14 @@ function generationLabel(type: UnifiedPracticeType) {
       <header class="panel-header">
         <div>
           <h2>统一练习</h2>
-          <p>当前节点：{{ selectedNodeId || "请先从工作台选择知识节点" }}。依次生成单选、简答和真实判题编程题。</p>
+          <p>当前节点：{{ selectedNodeName }}。依次生成单选、简答和真实判题编程题。</p>
         </div>
         <div class="button-row">
           <el-button :loading="loading" @click="loadPage">刷新</el-button>
           <el-button
             type="primary"
             :loading="generatingAll"
-            :disabled="!selectedNodeId"
+            :disabled="!hasValidSelectedNode"
             @click="generateAllPractices"
           >
             生成三类练习
@@ -324,7 +341,7 @@ function generationLabel(type: UnifiedPracticeType) {
             <div class="tag-row">
               <el-tag>{{ questionTypeLabel(questionFor(tab.value)!.questionType) }}</el-tag>
               <el-tag type="warning">{{ difficultyLabel(questionFor(tab.value)!.difficulty) }}</el-tag>
-              <el-tag type="info">{{ questionFor(tab.value)!.nodeId }}</el-tag>
+              <el-tag type="info">{{ nodeName(questionFor(tab.value)!.nodeId) }}</el-tag>
             </div>
             <h3>{{ questionFor(tab.value)!.title }}</h3>
             <p>{{ questionFor(tab.value)!.content }}</p>
@@ -411,7 +428,7 @@ function generationLabel(type: UnifiedPracticeType) {
         <section v-else class="soft-card-grid">
           <article v-for="question in filteredWrongQuestions" :key="question.id" class="mini-list-item">
             <strong>{{ question.title }}</strong>
-            <span>{{ questionTypeLabel(question.questionType) }} · {{ question.nodeId }}</span>
+            <span>{{ questionTypeLabel(question.questionType) }} · {{ nodeName(question.nodeId) }}</span>
           </article>
         </section>
       </el-tab-pane>

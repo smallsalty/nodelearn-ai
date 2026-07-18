@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-07-18
+最后更新：2026-07-19
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -30,6 +30,9 @@
 ## 当前进度
 
 ### 已完成
+
+- 2026-07-19 完成课程正文图片与练习节点名称修复：Hello Algo 导入正文的内部图片改用 `FILE_STORAGE_URL_PREFIX` 生成同源 `/storage/` 地址，避免 HTTPS 页面拦截旧 HTTP IP 图片；统一练习页复用课程节点接口建立名称映射，页头、普通题标签和错题列表只显示中文知识点名称，无效节点显示中文状态并禁用生成，路由、筛选和请求仍保留内部 `nodeId`。
+- 2026-07-19 本地回归结果：Hello Algo 定向测试 `7 passed`，后端完整测试 `204 passed, 2 skipped`，前端生产构建通过，页面和组件无直接 `fetch` / `axios`，`git diff --check` 无内容错误；腾讯云数据库备份、固定提交重导入、双域名图片与真实浏览器验收待同一部署流程完成后补记。
 
 - 2026-07-18 完成腾讯云生产部署：新增仅公开 `80` 的服务器 Compose，前端 Nginx 同源代理 `/api/` 与 `/storage/`，后端、NodeLearn PostgreSQL、Judge0 server/worker 及其 PostgreSQL/Redis 仅使用 Docker 内网；代码通过 `ssh-manager` 从 `codex/测试` 分支稀疏 Git 克隆到 `/root/nodelearn-ai`，真实后端环境文件以 `600` 权限单独上传并生成服务器专用 `JWT_SECRET`。
 - 2026-07-18 完成部署构建适配：后端 Debian、Python 和前端/渲染器 npm 依赖改用区域镜像并保留重试；服务器持久挂载 `data_sources`，Hello Algo 数据源对齐提交 `4935d2d3877a6205008d89def8d2ba43f7e06275` 后导入真实 PostgreSQL，结果为 20 章、85 个节点、68 条关系和 318 个来源资源；导入器支持容器缺少 Git 二进制时使用显式校验过的提交号。
