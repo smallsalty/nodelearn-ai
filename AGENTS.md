@@ -64,3 +64,9 @@
 - 左侧工作台明确为一级入口与二级目录结构：展开时一级目录使用浅黄弱选中提示，二级目录使用黄色胶囊强选中并增加缩进，避免一级与二级重复高亮。
 - 收起态只显示一级入口图标，并通过小点/短线保留当前二级所属一级的视觉提示；鼠标 hover、键盘 focus 或点击一级入口时使用 Element Plus Popover 弹出二级目录进行选择。
 - 本次仍只修改前端 UI、布局和交互，不新增接口、不修改路由、不修改 `docs/interface-contract.md`；未完成项：当前后端返回知识节点为空时，知识节点 Popover 会显示空状态，待真实节点数据返回后自动展示大节点与子节点。
+
+### 2026-07-19 PostgreSQL 持久化学习笔记
+
+- 新增 `/notes` 整理回顾页和“学习工具 / 学习笔记”入口，学习浮窗与正式页面共用笔记 API，并通过 `notesRevision` 在写操作后重新读取服务端数据。
+- `ENABLE_MOCK=false` 使用规范化 `note`、`note_tag`、`note_relation` 三表和幂等迁移；迁移已纳入本地初始化与后端 Docker 启动链，后端重启恢复验收通过。
+- 笔记正文继续复用既有 Markdown 安全渲染边界；前端请求均通过 `frontend/src/api/modules/note.ts`，契约、后端 schema/model/router/service/repository、前端类型/页面、测试和项目状态已同步。

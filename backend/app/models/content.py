@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Float, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -164,6 +164,68 @@ class WrongQuestionRecordModel(Base):
     id: Mapped[str] = mapped_column(String(128), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(128), nullable=False)
     question_id: Mapped[str] = mapped_column(String(128), ForeignKey("practice_question.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
+
+
+class NoteModel(Base):
+    __tablename__ = "note"
+    __table_args__ = (
+        Index("ix_note_user_pinned_updated", "user_id", "pinned", "updated_at"),
+        Index("ix_note_course_id", "course_id"),
+        Index("ix_note_node_id", "node_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    course_id: Mapped[str | None] = mapped_column(
+        String(128), ForeignKey("course.id", ondelete="SET NULL"), nullable=True
+    )
+    node_id: Mapped[str | None] = mapped_column(
+        String(128), ForeignKey("knowledge_node.id", ondelete="SET NULL"), nullable=True
+    )
+    question_id: Mapped[str | None] = mapped_column(
+        String(128), ForeignKey("practice_question.id", ondelete="SET NULL"), nullable=True
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
+
+
+class NoteTagModel(Base):
+    __tablename__ = "note_tag"
+    __table_args__ = (
+        UniqueConstraint("note_id", "tag", name="uq_note_tag_note_id_tag"),
+        Index("ix_note_tag_tag_note_id", "tag", "note_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    note_id: Mapped[str] = mapped_column(
+        String(128), ForeignKey("note.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tag: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+
+
+class NoteRelationModel(Base):
+    __tablename__ = "note_relation"
+    __table_args__ = (
+        UniqueConstraint("note_id", name="uq_note_relation_note_id"),
+        CheckConstraint(
+            "relation_type IN ('node', 'question', 'resource', 'path')",
+            name="ck_note_relation_type",
+        ),
+        Index("ix_note_relation_target", "relation_type", "relation_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    note_id: Mapped[str] = mapped_column(
+        String(128), ForeignKey("note.id", ondelete="CASCADE"), nullable=False
+    )
+    relation_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    relation_id: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
 

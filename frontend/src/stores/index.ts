@@ -14,6 +14,7 @@ export const appState = reactive({
   selectedResourceId: null as string | null,
   selectedQuestionId: null as string | null,
   selectedNoteId: null as string | null,
+  notesRevision: 0,
   loading: false,
   errorMessage: "",
   streamContent: "",
@@ -68,6 +69,10 @@ export function updateFloatingPosition(x: number, y: number): void {
   appState.floatingMenuState.positionY = y;
 }
 
+export function notifyNotesChanged(): void {
+  appState.notesRevision += 1;
+}
+
 export function clearAuthState() {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
@@ -76,4 +81,5 @@ export function clearAuthState() {
   setCurrentProfile(null);
   appState.selectedChapterId = null;
   appState.selectedNodeId = null;
+  appState.selectedNoteId = null;
 }

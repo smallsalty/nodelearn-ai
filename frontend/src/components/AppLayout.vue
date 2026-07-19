@@ -65,6 +65,14 @@ const navGroups = computed<SidebarNavGroup[]>(() => [
     icon: Collection,
     items: [
       {
+        id: "notes",
+        to: "/notes",
+        label: "学习笔记",
+        description: "记录与回顾",
+        icon: Notebook,
+        match: { path: "/notes", action: null }
+      },
+      {
         id: "resources",
         to: "/resources",
         label: "资源中心",

@@ -227,15 +227,6 @@ class EmbedRequest(ContractModel):
     course_id: str | None = None
 
 
-class PinNoteRequest(ContractModel):
-    pinned: bool
-
-
-class NoteRelationRequest(ContractModel):
-    relation_type: str
-    relation_id: str
-
-
 class HealthCheckResult(ContractModel):
     status: Literal["ok", "error"]
     database: Literal["ok", "error"]
