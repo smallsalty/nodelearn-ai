@@ -322,6 +322,7 @@ def generic_fallback_storyboard(
 def hash_fallback_storyboard(
     context: VideoGenerationContext,
     strategy: TeachingStrategy,
+    target_duration_seconds: float | None = None,
 ) -> VideoStoryboard:
     style_note = "先用图形过程理解" if strategy.code_depth == "none" else "同时观察取模代码怎样执行"
     scenes = [
@@ -454,6 +455,109 @@ def hash_fallback_storyboard(
         ),
     ]
 
+    extension_count = (
+        max(0, min(4, round((target_duration_seconds - 61) / 14)))
+        if target_duration_seconds is not None
+        else 0
+    )
+    if extension_count:
+        extended_scenes = [
+            StoryboardScene(
+                id="scene_07",
+                narrative_role="mechanism",
+                scene_type="process_flow",
+                title="桶号只是第一层定位",
+                teaching_purpose="解释定位桶后仍需核对原始 key",
+                narration="桶号只是第一层定位。进入三十六号桶后，还要在桶内比较原始 key；只有 key 相等时，才返回它对应的 value。这样既缩小了范围，也避免把同桶元素误认为同一个元素。",
+                screen_text=["先定位 Bucket #36", "再核对原始 Key", "命中后返回 Value"],
+                actors=[
+                    KeyActor(id="lookup_key", kind="key", slot="left", label="Key", value="12836"),
+                    BucketRowActor(id="lookup_bucket", kind="bucket_row", slot="center", label="Bucket #36", bucket_count=100, focus_indices=[36]),
+                    CalloutActor(id="key_check", kind="callout", slot="right", text="原始 Key 相等？", tone="neutral"),
+                    DataTokenActor(id="lookup_value", kind="data_token", slot="bottom", label="Value", value="命中结果"),
+                ],
+                beats=[
+                    Beat(id="locate_bucket", start_ratio=0.05, end_ratio=0.34, action="move", targets=["lookup_key", "lookup_bucket"], emphasis="#36"),
+                    Beat(id="compare_original_key", start_ratio=0.3, end_ratio=0.68, action="highlight", targets=["key_check"], emphasis="比较 Key"),
+                    Beat(id="return_value", start_ratio=0.64, end_ratio=0.95, action="reveal", targets=["lookup_value"], emphasis="返回 Value"),
+                ],
+                transition_out=SceneTransition(type="fade_through_background"),
+                claims=["哈希表定位桶后仍需比较原始 key 才能确认命中"],
+            ),
+            StoryboardScene(
+                id="scene_08",
+                narrative_role="process",
+                scene_type="before_after",
+                title="平均 O(1) 有前提",
+                teaching_purpose="说明均匀散列与合理装载是平均常数查找的条件",
+                narration="平均 O(1) 不是无条件保证。它依赖哈希函数把 key 尽量均匀地分散，同时桶的数量要和元素数量保持合理比例。若大量 key 挤进同一个桶，桶内比较就会越来越长。",
+                screen_text=["均匀散列", "合理装载因子", "冲突集中会变慢"],
+                actors=[
+                    ComparisonLaneActor(id="balanced_buckets", kind="comparison_lane", slot="left_lane", title="分布均匀", items=["#12: 1", "#36: 1", "#50: 2"]),
+                    ComparisonLaneActor(id="crowded_bucket", kind="comparison_lane", slot="right_lane", title="冲突集中", items=["#50: 1", "#50: 2", "#50: 3", "#50: 4"]),
+                    CalloutActor(id="average_condition", kind="callout", slot="bottom", text="均匀 + 合理装载 → 平均接近 O(1)", tone="result"),
+                ],
+                beats=[
+                    Beat(id="show_balanced", start_ratio=0.05, end_ratio=0.36, action="appear", targets=["balanced_buckets"], emphasis="分布均匀"),
+                    Beat(id="show_crowded", start_ratio=0.3, end_ratio=0.68, action="grow", targets=["crowded_bucket"], emphasis="冲突集中"),
+                    Beat(id="show_condition", start_ratio=0.64, end_ratio=0.95, action="reveal", targets=["average_condition"], emphasis="平均 O(1) 的条件"),
+                ],
+                transition_out=SceneTransition(type="fade_through_background"),
+                claims=["哈希表平均 O(1) 依赖较均匀的哈希分布和合理的装载因子"],
+            ),
+            StoryboardScene(
+                id="scene_09",
+                narrative_role="process",
+                scene_type="timeline",
+                title="元素增多后为什么要扩容",
+                teaching_purpose="展示装载升高、冲突增加和扩容重分布的过程",
+                narration="随着元素增多，装载因子会升高，冲突通常也会增加。工程实现会在达到阈值时扩容，并重新计算元素所在的桶，用更多可用桶换回更短的桶内查找。",
+                screen_text=["元素增多", "冲突增加", "扩容并重新分桶"],
+                actors=[
+                    CounterActor(id="load_factor", kind="counter", slot="left", label="装载因子", start=20, end=80, suffix="%"),
+                    BucketRowActor(id="before_resize", kind="bucket_row", slot="center", label="扩容前", bucket_count=8, focus_indices=[2, 5]),
+                    BucketRowActor(id="after_resize", kind="bucket_row", slot="right", label="扩容后", bucket_count=16, focus_indices=[2, 5, 10]),
+                    CalloutActor(id="redistribute", kind="callout", slot="bottom", text="重新计算桶索引", tone="positive"),
+                ],
+                beats=[
+                    Beat(id="load_rises", start_ratio=0.05, end_ratio=0.34, action="count", targets=["load_factor"], emphasis="装载升高"),
+                    Beat(id="resize_table", start_ratio=0.3, end_ratio=0.7, action="grow", targets=["before_resize", "after_resize"], emphasis="8 → 16 个桶"),
+                    Beat(id="rehash_keys", start_ratio=0.66, end_ratio=0.95, action="reveal", targets=["redistribute"], emphasis="重新分桶"),
+                ],
+                transition_out=SceneTransition(type="fade_through_background"),
+                claims=["装载因子升高时，扩容并重新分桶有助于减少冲突"],
+            ),
+            StoryboardScene(
+                id="scene_10",
+                narrative_role="example",
+                scene_type="algorithm_trace",
+                title="沿冲突链找到第二个 key",
+                teaching_purpose="完整追踪冲突链中的局部查找",
+                narration="现在查找二零九五零。先计算得到五十号桶，再比较第一个节点一六七五零，发现 key 不相等，于是沿冲突链继续；第二个节点 key 匹配，查找才真正完成。",
+                screen_text=["定位 Bucket #50", "16750 ≠ 20950", "继续到 20950：命中"],
+                actors=[
+                    CodePanelActor(id="chain_lookup", kind="code_panel", slot="left", language="python", label="桶内查找", code_lines=["index = 20950 % 100", "compare(16750)", "compare(20950)", "return value"]),
+                    VariablePanelActor(id="chain_state", kind="variable_panel", slot="right", label="查找状态", variables={"bucket": "50", "current": "16750", "target": "20950"}),
+                    CalloutActor(id="chain_hit", kind="callout", slot="bottom", text="第二个节点命中", tone="result"),
+                ],
+                beats=[
+                    Beat(id="trace_bucket_50", start_ratio=0.05, end_ratio=0.32, action="code_highlight", targets=["chain_lookup", "chain_state"], emphasis="Bucket #50"),
+                    Beat(id="trace_first_node", start_ratio=0.28, end_ratio=0.62, action="state_transition", targets=["chain_state"], emphasis="16750 不匹配"),
+                    Beat(id="trace_second_node", start_ratio=0.58, end_ratio=0.95, action="reveal", targets=["chain_lookup", "chain_hit"], emphasis="20950 命中"),
+                ],
+                transition_out=SceneTransition(type="fade_through_background"),
+                claims=["链地址法查找会在目标桶内逐个比较 key 直到命中或链结束"],
+            ),
+        ]
+        scenes.insert(3, extended_scenes[0])
+        if extension_count > 1:
+            example_index = next(
+                index for index, scene in enumerate(scenes) if scene.narrative_role == "example"
+            )
+            scenes[example_index:example_index] = extended_scenes[1:min(extension_count, 3)]
+        if extension_count > 3:
+            scenes.insert(-1, extended_scenes[3])
+
     if strategy.code_depth == "implementation":
         scenes.insert(
             2,
@@ -521,9 +625,9 @@ def hash_fallback_storyboard(
                 claims=["哈希表平均查找接近 O(1)，冲突集中时可能退化"],
             ),
         )
-        for index, scene in enumerate(scenes, start=1):
-            scene.id = f"scene_{index:02d}"
-    source_ids = [item.source_id for item in context.rag_evidence[:3]]
+    for index, scene in enumerate(scenes, start=1):
+        scene.id = f"scene_{index:02d}"
+    source_ids = [item.source_id for item in context.rag_evidence[:5]]
     if source_ids:
         for scene in scenes:
             if scene.claims:
@@ -534,9 +638,10 @@ def hash_fallback_storyboard(
 def fallback_storyboard(
     context: VideoGenerationContext,
     strategy: TeachingStrategy,
+    target_duration_seconds: float | None = None,
 ) -> VideoStoryboard:
     if is_hash_topic(context):
-        return hash_fallback_storyboard(context, strategy)
+        return hash_fallback_storyboard(context, strategy, target_duration_seconds)
     return generic_fallback_storyboard(context, strategy)
 
 
@@ -573,14 +678,15 @@ class StoryboardPlanner:
         context: VideoGenerationContext,
         strategy: TeachingStrategy,
         narrative: VideoNarrative,
+        target_duration_seconds: float | None = None,
     ) -> tuple[dict[str, Any], ValidatedStoryboard]:
-        fallback = fallback_storyboard(context, strategy)
+        fallback = fallback_storyboard(context, strategy, target_duration_seconds)
         if is_hash_topic(context):
             return fallback.model_dump(), ValidatedStoryboard(
                 storyboard=fallback,
-                validation_notes=["fixed six-scene hash acceptance storyboard enforced"],
+                validation_notes=["deterministic hash acceptance storyboard enforced"],
             )
-        prompt = self._prompt(context, strategy, narrative)
+        prompt = self._prompt(context, strategy, narrative, target_duration_seconds)
         try:
             raw = await self.llm_service.generate_json(prompt, mock_data=fallback.model_dump())
         except (RuntimeError, ValueError):
@@ -624,7 +730,14 @@ class StoryboardPlanner:
         context: VideoGenerationContext,
         strategy: TeachingStrategy,
         narrative: VideoNarrative,
+        target_duration_seconds: float | None = None,
     ) -> str:
+        duration_requirement = (
+            f"目标总时长 {target_duration_seconds:.0f} 秒，按每个场景约 8 到 14 秒安排足够场景；"
+            f"预计总时长必须在 {target_duration_seconds * 0.85:.0f} 到 {target_duration_seconds * 1.15:.0f} 秒之间。\n"
+            if target_duration_seconds is not None
+            else ""
+        )
         return (
             "你是教学视频 Storyboard Director。只输出严格 Scene DSL JSON，不得输出组件名、HTML、JSX、CSS、"
             "绝对坐标、Markdown 或自由代码。演员、动作、槽位和转场只能使用 Schema 枚举。每场景必须有教学性视觉事件；"
@@ -632,5 +745,6 @@ class StoryboardPlanner:
             f"上下文：{json.dumps(context.prompt_payload(), ensure_ascii=False)}\n"
             f"策略：{strategy.model_dump_json()}\n"
             f"Narrative：{narrative.model_dump_json()}\n"
+            f"时长要求：{duration_requirement}"
             f"Schema：{json.dumps(VideoStoryboard.model_json_schema(), ensure_ascii=False)}"
         )

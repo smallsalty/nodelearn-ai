@@ -1,0 +1,82 @@
+{
+  "title": "哈希表：高效查找的秘密",
+  "sections": [
+    {
+      "role": "hook",
+      "title": "查询难题",
+      "teaching_objective": "通过数组与哈希表查询效率对比，激发对哈希表高效性的好奇心。",
+      "key_points": [
+        "数组和链表查询需 O(n) 时间",
+        "哈希表查询仅 O(1) 时间",
+        "高效源于键值映射"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "definition",
+      "title": "哈希表定义",
+      "teaching_objective": "阐释哈希表是通过哈希函数将键映射到桶索引的键值对数据结构。",
+      "key_points": [
+        "键 key 与值 value 的映射",
+        "哈希函数计算存储位置",
+        "桶 bucket 存储键值对"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "mechanism",
+      "title": "哈希函数与桶定位",
+      "teaching_objective": "演示取模哈希函数如何将键转换为桶索引，实现直接访问。",
+      "key_points": [
+        "例如 key % 100 得到索引",
+        "根据索引直接访问桶",
+        "理想情况下一次定位 O(1)"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "example",
+      "title": "无冲突查询示例",
+      "teaching_objective": "展示无哈希冲突时，通过索引直接获取值的 O(1) 查询过程。",
+      "key_points": [
+        "学号 203 -> 索引 3",
+        "桶 3 中直接存储姓名",
+        "查询一步到位"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "mechanism",
+      "title": "哈希冲突与链式地址",
+      "teaching_objective": "解释不同键可能映射到同一桶，以及链式地址如何用链表解决冲突。",
+      "key_points": [
+        "不同键产生相同索引导致冲突",
+        "桶内用链表存储冲突元素",
+        "查找时遍历链表"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "example",
+      "title": "冲突链查询示例",
+      "teaching_objective": "演示有冲突时通过链表查找仍平均 O(1)，并提及负载因子与扩容条件。",
+      "key_points": [
+        "学号 303 也映射到索引 3",
+        "在链表末尾追加，查找需遍历",
+        "负载因子高时扩容维持效率"
+      ],
+      "evidence_mistake": null
+    },
+    {
+      "role": "summary",
+      "title": "哈希表核心回顾",
+      "teaching_objective": "总结哈希函数、平均 O(1) 条件、冲突链解决，强化哈希表高效原理。",
+      "key_points": [
+        "哈希函数确定桶位置",
+        "平均 O(1) 依赖良好哈希函数与负载控制",
+        "链式地址解决冲突"
+      ],
+      "evidence_mistake": null
+    }
+  ]
+}

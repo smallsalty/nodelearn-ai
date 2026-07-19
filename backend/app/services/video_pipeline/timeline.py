@@ -13,6 +13,29 @@ from app.services.video_pipeline.models import (
 )
 
 
+TARGET_DURATION_TOLERANCE_RATIO = 0.15
+
+
+def validate_target_duration(
+    actual_duration_seconds: float,
+    target_duration_seconds: float | None,
+    *,
+    tolerance_ratio: float = TARGET_DURATION_TOLERANCE_RATIO,
+) -> None:
+    """Reject lessons that materially miss the duration requested by the user."""
+
+    if target_duration_seconds is None:
+        return
+    lower_bound = target_duration_seconds * (1 - tolerance_ratio)
+    upper_bound = target_duration_seconds * (1 + tolerance_ratio)
+    if not lower_bound <= actual_duration_seconds <= upper_bound:
+        raise RuntimeError(
+            "video duration is outside the target tolerance: "
+            f"target={target_duration_seconds:.3f}s, actual={actual_duration_seconds:.3f}s, "
+            f"allowed={lower_bound:.3f}-{upper_bound:.3f}s"
+        )
+
+
 _PHRASE_BREAK = re.compile(r"(?<=[。！？；!?;，,：:])")
 
 

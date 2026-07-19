@@ -1,0 +1,460 @@
+﻿{
+    "code":  200,
+    "message":  "success",
+    "data":  {
+                 "taskId":  "multimodal_video_task_dd5f16985bc6",
+                 "status":  "success",
+                 "progress":  100,
+                 "currentStep":  "done",
+                 "resourceId":  "resource_knowledge_video_0701b10a846d",
+                 "fileUrl":  "http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_dd5f16985bc6/lesson.mp4",
+                 "videoUrl":  "http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_dd5f16985bc6/lesson.mp4",
+                 "script":  "è¿éæä¸ç¾ä¸ªä½ç½®ãæ¥æ¾ä¸ä¸ª key æ¶ï¼æä»¬ççå¿\u0085é¡»ä»é¶å·ä½ç½®éé¡¹æ«æåï¼\næ¢ä¸ç§æ¹æ³ï¼æä¸äºå\u0085«ä¸å\u0085­éå\u0085¥åå¸å½æ°ï¼è®¡ç®ä¸äºå\u0085«ä¸å\u0085­å¯¹ä¸ç¾åæ¨¡ï¼ç»ææ¯ä¸åå\u0085­ãå\u0085ç¨å¾å½¢è¿ç¨çè§£ã\néå¤´ä»æ´ä¸ªè¡¨ç§»å¨å°ä¸ååè³ä¸åä¸å·æ¡¶ï¼éå®ä¸åå\u0085­å·ä½ç½®ï¼key éå³è½å\u0085¥ç®æ æ¡¶ã\nä¸¤ç§æ¥æ¾åæ¶å¼å§ãçº¿æ§æ¥æ¾éé¡¹åè¿ï¼åå¸æ¥æ¾ç´æ¥å®ä½ãåå¸æ¥æ¾å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)ã\nä¸å\u0085­ä¸äºé¶åäºé¶ä¹äºé¶é½æ å°å°äºåå·æ¡¶ãå®ä»¬å\u0085æåå¹¶åçå²çªï¼åå±å¼ä¸ºä¸å\u0085­ä¸äºé¶æåäºé¶ä¹äºé¶ãå²çªä¸ç­äºè¦çã\næååå¿ï¼Key å\u0085ç»è¿ Hash å¾å° Bucketï¼åå¨æ¡¶å\u0085åå±é¨å¤çãå æ­¤ï¼åå¸è¡¨éè¿è®¡ç®ç´æ¥ç¼©å°æ¥æ¾èå´ï¼å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)ï¼å²çªåå¨æ¡¶å\u0085ç»§ç»­å¤çã",
+                 "storyboard":  [
+                                    {
+                                        "sceneId":  "scene_01",
+                                        "sceneType":  "hook",
+                                        "title":  "ä¸å®è¦ä» #0 å¼å§å",
+                                        "narration":  "è¿éæä¸ç¾ä¸ªä½ç½®ãæ¥æ¾ä¸ä¸ª key æ¶ï¼æä»¬ççå¿\u0085é¡»ä»é¶å·ä½ç½®éé¡¹æ«æåï¼",
+                                        "durationSeconds":  6.633333333333334,
+                                        "teachingPurpose":  "ç¨ 100 ä¸ªä½ç½®åæ«æå\u0085æ å»ºç«é®é¢",
+                                        "concreteObjects":  [
+                                                                "scan_lane",
+                                                                "å·²æ£æ¥"
+                                                            ],
+                                        "animationSteps":  [
+
+                                                           ],
+                                        "stateChanges":  [
+                                                             "éé¡¹æ£æ¥"
+                                                         ],
+                                        "screenText":  [
+                                                           "100 ä¸ªä½ç½®",
+                                                           "å¿\u0085é¡»ä» #0 å¼å§ï¼"
+                                                       ],
+                                        "misconceptionFix":  "",
+                                        "componentHints":  [
+
+                                                           ],
+                                        "auditChecklist":  [
+                                                               "Scene DSL validated",
+                                                               "timing resolved from scene audio"
+                                                           ],
+                                        "visualPlan":  {
+                                                           "layout":  "center_focus",
+                                                           "elements":  [
+                                                                            {
+                                                                                "type":  "keyword",
+                                                                                "content":  "100 ä¸ªä½ç½®",
+                                                                                "animation":  "highlight"
+                                                                            }
+                                                                        ]
+                                                       },
+                                        "audioUrl":  "",
+                                        "beats":  [
+                                                      {
+                                                          "beatId":  "scene_01",
+                                                          "narration":  "è¿éæä¸ç¾ä¸ªä½ç½®ãæ¥æ¾ä¸ä¸ª key æ¶ï¼æä»¬ççå¿\u0085é¡»ä»é¶å·ä½ç½®éé¡¹æ«æåï¼",
+                                                          "durationSeconds":  6.633333333333334,
+                                                          "screenText":  [
+                                                                             "100 ä¸ªä½ç½®",
+                                                                             "å¿\u0085é¡»ä» #0 å¼å§ï¼"
+                                                                         ],
+                                                          "claims":  [
+
+                                                                     ],
+                                                          "sourceIds":  [
+
+                                                                        ],
+                                                          "visualPlan":  {
+                                                                             "layout":  "center_focus",
+                                                                             "elements":  [
+                                                                                              {
+                                                                                                  "type":  "keyword",
+                                                                                                  "content":  "100 ä¸ªä½ç½®",
+                                                                                                  "animation":  "highlight"
+                                                                                              }
+                                                                                          ]
+                                                                         },
+                                                          "audioUrl":  "http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_dd5f16985bc6/audio/scene_01.mp3"
+                                                      }
+                                                  ]
+                                    },
+                                    {
+                                        "sceneId":  "scene_02",
+                                        "sceneType":  "definition",
+                                        "title":  "ä» Key ç´æ¥ç®ä½ç½®",
+                                        "narration":  "æ¢ä¸ç§æ¹æ³ï¼æä¸äºå\u0085«ä¸å\u0085­éå\u0085¥åå¸å½æ°ï¼è®¡ç®ä¸äºå\u0085«ä¸å\u0085­å¯¹ä¸ç¾åæ¨¡ï¼ç»ææ¯ä¸åå\u0085­ãå\u0085ç¨å¾å½¢è¿ç¨çè§£ã",
+                                        "durationSeconds":  10.666666666666666,
+                                        "teachingPurpose":  "å±ç¤º 12836 ç»è¿åæ¨¡å¾å° 36",
+                                        "concreteObjects":  [
+                                                                "Key",
+                                                                "Hash Function",
+                                                                "Buckets"
+                                                            ],
+                                        "animationSteps":  [
+
+                                                           ],
+                                        "stateChanges":  [
+                                                             "12836",
+                                                             "% 100",
+                                                             "#36"
+                                                         ],
+                                        "screenText":  [
+                                                           "12836 â Hash Function",
+                                                           "12836 % 100 = 36"
+                                                       ],
+                                        "misconceptionFix":  "",
+                                        "componentHints":  [
+
+                                                           ],
+                                        "auditChecklist":  [
+                                                               "Scene DSL validated",
+                                                               "timing resolved from scene audio"
+                                                           ],
+                                        "visualPlan":  {
+                                                           "layout":  "pipeline",
+                                                           "elements":  [
+                                                                            {
+                                                                                "type":  "keyword",
+                                                                                "content":  "12836 â Hash Function",
+                                                                                "animation":  "highlight"
+                                                                            }
+                                                                        ]
+                                                       },
+                                        "audioUrl":  "",
+                                        "beats":  [
+                                                      {
+                                                          "beatId":  "scene_02",
+                                                          "narration":  "æ¢ä¸ç§æ¹æ³ï¼æä¸äºå\u0085«ä¸å\u0085­éå\u0085¥åå¸å½æ°ï¼è®¡ç®ä¸äºå\u0085«ä¸å\u0085­å¯¹ä¸ç¾åæ¨¡ï¼ç»ææ¯ä¸åå\u0085­ãå\u0085ç¨å¾å½¢è¿ç¨çè§£ã",
+                                                          "durationSeconds":  10.666666666666666,
+                                                          "screenText":  [
+                                                                             "12836 â Hash Function",
+                                                                             "12836 % 100 = 36"
+                                                                         ],
+                                                          "claims":  [
+
+                                                                     ],
+                                                          "sourceIds":  [
+
+                                                                        ],
+                                                          "visualPlan":  {
+                                                                             "layout":  "pipeline",
+                                                                             "elements":  [
+                                                                                              {
+                                                                                                  "type":  "keyword",
+                                                                                                  "content":  "12836 â Hash Function",
+                                                                                                  "animation":  "highlight"
+                                                                                              }
+                                                                                          ]
+                                                                         },
+                                                          "audioUrl":  "http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_dd5f16985bc6/audio/scene_02.mp3"
+                                                      }
+                                                  ]
+                                    },
+                                    {
+                                        "sceneId":  "scene_03",
+                                        "sceneType":  "mechanism",
+                                        "title":  "éå¤´å®ä½å° #36",
+                                        "narration":  "éå¤´ä»æ´ä¸ªè¡¨ç§»å¨å°ä¸ååè³ä¸åä¸å·æ¡¶ï¼éå®ä¸åå\u0085­å·ä½ç½®ï¼key éå³è½å\u0085¥ç®æ æ¡¶ã",
+                                        "durationSeconds":  8.4,
+                                        "teachingPurpose":  "ä»æ´ä½æ¡¶æ°ç»èç¦ #34 å° #37 å¹¶è®© key è½æ¡¶",
+                                        "concreteObjects":  [
+                                                                "Buckets #34â#37",
+                                                                "Key"
+                                                            ],
+                                        "animationSteps":  [
+
+                                                           ],
+                                        "stateChanges":  [
+                                                             "#34â#37",
+                                                             "#36",
+                                                             "ç´æ¥å®ä½"
+                                                         ],
+                                        "screenText":  [
+                                                           "#34 #35 #36 #37",
+                                                           "å®ä½ #36"
+                                                       ],
+                                        "misconceptionFix":  "",
+                                        "componentHints":  [
+
+                                                           ],
+                                        "auditChecklist":  [
+                                                               "Scene DSL validated",
+                                                               "timing resolved from scene audio"
+                                                           ],
+                                        "visualPlan":  {
+                                                           "layout":  "grid_focus",
+                                                           "elements":  [
+                                                                            {
+                                                                                "type":  "keyword",
+                                                                                "content":  "#34 #35 #36 #37",
+                                                                                "animation":  "highlight"
+                                                                            }
+                                                                        ]
+                                                       },
+                                        "audioUrl":  "",
+                                        "beats":  [
+                                                      {
+                                                          "beatId":  "scene_03",
+                                                          "narration":  "éå¤´ä»æ´ä¸ªè¡¨ç§»å¨å°ä¸ååè³ä¸åä¸å·æ¡¶ï¼éå®ä¸åå\u0085­å·ä½ç½®ï¼key éå³è½å\u0085¥ç®æ æ¡¶ã",
+                                                          "durationSeconds":  8.4,
+                                                          "screenText":  [
+                                                                             "#34 #35 #36 #37",
+                                                                             "å®ä½ #36"
+                                                                         ],
+                                                          "claims":  [
+
+                                                                     ],
+                                                          "sourceIds":  [
+
+                                                                        ],
+                                                          "visualPlan":  {
+                                                                             "layout":  "grid_focus",
+                                                                             "elements":  [
+                                                                                              {
+                                                                                                  "type":  "keyword",
+                                                                                                  "content":  "#34 #35 #36 #37",
+                                                                                                  "animation":  "highlight"
+                                                                                              }
+                                                                                          ]
+                                                                         },
+                                                          "audioUrl":  "http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_dd5f16985bc6/audio/scene_03.mp3"
+                                                      }
+                                                  ]
+                                    },
+                                    {
+                                        "sceneId":  "scene_04",
+                                        "sceneType":  "comparison",
+                                        "title":  "ä¸¤ç§æ¥æ¾åæ¶èµ·è·",
+                                        "narration":  "ä¸¤ç§æ¥æ¾åæ¶å¼å§ãçº¿æ§æ¥æ¾éé¡¹åè¿ï¼åå¸æ¥æ¾ç´æ¥å®ä½ãåå¸æ¥æ¾å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)ã",
+                                        "durationSeconds":  10.233333333333333,
+                                        "teachingPurpose":  "å¹¶è¡æ¯è¾éé¡¹æ«æä¸åå¸å®ä½çæ£æ¥æ¬¡æ°",
+                                        "concreteObjects":  [
+                                                                "linear_lane",
+                                                                "hash_lane",
+                                                                "æ£æ¥æ¬¡æ°",
+                                                                "æ£æ¥æ¬¡æ°"
+                                                            ],
+                                        "animationSteps":  [
+
+                                                           ],
+                                        "stateChanges":  [
+                                                             "37 æ¬¡",
+                                                             "1 æ¬¡",
+                                                             "å¹³å O(1)"
+                                                         ],
+                                        "screenText":  [
+                                                           "Linear Search vs Hash Lookup",
+                                                           "å¹³åæ\u0085åµä¸æ¥è¿ O(1)"
+                                                       ],
+                                        "misconceptionFix":  "",
+                                        "componentHints":  [
+
+                                                           ],
+                                        "auditChecklist":  [
+                                                               "Scene DSL validated",
+                                                               "timing resolved from scene audio"
+                                                           ],
+                                        "visualPlan":  {
+                                                           "layout":  "comparison",
+                                                           "elements":  [
+                                                                            {
+                                                                                "type":  "keyword",
+                                                                                "content":  "Linear Search vs Hash Lookup",
+                                                                                "animation":  "highlight"
+                                                                            }
+                                                                        ]
+                                                       },
+                                        "audioUrl":  "",
+                                        "beats":  [
+                                                      {
+                                                          "beatId":  "scene_04",
+                                                          "narration":  "ä¸¤ç§æ¥æ¾åæ¶å¼å§ãçº¿æ§æ¥æ¾éé¡¹åè¿ï¼åå¸æ¥æ¾ç´æ¥å®ä½ãåå¸æ¥æ¾å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)ã",
+                                                          "durationSeconds":  10.233333333333333,
+                                                          "screenText":  [
+                                                                             "Linear Search vs Hash Lookup",
+                                                                             "å¹³åæ\u0085åµä¸æ¥è¿ O(1)"
+                                                                         ],
+                                                          "claims":  [
+                                                                         "åå¸è¡¨æ¥æ¾å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)"
+                                                                     ],
+                                                          "sourceIds":  [
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/docs/chapter_hashing/hash_map.md",
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/python/chapter_hashing/array_hash_map.py",
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/java/chapter_hashing/array_hash_map.java"
+                                                                        ],
+                                                          "visualPlan":  {
+                                                                             "layout":  "comparison",
+                                                                             "elements":  [
+                                                                                              {
+                                                                                                  "type":  "keyword",
+                                                                                                  "content":  "Linear Search vs Hash Lookup",
+                                                                                                  "animation":  "highlight"
+                                                                                              }
+                                                                                          ]
+                                                                         },
+                                                          "audioUrl":  "http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_dd5f16985bc6/audio/scene_04.mp3"
+                                                      }
+                                                  ]
+                                    },
+                                    {
+                                        "sceneId":  "scene_05",
+                                        "sceneType":  "example",
+                                        "title":  "åä¸ä¸ªæ¡¶ï¼ä¸ç­äºè¦ç",
+                                        "narration":  "ä¸å\u0085­ä¸äºé¶åäºé¶ä¹äºé¶é½æ å°å°äºåå·æ¡¶ãå®ä»¬å\u0085æåå¹¶åçå²çªï¼åå±å¼ä¸ºä¸å\u0085­ä¸äºé¶æåäºé¶ä¹äºé¶ãå²çªä¸ç­äºè¦çã",
+                                        "durationSeconds":  12.233333333333333,
+                                        "teachingPurpose":  "æ¼ç¤º 16750 ä¸ 20950 åå° #50 åä½¿ç¨é¾å°åæ³",
+                                        "concreteObjects":  [
+                                                                "Key",
+                                                                "Key",
+                                                                "Bucket #50",
+                                                                "collision_chain"
+                                                            ],
+                                        "animationSteps":  [
+
+                                                           ],
+                                        "stateChanges":  [
+                                                             "#50",
+                                                             "#50",
+                                                             "å²çª",
+                                                             "å²çª â  è¦ç"
+                                                         ],
+                                        "screenText":  [
+                                                           "16750 % 100 = 50",
+                                                           "20950 % 100 = 50",
+                                                           "å²çª â  è¦ç"
+                                                       ],
+                                        "misconceptionFix":  "",
+                                        "componentHints":  [
+
+                                                           ],
+                                        "auditChecklist":  [
+                                                               "Scene DSL validated",
+                                                               "timing resolved from scene audio"
+                                                           ],
+                                        "visualPlan":  {
+                                                           "layout":  "grid_focus",
+                                                           "elements":  [
+                                                                            {
+                                                                                "type":  "keyword",
+                                                                                "content":  "16750 % 100 = 50",
+                                                                                "animation":  "highlight"
+                                                                            }
+                                                                        ]
+                                                       },
+                                        "audioUrl":  "",
+                                        "beats":  [
+                                                      {
+                                                          "beatId":  "scene_05",
+                                                          "narration":  "ä¸å\u0085­ä¸äºé¶åäºé¶ä¹äºé¶é½æ å°å°äºåå·æ¡¶ãå®ä»¬å\u0085æåå¹¶åçå²çªï¼åå±å¼ä¸ºä¸å\u0085­ä¸äºé¶æåäºé¶ä¹äºé¶ãå²çªä¸ç­äºè¦çã",
+                                                          "durationSeconds":  12.233333333333333,
+                                                          "screenText":  [
+                                                                             "16750 % 100 = 50",
+                                                                             "20950 % 100 = 50",
+                                                                             "å²çª â  è¦ç"
+                                                                         ],
+                                                          "claims":  [
+                                                                         "é¾å°åæ³å¯ä»¥å¨åä¸æ¡¶ä¸­ä¿çå¤ä¸ªåçåå¸å²çªç key"
+                                                                     ],
+                                                          "sourceIds":  [
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/docs/chapter_hashing/hash_map.md",
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/python/chapter_hashing/array_hash_map.py",
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/java/chapter_hashing/array_hash_map.java"
+                                                                        ],
+                                                          "visualPlan":  {
+                                                                             "layout":  "grid_focus",
+                                                                             "elements":  [
+                                                                                              {
+                                                                                                  "type":  "keyword",
+                                                                                                  "content":  "16750 % 100 = 50",
+                                                                                                  "animation":  "highlight"
+                                                                                              }
+                                                                                          ]
+                                                                         },
+                                                          "audioUrl":  "http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_dd5f16985bc6/audio/scene_05.mp3"
+                                                      }
+                                                  ]
+                                    },
+                                    {
+                                        "sceneId":  "scene_06",
+                                        "sceneType":  "summary",
+                                        "title":  "åæ­¥åå¿åå¸æ¥æ¾",
+                                        "narration":  "æååå¿ï¼Key å\u0085ç»è¿ Hash å¾å° Bucketï¼åå¨æ¡¶å\u0085åå±é¨å¤çãå æ­¤ï¼åå¸è¡¨éè¿è®¡ç®ç´æ¥ç¼©å°æ¥æ¾èå´ï¼å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)ï¼å²çªåå¨æ¡¶å\u0085ç»§ç»­å¤çã",
+                                        "durationSeconds":  14.533333333333333,
+                                        "teachingPurpose":  "éæ­¥åå¿ KeyãHashãBucket ä¸å±é¨å¤ç",
+                                        "concreteObjects":  [
+                                                                "recall_key",
+                                                                "recall_hash",
+                                                                "recall_bucket",
+                                                                "recall_local"
+                                                            ],
+                                        "animationSteps":  [
+
+                                                           ],
+                                        "stateChanges":  [
+                                                             "å¹³å O(1)"
+                                                         ],
+                                        "screenText":  [
+                                                           "Key â Hash â Bucket â Local handling",
+                                                           "ç´æ¥ç¼©å°"
+                                                       ],
+                                        "misconceptionFix":  "",
+                                        "componentHints":  [
+
+                                                           ],
+                                        "auditChecklist":  [
+                                                               "Scene DSL validated",
+                                                               "timing resolved from scene audio"
+                                                           ],
+                                        "visualPlan":  {
+                                                           "layout":  "pipeline",
+                                                           "elements":  [
+                                                                            {
+                                                                                "type":  "keyword",
+                                                                                "content":  "Key â Hash â Bucket â Local handling",
+                                                                                "animation":  "highlight"
+                                                                            }
+                                                                        ]
+                                                       },
+                                        "audioUrl":  "",
+                                        "beats":  [
+                                                      {
+                                                          "beatId":  "scene_06",
+                                                          "narration":  "æååå¿ï¼Key å\u0085ç»è¿ Hash å¾å° Bucketï¼åå¨æ¡¶å\u0085åå±é¨å¤çãå æ­¤ï¼åå¸è¡¨éè¿è®¡ç®ç´æ¥ç¼©å°æ¥æ¾èå´ï¼å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)ï¼å²çªåå¨æ¡¶å\u0085ç»§ç»­å¤çã",
+                                                          "durationSeconds":  14.533333333333333,
+                                                          "screenText":  [
+                                                                             "Key â Hash â Bucket â Local handling",
+                                                                             "ç´æ¥ç¼©å°"
+                                                                         ],
+                                                          "claims":  [
+                                                                         "åå¸è¡¨éè¿è®¡ç®ç´æ¥ç¼©å°æ¥æ¾èå´ï¼å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)"
+                                                                     ],
+                                                          "sourceIds":  [
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/docs/chapter_hashing/hash_map.md",
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/python/chapter_hashing/array_hash_map.py",
+                                                                            "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/java/chapter_hashing/array_hash_map.java"
+                                                                        ],
+                                                          "visualPlan":  {
+                                                                             "layout":  "pipeline",
+                                                                             "elements":  [
+                                                                                              {
+                                                                                                  "type":  "keyword",
+                                                                                                  "content":  "Key â Hash â Bucket â Local handling",
+                                                                                                  "animation":  "highlight"
+                                                                                              }
+                                                                                          ]
+                                                                         },
+                                                          "audioUrl":  "http://127.0.0.1:8011/storage/generated_resources/multimodal_video_task_dd5f16985bc6/audio/scene_06.mp3"
+                                                      }
+                                                  ]
+                                    }
+                                ],
+                 "subtitleText":  "è¿éæä¸ç¾ä¸ªä½ç½®ãæ¥æ¾ä¸ä¸ª key æ¶ï¼æä»¬ççå¿\u0085é¡»ä»é¶å·ä½ç½®éé¡¹æ«æåï¼\næ¢ä¸ç§æ¹æ³ï¼æä¸äºå\u0085«ä¸å\u0085­éå\u0085¥åå¸å½æ°ï¼è®¡ç®ä¸äºå\u0085«ä¸å\u0085­å¯¹ä¸ç¾åæ¨¡ï¼ç»ææ¯ä¸åå\u0085­ãå\u0085ç¨å¾å½¢è¿ç¨çè§£ã\néå¤´ä»æ´ä¸ªè¡¨ç§»å¨å°ä¸ååè³ä¸åä¸å·æ¡¶ï¼éå®ä¸åå\u0085­å·ä½ç½®ï¼key éå³è½å\u0085¥ç®æ æ¡¶ã\nä¸¤ç§æ¥æ¾åæ¶å¼å§ãçº¿æ§æ¥æ¾éé¡¹åè¿ï¼åå¸æ¥æ¾ç´æ¥å®ä½ãåå¸æ¥æ¾å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)ã\nä¸å\u0085­ä¸äºé¶åäºé¶ä¹äºé¶é½æ å°å°äºåå·æ¡¶ãå®ä»¬å\u0085æåå¹¶åçå²çªï¼åå±å¼ä¸ºä¸å\u0085­ä¸äºé¶æåäºé¶ä¹äºé¶ãå²çªä¸ç­äºè¦çã\næååå¿ï¼Key å\u0085ç»è¿ Hash å¾å° Bucketï¼åå¨æ¡¶å\u0085åå±é¨å¤çãå æ­¤ï¼åå¸è¡¨éè¿è®¡ç®ç´æ¥ç¼©å°æ¥æ¾èå´ï¼å¨å¹³åæ\u0085åµä¸æ¥è¿ O(1)ï¼å²çªåå¨æ¡¶å\u0085ç»§ç»­å¤çã",
+                 "errorMessage":  null,
+                 "createdAt":  "2026-07-19T10:34:59.450993+00:00",
+                 "updatedAt":  "2026-07-19T10:36:50.245672+00:00"
+             },
+    "traceId":  "trace_6d52de4e2b4d4edea5d002a92afae206",
+    "timestamp":  "2026-07-19T10:36:50.270878+00:00"
+}

@@ -98,13 +98,16 @@
 - 组件：`MultimodalTaskProgress.vue`、`DigitalHumanChatPanel.vue`
 - 状态变量：`selectedResourceId`
 - 资源页不再提供 `practice_question` 生成卡片，练习统一由练习页负责；该枚举继续保留以兼容既有契约。
-- 主导航将资源能力拆为三个互斥入口：`/resources` 只允许新生成讲解文档和拓展材料阅读；`action=mind_map` 预选当前节点和唯一 `mind_map` 类型且不再显示类型选择；`action=digital_human_chat` 只显示实时数字人问答，不显示学习目标、数字人讲解或普通生成按钮。
-- 路由 `action` 变化时必须重置生成模式、资源类型与本次任务状态，防止组件复用后残留上一个入口的表单；三个入口按 `path + action` 精确匹配且只能有一个主导航强选中。
-- 资源工具页使用 `GET /nodes/{nodeId}/generated-resources` 读取当前知识点资源，并在前端再次按当前课程、节点、工具类型、`status=success` 和 `auditStatus=passed` 严格过滤；资源中心只显示 `lecture_doc/reading_material`，思维导图只显示 `mind_map`，旧视频深链接只显示各自视频类型。
-- 工具页不再显示历史资源卡片网格或“推荐资源”页签；合格历史资源按 `createdAt` 倒序进入详情标题栏的紧凑选择器，默认打开最新一条，生成完成后优先打开本次新资源。首页、悬浮侧栏和后端推荐能力保持不变。
-- 节点或 `action` 变化时立即清空旧资源与详情，并使用请求序号丢弃过期响应；`action=digital_human_chat` 完全跳过资源请求和详情渲染，只保留实时数字人对话。
-- 旧 `knowledge_video`、`digital_human_video` 深链接与后端生成能力继续兼容，但不再出现在主导航或面向用户的模式选择中。
-- `action=mind_map` 不会自动触发付费生成，仍由用户确认后点击生成。
+- 主导航将资源能力拆为四个互斥入口：`/resources` 只允许新生成讲解文档和拓展材料阅读；`action=mind_map` 预选唯一 `mind_map` 类型；`action=knowledge_video` 作为正式“视频讲解”学习工具预选唯一 `knowledge_video` 类型；`action=digital_human_chat` 只显示实时数字人问答。
+- 路由 `action` 变化时必须重置生成模式、资源类型与本次任务状态，防止组件复用后残留上一个入口的表单；四个入口按 `path + action` 精确匹配且只能有一个主导航强选中。
+- 资源工具页使用 `GET /nodes/{nodeId}/generated-resources` 读取当前知识点资源，并在前端再次按当前课程、节点、工具类型、`status=success` 和 `auditStatus=passed` 严格过滤；资源中心只显示 `lecture_doc/reading_material`，思维导图只显示 `mind_map`，视频讲解只显示 `knowledge_video`。
+- 工具页不再显示历史资源卡片网格或“推荐资源”页签；合格历史资源按 `createdAt` 倒序进入详情标题栏的紧凑选择器，默认打开最新一条。`nodeId + resourceId + action=knowledge_video` 深链会优先打开指定视频，生成完成后优先打开本次新资源。
+- 节点、`action` 或 `resourceId` 变化时立即清空旧资源与详情，并使用请求序号丢弃过期响应；`action=digital_human_chat` 完全跳过资源请求和详情渲染，只保留实时数字人对话。
+- 课程正文、知识图谱和知识节点正文兼容页在思维导图入口旁同时提供视频讲解入口，并先同步全局课程节点状态。
+- 思维导图和视频讲解页面都不会自动触发付费生成，仍由用户确认后点击生成。
+- 成功且审核通过、具有文件地址的 `knowledge_video` 会幂等写入现有 `ResourceRecommendation` 和推送记录；推荐读取会补齐历史合格视频并按 `resourceId` 去重，失败、未审核或缺少文件地址的视频不会进入推荐。
+- 首页和学习浮窗按 `createdAt` 倒序显示推荐；点击后调用既有已查看接口，并通过共享路由解析器进入视频讲解、思维导图或普通资源详情。推荐读取不会因为缺少视频而启动视频生成。
+- 旧 `digital_human_video` 深链接与后端生成能力继续兼容，但不出现在主导航或面向用户的模式选择中。
 - `GeneratedResource.chapterId` 可空；Hello Algo 章节阅读材料以及从旧总览节点迁移的章节讲解文档、思维导图使用章节关联并清空 `nodeId`，既有知识节点生成链路不变。
 
 ## 后端
@@ -127,12 +130,13 @@
 - `GeneratedResource.fileUrl` 保存审核通过后的 MP4 地址。
 - 两种视频资源类型必须同时保存，并共享最终 MP4。
 - 新生成资源统一使用 `style=clean_motion_graphics` 和 `sceneType + visualPlan`，不再生成 `stack_animation` 或 `text_slide`。
-- 公开 v2 必须按顺序包含 hook、definition、mechanism、example、summary；内部另用 `scene_type` 从 15 个模板中选择，哈希验收固定六场景。
+- 公开 v2 必须按顺序包含 hook、definition、mechanism、example、summary；内部另用 `scene_type` 从 15 个模板中选择。哈希 storyboard 会根据目标时长在六个核心场景上确定性增加最多四个教学场景；120 秒目标使用十场景版本，补充桶内核对、复杂度条件、装载/扩容和冲突链追踪。
 - 新任务由 `SceneRendererRegistry` 和内部 render manifest 渲染；`UniversalExplainerVideoRenderer` 只处理历史资源。
-- TTS 使用豆包 V3 HTTP Chunked，每个内部 scene 生成一段真实 MP3；最终时长由 `audioDuration + 0.35s` 决定，不用静止画面补齐目标时长。
+- TTS 使用豆包 V3 HTTP Chunked，每个内部 scene 生成一段真实 MP3；最终时长由 `audioDuration + 0.35s` 决定，不用静止画面补齐目标时长。estimated timeline 和真实音频 timeline 都必须落在目标时长 ±15% 内，否则在渲染/发布前失败。
 - MP4 发布前完整验证非空、H.264、AAC、宽高、30fps、音视频轨和 resolved timeline 时长误差。
 - 豆包 `TTS_VOICE_NAME` 必须与 `TTS_RESOURCE_ID` 匹配；`seed-tts-2.0` 可使用已验证的 `zh_female_vv_uranus_bigtts`。
 - 音频、视频和依赖失败必须明确标记 `failed`。
+- 目标节点材料不足以支撑用户明确要求的哈希冲突、链式地址、负载因子或扩容时，检索会补充同课程真实“哈希冲突”材料；事实 beat 仍必须引用投影到 v2 `sources` 的来源。
 - 历史视频 JSON 和前端 JSON 预览继续兼容；真实新动画只读取内部 manifest。
 
 ## 真实材料和导图

@@ -267,6 +267,12 @@ function openMindMap(nodeId: string) {
   void router.push({ path: "/resources", query: { nodeId, action: "mind_map" } });
 }
 
+function openKnowledgeVideo(nodeId: string) {
+  appState.selectedChapterId = chapterIdByNodeId.value.get(nodeId) ?? null;
+  appState.selectedNodeId = nodeId;
+  void router.push({ path: "/resources", query: { nodeId, action: "knowledge_video" } });
+}
+
 onMounted(() => {
   if (content.value) setupObserver();
 });
@@ -399,8 +405,11 @@ onBeforeUnmount(() => {
                   <footer class="section-actions" :aria-label="`${section.title} 学习操作`">
                     <el-button @click="openGraph(section.nodeId)">返回图谱</el-button>
                     <el-button plain @click="openPractice(section.nodeId)">进入练习</el-button>
-                    <el-button type="primary" @click="openMindMap(section.nodeId)">
+                    <el-button plain @click="openMindMap(section.nodeId)">
                       生成思维导图<el-icon class="el-icon--right"><ArrowRight /></el-icon>
+                    </el-button>
+                    <el-button type="primary" @click="openKnowledgeVideo(section.nodeId)">
+                      视频讲解<el-icon class="el-icon--right"><ArrowRight /></el-icon>
                     </el-button>
                   </footer>
                 </section>

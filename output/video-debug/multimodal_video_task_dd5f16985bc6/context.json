@@ -1,0 +1,52 @@
+{
+  "course_id": "course_ds_001",
+  "course_name": null,
+  "current_node": {
+    "id": "node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4",
+    "name": "6.1 哈希表",
+    "description": "哈希表（hash table），又称散列表，它通过建立键 key 与值 value 之间的映射，实现高效的元素查询。具体而言，我们向哈希表中输入一个键 key ，则可以在 $O(1)$ 时间内获取对应的值 value 。 如下图所示，给定 $n$ 个学生，每个学生都有“姓名”和“学号”两项数据。假如我们希望实现“输入一个学号，返回对应的姓名”的查询功能，则可以采用下图所示的哈希表来实现。 除哈希表外，数组和链表也可以实现查询功能，它们的效率对比如下表所示。 - 添加元素：仅需将元素添加至数组（链表）的尾部即可，使用 $O(1)$ 时间。 - 查询元素：由于数组（链表）是乱序的，因此需要遍历其中的所有元素，使用 $O(n)$ 时间。 - 删除元素：需要先查询到元素，再从数组（链表）中删除，使用 $O(n)$ 时间。 表 6-1 元素查询效率对比 观察发现，在哈希表中进行增删查改的时间复杂度都是 $O(1)$ ，非常高效。 哈希表的常见操作包括：初始化、查询操作、添加键值对和删除键值对等，示例代码如下： ::: 可视化运行 https://pytho",
+    "difficulty": "medium",
+    "common_mistakes": []
+  },
+  "prerequisite_nodes": [],
+  "learner": {
+    "cognitive_style": "diagram",
+    "practice_preference": "coding",
+    "knowledge_base_level": "easy",
+    "learning_goal": "准备数据结构期末考试",
+    "weak_node_ids": [
+      "node_linked_list_001",
+      "node_recursion_001"
+    ],
+    "common_mistakes": [
+      "链表指针断链",
+      "递归终止条件错误",
+      "数组下标越界"
+    ],
+    "profile_summary": "学生具备基础编程能力，但链表和递归较弱，偏好图解和代码练习。"
+  },
+  "relevant_mistakes": [],
+  "recent_practice": [],
+  "rag_evidence": [
+    {
+      "source_id": "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/docs/chapter_hashing/hash_map.md",
+      "title": "哈希表",
+      "excerpt": "Source: https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/docs/chapter_hashing/hash_map.md\nCommit: 1f9eaee5be4f5e85ad562fb57878d939104d21ea\nLicense: CC BY-NC-SA 4.0\nPath: docs/chapter_hashing/hash_map.md\n\n# 哈希表\n\n<u>哈希表（hash table）</u>，又称<u>散列表</u>，它通过建立键 `key` 与值 `value` 之间的映射，实现高效的元素查询。具体而言，我们向哈希表中输入一个键 `key` ，则可以在 $O(1)$ 时间内获取对应的值 `value` 。\n\n如下图所示，给定 $n$ 个学生，每个学生都有“姓名”和“学号”两项数据。假如我们希望实现“输入一个学号，返回对应的姓名”的查询功能，则可以采用下图所示的哈希表来实现。\n\n![哈希表的抽象表示](hash_map.assets/hash_table_lookup.png)\n\n除哈希表外，数组和链表也可以实现查询功能，它们的效率对比如下表所示。\n\n- **添加元素**：仅需将元素添加至数组（链表）的尾部即可，使用 $O(1)$ 时间。\n- **查询元素**：由于数组（链表）是乱序的，因此需要遍历其中的所有元素，使用 $O(n)$ 时间。\n- **删除元素**：需要先查询到元素，再从数组（链表）中删除，使用 $O(n)$ 时间。\n\n<p align=\"center\"> 表 <id> &nbsp; 元素查询效率对比 </p>\n\n|          | 数组   | 链表   | 哈希表 |\n| -------- | ------ | ------ | ------ |\n| 查找元素 | $O(n)$ | $O(n)$ | $O(1)$ |\n| 添加元素 | $O(1)$ | $O(1)$ | $O(1)$ |\n| 删除元素 |",
+      "score": 1.0
+    },
+    {
+      "source_id": "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/python/chapter_hashing/array_hash_map.py",
+      "title": "Array Hash Map (Python)",
+      "excerpt": "Source: https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/python/chapter_hashing/array_hash_map.py\nCommit: 1f9eaee5be4f5e85ad562fb57878d939104d21ea\nLicense: CC BY-NC-SA 4.0\nPath: codes/python/chapter_hashing/array_hash_map.py\n\n\"\"\"\nFile: array_hash_map.py\nCreated Time: 2022-12-14\nAuthor: msk397 (machangxinq@gmail.com)\n\"\"\"\n\n\nclass Pair:\n    \"\"\"键值对\"\"\"\n\n    def __init__(self, key: int, val: str):\n        self.key = key\n        self.val = val\n\n\nclass ArrayHashMap:\n    \"\"\"基于数组实现的哈希表\"\"\"\n\n    def __init__(self):\n        \"\"\"构造方法\"\"\"\n        # 初始化数组，包含 100 个桶\n        self.buckets: list[Pair | None] = [None] * 100\n\n    def hash_func(self, key: int) -> int:\n        \"\"\"哈希函数\"\"\"\n        index = key % 100\n        return index\n\n    def get(self, key: int) -> str | None:\n        \"\"\"查询操作\"\"\"\n        index: int = self.hash_func(key)\n        pair: Pair = self.buckets[ind",
+      "score": 1.0
+    },
+    {
+      "source_id": "https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/java/chapter_hashing/array_hash_map.java",
+      "title": "Array Hash Map (Java)",
+      "excerpt": "Source: https://github.com/krahets/hello-algo/blob/1f9eaee5be4f5e85ad562fb57878d939104d21ea/codes/java/chapter_hashing/array_hash_map.java\nCommit: 1f9eaee5be4f5e85ad562fb57878d939104d21ea\nLicense: CC BY-NC-SA 4.0\nPath: codes/java/chapter_hashing/array_hash_map.java\n\n/**\n * File: array_hash_map.java\n * Created Time: 2022-12-04\n * Author: krahets (krahets@163.com)\n */\n\npackage chapter_hashing;\n\nimport java.util.*;\n\n/* 键值对 */\nclass Pair {\n    public int key;\n    public String val;\n\n    public Pair(int key, String val) {\n        this.key = key;\n        this.val = val;\n    }\n}\n\n/* 基于数组实现的哈希表 */\nclass ArrayHashMap {\n    private List<Pair> buckets;\n\n    public ArrayHashMap() {\n        // 初始化数组，包含 100 个桶\n        buckets = new ArrayList<>();\n        for (int i = 0; i < 100; i++) {\n            buckets.add(null);\n        }\n    }\n\n    /* 哈希函数 */\n    private int hashFunc(int key) {\n        int index",
+      "score": 1.0
+    }
+  ],
+  "learning_goal": "理解哈希函数如何把键映射到桶，掌握桶索引定位、平均 O(1) 的成立条件，并通过真实键值示例理解冲突链如何避免覆盖。",
+  "custom_requirement": "使用中文字幕和暖白学院风；不启用背景音乐；依次讲清哈希函数、桶定位、平均查找复杂度的成立条件和冲突链。"
+}

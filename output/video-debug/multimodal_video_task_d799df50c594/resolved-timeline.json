@@ -1,0 +1,461 @@
+{
+  "fps": 30,
+  "scenes": [
+    {
+      "scene_id": "scene_01",
+      "start_frame": 0,
+      "duration_frames": 204,
+      "audio_duration_seconds": 6.432,
+      "beats": [
+        {
+          "id": "scan_appear",
+          "action": "appear",
+          "targets": [
+            "scan_lane"
+          ],
+          "start_frame": 10,
+          "end_frame": 51,
+          "emphasis": null
+        },
+        {
+          "id": "scan_move",
+          "action": "follow_path",
+          "targets": [
+            "scan_lane"
+          ],
+          "start_frame": 40,
+          "end_frame": 168,
+          "emphasis": null
+        },
+        {
+          "id": "scan_count",
+          "action": "count",
+          "targets": [
+            "scan_counter"
+          ],
+          "start_frame": 40,
+          "end_frame": 168,
+          "emphasis": "逐项检查"
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "scene_01_subtitle_01",
+          "text": "这里有一百个位置。",
+          "start_frame": 0,
+          "end_frame": 54,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_01_subtitle_02",
+          "text": "查找一个 key 时，",
+          "start_frame": 54,
+          "end_frame": 98,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_01_subtitle_03",
+          "text": "我们真的必须从零号位置逐项扫描吗？",
+          "start_frame": 98,
+          "end_frame": 193,
+          "highlight_terms": []
+        }
+      ]
+    },
+    {
+      "scene_id": "scene_02",
+      "start_frame": 204,
+      "duration_frames": 313,
+      "audio_duration_seconds": 10.056,
+      "beats": [
+        {
+          "id": "key_into_hash",
+          "action": "move",
+          "targets": [
+            "key_12836"
+          ],
+          "start_frame": 15,
+          "end_frame": 110,
+          "emphasis": "12836"
+        },
+        {
+          "id": "formula_steps",
+          "action": "type",
+          "targets": [
+            "hash_formula"
+          ],
+          "start_frame": 87,
+          "end_frame": 220,
+          "emphasis": "% 100"
+        },
+        {
+          "id": "result_36",
+          "action": "highlight",
+          "targets": [
+            "bucket_row"
+          ],
+          "start_frame": 203,
+          "end_frame": 298,
+          "emphasis": "#36"
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "scene_02_subtitle_01",
+          "text": "换一种方法：",
+          "start_frame": 0,
+          "end_frame": 40,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_02_subtitle_02",
+          "text": "把一二八三六送入哈希函数，",
+          "start_frame": 40,
+          "end_frame": 115,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_02_subtitle_03",
+          "text": "计算一二八三六对一百取模，",
+          "start_frame": 115,
+          "end_frame": 190,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_02_subtitle_04",
+          "text": "结果是三十六。",
+          "start_frame": 190,
+          "end_frame": 240,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_02_subtitle_05",
+          "text": "先用图形过程理解。",
+          "start_frame": 240,
+          "end_frame": 302,
+          "highlight_terms": []
+        }
+      ]
+    },
+    {
+      "scene_id": "scene_03",
+      "start_frame": 517,
+      "duration_frames": 259,
+      "audio_duration_seconds": 8.256,
+      "beats": [
+        {
+          "id": "camera_to_range",
+          "action": "camera",
+          "targets": [
+            "bucket_zoom"
+          ],
+          "start_frame": 12,
+          "end_frame": 109,
+          "emphasis": "#34–#37"
+        },
+        {
+          "id": "focus_36",
+          "action": "highlight",
+          "targets": [
+            "bucket_zoom"
+          ],
+          "start_frame": 98,
+          "end_frame": 177,
+          "emphasis": "#36"
+        },
+        {
+          "id": "drop_key",
+          "action": "move",
+          "targets": [
+            "key_drop"
+          ],
+          "start_frame": 160,
+          "end_frame": 247,
+          "emphasis": "直接定位"
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "scene_03_subtitle_01",
+          "text": "镜头从整个表移动到三十四至三十七号桶，",
+          "start_frame": 0,
+          "end_frame": 117,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_03_subtitle_02",
+          "text": "锁定三十六号位置，",
+          "start_frame": 117,
+          "end_frame": 171,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_03_subtitle_03",
+          "text": "key 随即落入目标桶。",
+          "start_frame": 171,
+          "end_frame": 248,
+          "highlight_terms": []
+        }
+      ]
+    },
+    {
+      "scene_id": "scene_04",
+      "start_frame": 776,
+      "duration_frames": 300,
+      "audio_duration_seconds": 9.624,
+      "beats": [
+        {
+          "id": "race_start",
+          "action": "appear",
+          "targets": [
+            "linear_lane",
+            "hash_lane"
+          ],
+          "start_frame": 15,
+          "end_frame": 60,
+          "emphasis": null
+        },
+        {
+          "id": "linear_run",
+          "action": "count",
+          "targets": [
+            "linear_count"
+          ],
+          "start_frame": 54,
+          "end_frame": 255,
+          "emphasis": "37 次"
+        },
+        {
+          "id": "hash_jump",
+          "action": "count",
+          "targets": [
+            "hash_count"
+          ],
+          "start_frame": 54,
+          "end_frame": 126,
+          "emphasis": "1 次"
+        },
+        {
+          "id": "average_o1",
+          "action": "reveal",
+          "targets": [
+            "hash_lane"
+          ],
+          "start_frame": 216,
+          "end_frame": 288,
+          "emphasis": "平均 O(1)"
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "scene_04_subtitle_01",
+          "text": "两种查找同时开始。",
+          "start_frame": 0,
+          "end_frame": 63,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_04_subtitle_02",
+          "text": "线性查找逐项前进，",
+          "start_frame": 63,
+          "end_frame": 115,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_04_subtitle_03",
+          "text": "哈希查找直接定位。",
+          "start_frame": 115,
+          "end_frame": 178,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_04_subtitle_04",
+          "text": "哈希查找在平均情况下接近 O(1)。",
+          "start_frame": 178,
+          "end_frame": 289,
+          "highlight_terms": []
+        }
+      ]
+    },
+    {
+      "scene_id": "scene_05",
+      "start_frame": 1076,
+      "duration_frames": 367,
+      "audio_duration_seconds": 11.88,
+      "beats": [
+        {
+          "id": "first_to_50",
+          "action": "move",
+          "targets": [
+            "key_16750"
+          ],
+          "start_frame": 18,
+          "end_frame": 140,
+          "emphasis": "#50"
+        },
+        {
+          "id": "second_to_50",
+          "action": "move",
+          "targets": [
+            "key_20950"
+          ],
+          "start_frame": 73,
+          "end_frame": 191,
+          "emphasis": "#50"
+        },
+        {
+          "id": "collision_pause",
+          "action": "collision",
+          "targets": [
+            "key_16750",
+            "key_20950"
+          ],
+          "start_frame": 176,
+          "end_frame": 243,
+          "emphasis": "冲突"
+        },
+        {
+          "id": "chain_reveal",
+          "action": "reveal",
+          "targets": [
+            "collision_chain"
+          ],
+          "start_frame": 234,
+          "end_frame": 349,
+          "emphasis": "冲突 ≠ 覆盖"
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "scene_05_subtitle_01",
+          "text": "一六七五零和二零九五零都映射到五十号桶。",
+          "start_frame": 0,
+          "end_frame": 128,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_05_subtitle_02",
+          "text": "它们先暂停并发生冲突，",
+          "start_frame": 128,
+          "end_frame": 191,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_05_subtitle_03",
+          "text": "再展开为一六七五零指向二零九五零。",
+          "start_frame": 191,
+          "end_frame": 301,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_05_subtitle_04",
+          "text": "冲突不等于覆盖。",
+          "start_frame": 301,
+          "end_frame": 357,
+          "highlight_terms": []
+        }
+      ]
+    },
+    {
+      "scene_id": "scene_06",
+      "start_frame": 1443,
+      "duration_frames": 436,
+      "audio_duration_seconds": 14.164708,
+      "beats": [
+        {
+          "id": "recall_1",
+          "action": "reveal",
+          "targets": [
+            "recall_key"
+          ],
+          "start_frame": 21,
+          "end_frame": 123,
+          "emphasis": null
+        },
+        {
+          "id": "recall_2",
+          "action": "reveal",
+          "targets": [
+            "recall_hash"
+          ],
+          "start_frame": 104,
+          "end_frame": 210,
+          "emphasis": null
+        },
+        {
+          "id": "recall_3",
+          "action": "reveal",
+          "targets": [
+            "recall_bucket"
+          ],
+          "start_frame": 191,
+          "end_frame": 306,
+          "emphasis": null
+        },
+        {
+          "id": "recall_4",
+          "action": "reveal",
+          "targets": [
+            "recall_local"
+          ],
+          "start_frame": 287,
+          "end_frame": 415,
+          "emphasis": "平均 O(1)"
+        }
+      ],
+      "subtitles": [
+        {
+          "id": "scene_06_subtitle_01",
+          "text": "最后回忆：",
+          "start_frame": 0,
+          "end_frame": 31,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_06_subtitle_02",
+          "text": "Key 先经过 Hash 得到 Bucket，",
+          "start_frame": 31,
+          "end_frame": 131,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_06_subtitle_03",
+          "text": "再在桶内做局部处理。",
+          "start_frame": 131,
+          "end_frame": 192,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_06_subtitle_04",
+          "text": "因此，",
+          "start_frame": 192,
+          "end_frame": 206,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_06_subtitle_05",
+          "text": "哈希表通过计算直接缩小查找范围，",
+          "start_frame": 206,
+          "end_frame": 290,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_06_subtitle_06",
+          "text": "在平均情况下接近 O(1)，",
+          "start_frame": 290,
+          "end_frame": 359,
+          "highlight_terms": []
+        },
+        {
+          "id": "scene_06_subtitle_07",
+          "text": "冲突则在桶内继续处理。",
+          "start_frame": 359,
+          "end_frame": 425,
+          "highlight_terms": []
+        }
+      ]
+    }
+  ],
+  "total_frames": 1879,
+  "total_duration_seconds": 62.63333333333333
+}

@@ -169,6 +169,7 @@ class ResourceRepository:
             and (course_id is None or recommendation.course_id == course_id)
             and (node_id is None or recommendation.node_id == node_id)
         ]
+        recommendations.sort(key=lambda item: item.created_at, reverse=True)
         return recommendations[:limit] if limit else recommendations
 
     def get_recommendation(self, recommendation_id: str) -> ResourceRecommendation | None:

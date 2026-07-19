@@ -69,7 +69,9 @@ const resourceTypeOptions: Array<{ value: ResourceType; title: string; descripti
 ];
 
 const routeAction = computed(() => (typeof route.query.action === "string" ? route.query.action : ""));
+const routeResourceId = computed(() => (typeof route.query.resourceId === "string" ? route.query.resourceId : ""));
 const isMindMapEntry = computed(() => routeAction.value === "mind_map");
+const isKnowledgeVideoEntry = computed(() => routeAction.value === "knowledge_video");
 const isDigitalHumanAnswer = computed(() => generatorMode.value === "digital_human_chat");
 const allowedResourceTypes = computed<ResourceType[]>(() => {
   if (isDigitalHumanAnswer.value) return [];
@@ -93,16 +95,22 @@ const emptyResourceText = computed(() => {
 const pageTitle = computed(() => {
   if (isMindMapEntry.value) return "思维导图";
   if (isDigitalHumanAnswer.value) return "数字人解答";
-  if (generatorMode.value === "knowledge_video") return "知识点教学视频";
+  if (generatorMode.value === "knowledge_video") return "视频讲解";
   if (generatorMode.value === "digital_human_video") return "数字人讲解";
   return "资源中心";
 });
 const pageDescription = computed(() => {
   if (isMindMapEntry.value) return "当前知识点和思维导图类型已预选，确认学习目标后即可生成。";
   if (isDigitalHumanAnswer.value) return "围绕当前知识点与数字人实时对话。";
-  if (generatorMode.value === "knowledge_video") return "兼容旧知识点教学视频深链接与生成流程。";
+  if (generatorMode.value === "knowledge_video") return "当前知识点和视频类型已预选，确认学习目标和视频设置后即可生成。";
   if (generatorMode.value === "digital_human_video") return "兼容旧数字人讲解深链接与生成流程。";
   return "生成讲解文档与拓展材料阅读。";
+});
+const submitButtonText = computed(() => {
+  if (isMindMapEntry.value) return "生成思维导图";
+  if (isKnowledgeVideoEntry.value) return "生成讲解视频";
+  if (generatorMode.value === "digital_human_video") return "生成数字人讲解";
+  return "生成资源";
 });
 
 const selectedVideoContent = computed<AnimationScriptContent | null>(() => {
@@ -123,12 +131,12 @@ onMounted(async () => {
 });
 
 watch(
-  () => [route.query.nodeId, route.query.action],
+  () => [route.query.nodeId, route.query.action, route.query.resourceId],
   () => {
     const previousNodeId = selectedNodeId.value;
     applyRouteQuery();
     if (nodesReady && previousNodeId === selectedNodeId.value) {
-      void loadCurrentResources();
+      void loadCurrentResources(routeResourceId.value ? [routeResourceId.value] : []);
     }
     focusGeneratorForRouteAction();
   }
@@ -139,7 +147,7 @@ watch(selectedNodeId, (nodeId) => {
     appState.selectedNodeId = nodeId;
   }
   if (nodesReady) {
-    void loadCurrentResources();
+    void loadCurrentResources(routeResourceId.value ? [routeResourceId.value] : []);
   }
 });
 
@@ -165,6 +173,7 @@ function applyRouteQuery() {
   if (action === "mind_map") {
     generatorMode.value = "standard";
     resourceTypes.value = ["mind_map"];
+    learningGoal.value = "梳理当前知识点的核心概念、关键步骤、常见误区和知识关联";
     return;
   }
   if (action === "digital_human_chat") {
@@ -175,6 +184,7 @@ function applyRouteQuery() {
   if (action === "knowledge_video") {
     generatorMode.value = "knowledge_video";
     resourceTypes.value = [];
+    learningGoal.value = "通过动态过程讲清当前知识点的原理、步骤、例子和易错点";
     return;
   }
   if (action === "digital_human_video") {
@@ -220,7 +230,7 @@ async function loadPage() {
     appState.selectedNodeId = nextNodeId || null;
     nodesReady = true;
     delegatedResourceLoading = true;
-    await loadCurrentResources();
+    await loadCurrentResources(routeResourceId.value ? [routeResourceId.value] : []);
   } catch (error) {
     if (requestId === pageRequestId) {
       errorMessage.value = getErrorMessage(error);
@@ -499,6 +509,14 @@ function toggleResourceType(resourceType: ResourceType) {
             :closable="false"
             class="mb-16"
           />
+          <el-alert
+            v-if="isKnowledgeVideoEntry"
+            title="已选择视频讲解，无需再次选择资源类型"
+            type="success"
+            show-icon
+            :closable="false"
+            class="mb-16"
+          />
           <el-form-item v-if="!isDigitalHumanAnswer" label="学习目标">
             <el-input v-model="learningGoal" />
           </el-form-item>
@@ -527,7 +545,7 @@ function toggleResourceType(resourceType: ResourceType) {
               :disabled="generatorMode === 'standard' && !resourceTypes.length"
               @click="submitGenerator"
             >
-              生成资源
+              {{ submitButtonText }}
             </el-button>
           </div>
         </el-form>

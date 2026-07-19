@@ -122,6 +122,12 @@ function nodeName(task: LearningTask) {
 
 function toolRecommendations(task: LearningTask): LearningToolRecommendation[] {
   const topic = nodeName(task);
+  const videoPromptByTaskType: Record<LearningTask["taskType"], string> = {
+    learn: `请为“${topic}”生成约两分钟的中文讲解视频，从一个问题切入，动态演示核心机制，包含完整例子和一个易错点。`,
+    practice: `请为“${topic}”生成约两分钟的中文讲解视频，围绕典型解题过程，展示关键状态变化、常见错误和纠正方法。`,
+    review: `请为“${topic}”生成约两分钟的中文复习视频，串联核心定义、关键步骤、知识对比和三个记忆结论。`,
+    project: `请为“${topic}”生成约两分钟的中文应用讲解视频，用具体项目案例说明工作机制、实现步骤和方案取舍。`
+  };
   const shared = {
     qa: {
       name: "问答助手",
@@ -134,6 +140,12 @@ function toolRecommendations(task: LearningTask): LearningToolRecommendation[] {
       description: "把概念、步骤和关联知识整理成结构图。",
       prompt: `请为“${topic}”整理一张中文思维导图，包含核心概念、关键步骤、常见错误和与前置知识的联系。`,
       route: { path: "/resources", query: { action: "mind_map", nodeId: task.nodeId } }
+    },
+    video: {
+      name: "视频讲解",
+      description: "用动态演示讲清原理、过程、案例和易错点。",
+      prompt: videoPromptByTaskType[task.taskType],
+      route: { path: "/resources", query: { action: "knowledge_video", nodeId: task.nodeId } }
     },
     practice: {
       name: "练习测评",
@@ -155,10 +167,10 @@ function toolRecommendations(task: LearningTask): LearningToolRecommendation[] {
     }
   };
 
-  if (task.taskType === "learn") return [shared.resource, shared.mindMap, shared.qa];
-  if (task.taskType === "practice") return [shared.practice, shared.qa, shared.resource];
-  if (task.taskType === "project") return [shared.resource, shared.practice, shared.qa];
-  return [shared.mindMap, shared.qa, shared.digital];
+  if (task.taskType === "learn") return [shared.resource, shared.mindMap, shared.video, shared.qa];
+  if (task.taskType === "practice") return [shared.practice, shared.video, shared.qa, shared.resource];
+  if (task.taskType === "project") return [shared.resource, shared.video, shared.practice, shared.qa];
+  return [shared.mindMap, shared.video, shared.qa, shared.digital];
 }
 
 async function copyPrompt(prompt: string) {
@@ -414,7 +426,7 @@ function openTool(task: LearningTask, recommendation: LearningToolRecommendation
 
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -476,7 +488,7 @@ function openTool(task: LearningTask, recommendation: LearningToolRecommendation
 
 @media (max-width: 1080px) {
   .tool-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .localized-path-summary {
@@ -485,6 +497,10 @@ function openTool(task: LearningTask, recommendation: LearningToolRecommendation
 }
 
 @media (max-width: 680px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
     gap: 0;
