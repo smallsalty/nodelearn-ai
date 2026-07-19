@@ -29,7 +29,7 @@ from app.services.video_pipeline.planning import (
 )
 from app.services.video_pipeline.projection import build_render_manifest, project_public_v2
 from app.services.video_pipeline.registry import SceneTemplateRegistry
-from app.services.video_pipeline.timeline import resolve_timeline, split_subtitle_phrases
+from app.services.video_pipeline.timeline import resolve_timeline, split_subtitle_phrases, validate_target_duration
 
 
 def run(coro):
@@ -304,6 +304,55 @@ def test_ratio_to_frame_subtitles_and_public_v2_projection_are_audio_driven():
     assert lesson.duration_seconds == pytest.approx(38.2)
     assert manifest["totalFrames"] == timeline.total_frames
     assert manifest["scenes"][1]["sceneType"] == "direct_mapping_demo"
+
+
+def test_hash_storyboard_expands_to_requested_120_second_teaching_depth():
+    context = VideoGenerationContext(
+        course_id="course_ds_001",
+        current_node=ContextNode(id="node_hash", name="哈希表", difficulty="medium"),
+        learner=LearnerContext(cognitive_style="diagram", knowledge_base_level="medium"),
+        rag_evidence=[
+            RagEvidence(source_id="source_hash_map", title="哈希表", excerpt="key 映射到桶"),
+            RagEvidence(source_id="source_hash_collision", title="哈希冲突", excerpt="链式地址和负载因子"),
+        ],
+    )
+    storyboard = hash_fallback_storyboard(context, deterministic_strategy(context), 120)
+    audio = {
+        scene.id: SceneAudio(
+            scene_id=scene.id,
+            path="fixture.mp3",
+            url="http://localhost/fixture.mp3",
+            duration_seconds=min(14.0, max(2.8, len(scene.narration) / 5)),
+        )
+        for scene in storyboard.scenes
+    }
+    timeline = resolve_timeline(storyboard, audio)
+
+    assert len(storyboard.scenes) == 10
+    assert {scene.scene_type for scene in storyboard.scenes} >= {
+        "problem_hook",
+        "direct_mapping_demo",
+        "process_flow",
+        "compare_race",
+        "before_after",
+        "timeline",
+        "collision_demo",
+        "algorithm_trace",
+        "summary_recall",
+    }
+    assert any("平均 O(1)" in scene.title for scene in storyboard.scenes)
+    assert any("冲突链" in scene.title for scene in storyboard.scenes)
+    assert all(
+        "source_hash_collision" in scene.source_ids
+        for scene in storyboard.scenes
+        if scene.claims
+    )
+    validate_target_duration(timeline.total_duration_seconds, 120)
+
+
+def test_target_duration_gate_rejects_materially_short_video():
+    with pytest.raises(RuntimeError, match="outside the target tolerance"):
+        validate_target_duration(62.7, 120)
 
 
 def test_subtitle_split_keeps_two_line_phrase_limit():

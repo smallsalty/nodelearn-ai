@@ -1,0 +1,19 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": "push_b0992a638ad9",
+      "userId": "user_demo_001",
+      "resourceId": "resource_knowledge_video_0701b10a846d",
+      "nodeId": "node_docs_chapter_hashing_hash_map_md_f99bbe2ebac4",
+      "reason": "根据diagram认知风格、coding练习偏好和6.1 哈希表掌握状态推荐。",
+      "viewed": false,
+      "viewedAt": null,
+      "createdAt": "2026-07-19T10:36:50.221370+00:00",
+      "updatedAt": "2026-07-19T10:36:50.221370+00:00"
+    }
+  ],
+  "traceId": "trace_5a059716f7084df48880b3d841f6b30a",
+  "timestamp": "2026-07-19T10:37:26.067890+00:00"
+}

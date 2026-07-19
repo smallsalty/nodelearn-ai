@@ -130,12 +130,13 @@
 - `GeneratedResource.fileUrl` 保存审核通过后的 MP4 地址。
 - 两种视频资源类型必须同时保存，并共享最终 MP4。
 - 新生成资源统一使用 `style=clean_motion_graphics` 和 `sceneType + visualPlan`，不再生成 `stack_animation` 或 `text_slide`。
-- 公开 v2 必须按顺序包含 hook、definition、mechanism、example、summary；内部另用 `scene_type` 从 15 个模板中选择，哈希验收固定六场景。
+- 公开 v2 必须按顺序包含 hook、definition、mechanism、example、summary；内部另用 `scene_type` 从 15 个模板中选择。哈希 storyboard 会根据目标时长在六个核心场景上确定性增加最多四个教学场景；120 秒目标使用十场景版本，补充桶内核对、复杂度条件、装载/扩容和冲突链追踪。
 - 新任务由 `SceneRendererRegistry` 和内部 render manifest 渲染；`UniversalExplainerVideoRenderer` 只处理历史资源。
-- TTS 使用豆包 V3 HTTP Chunked，每个内部 scene 生成一段真实 MP3；最终时长由 `audioDuration + 0.35s` 决定，不用静止画面补齐目标时长。
+- TTS 使用豆包 V3 HTTP Chunked，每个内部 scene 生成一段真实 MP3；最终时长由 `audioDuration + 0.35s` 决定，不用静止画面补齐目标时长。estimated timeline 和真实音频 timeline 都必须落在目标时长 ±15% 内，否则在渲染/发布前失败。
 - MP4 发布前完整验证非空、H.264、AAC、宽高、30fps、音视频轨和 resolved timeline 时长误差。
 - 豆包 `TTS_VOICE_NAME` 必须与 `TTS_RESOURCE_ID` 匹配；`seed-tts-2.0` 可使用已验证的 `zh_female_vv_uranus_bigtts`。
 - 音频、视频和依赖失败必须明确标记 `failed`。
+- 目标节点材料不足以支撑用户明确要求的哈希冲突、链式地址、负载因子或扩容时，检索会补充同课程真实“哈希冲突”材料；事实 beat 仍必须引用投影到 v2 `sources` 的来源。
 - 历史视频 JSON 和前端 JSON 预览继续兼容；真实新动画只读取内部 manifest。
 
 ## 真实材料和导图

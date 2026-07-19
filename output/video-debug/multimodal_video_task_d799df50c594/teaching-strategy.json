@@ -1,0 +1,22 @@
+{
+  "entry_mode": "question",
+  "preferred_scene_types": [
+    "problem_hook",
+    "process_flow",
+    "concept_relationship",
+    "zoom_focus",
+    "summary_recall"
+  ],
+  "terminology_level": "plain",
+  "pacing": "slow",
+  "code_depth": "none",
+  "include_misconception": false,
+  "complexity_notes": [
+    "explain one state change at a time",
+    "avoid unnecessary terminology"
+  ],
+  "personalization_reasons": [
+    "diagram learner: prioritize process, relationships and camera focus",
+    "easy level: reduce terminology and slow the pacing"
+  ]
+}

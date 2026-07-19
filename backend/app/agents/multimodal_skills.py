@@ -39,7 +39,7 @@ from app.services.video_pipeline.models import (
 from app.services.video_pipeline.planning import NarrativePlanner, StoryboardPlanner, TeachingStrategyPlanner
 from app.services.video_pipeline.projection import build_render_manifest, project_public_v2
 from app.services.video_pipeline.registry import SceneTemplateRegistry
-from app.services.video_pipeline.timeline import resolve_timeline
+from app.services.video_pipeline.timeline import resolve_timeline, validate_target_duration
 
 logger = logging.getLogger(__name__)
 
@@ -1543,11 +1543,13 @@ class VideoGenerationService:
             available_nodes=available_nodes or ([node] if node else []),
             course_name=course_name,
             custom_requirement=custom_requirement,
+            target_duration_seconds=target_duration_seconds,
             artifacts=None,
             detail_callback=detail_callback,
         )
         audio = self._estimated_audio(prepared)
         timeline = resolve_timeline(prepared.validated_storyboard.storyboard, audio)
+        validate_target_duration(timeline.total_duration_seconds, target_duration_seconds)
         return project_public_v2(
             context=prepared.context,
             storyboard=prepared.validated_storyboard.storyboard,
@@ -1621,6 +1623,7 @@ class VideoGenerationService:
                 available_nodes=available_nodes or ([node] if node else []),
                 course_name=course_name,
                 custom_requirement=custom_requirement,
+                target_duration_seconds=target_duration_seconds,
                 artifacts=artifacts,
                 detail_callback=detail_callback,
             )
@@ -1651,6 +1654,7 @@ class VideoGenerationService:
             )
 
             timeline = resolve_timeline(storyboard, audio_by_scene, fps=30)
+            validate_target_duration(timeline.total_duration_seconds, target_duration_seconds)
             emit(VideoGenerationStage.tts, 72)
             if detail_callback is not None:
                 detail_callback("animation_timing_resolution", 72)
@@ -1721,6 +1725,12 @@ class VideoGenerationService:
                 {"errorType": exc.__class__.__name__, "message": str(exc) or exc.__class__.__name__},
             )
             emit(VideoGenerationStage.error, 100, str(exc) or exc.__class__.__name__)
+            if artifacts.enabled and publication_dir.exists():
+                shutil.copytree(
+                    publication_dir,
+                    artifacts.directory / "failed-media",
+                    dirs_exist_ok=True,
+                )
             shutil.rmtree(publication_dir, ignore_errors=True)
             raise
         finally:
@@ -1745,6 +1755,7 @@ class VideoGenerationService:
         available_nodes: list[KnowledgeNode],
         course_name: str | None,
         custom_requirement: str | None,
+        target_duration_seconds: float | None,
         artifacts: DebugArtifactStore | None,
         detail_callback: Callable[[str, float], None] | None,
     ) -> _PreparedVideoPipeline:
@@ -1788,7 +1799,12 @@ class VideoGenerationService:
         emit(VideoGenerationStage.storyboard, 30)
         if detail_callback is not None:
             detail_callback("storyboard_generation", 30)
-        raw_storyboard, validated = await self.storyboard_planner.generate(context, strategy, narrative)
+        raw_storyboard, validated = await self.storyboard_planner.generate(
+            context,
+            strategy,
+            narrative,
+            target_duration_seconds,
+        )
         if artifacts:
             artifacts.write("storyboard-raw.json", raw_storyboard)
             artifacts.write("storyboard-validated.json", validated)
@@ -1811,6 +1827,7 @@ class VideoGenerationService:
                 _PreparedVideoPipeline(context, strategy, narrative, validated, scene_plans)
             )
             estimated_timeline = resolve_timeline(validated.storyboard, estimated_audio)
+            validate_target_duration(estimated_timeline.total_duration_seconds, target_duration_seconds)
             preflight = project_public_v2(
                 context=context,
                 storyboard=validated.storyboard,
@@ -1820,7 +1837,7 @@ class VideoGenerationService:
                 aspect_ratio=options.aspect_ratio or VideoAspect.landscape,
                 subtitle_enabled=options.subtitle_enabled is not False,
                 learner_profile_summary=learner_profile_summary,
-                target_duration_seconds=None,
+                target_duration_seconds=target_duration_seconds,
             )
             audit = await self.safety_audit_skill.check(
                 json.dumps(preflight.model_dump(by_alias=True, mode="json"), ensure_ascii=False),

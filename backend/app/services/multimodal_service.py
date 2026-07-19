@@ -590,7 +590,41 @@ class MultimodalService:
                     score=1.0,
                 )
             ]
-        return self.resource_service.search_knowledge_base(course_id=course_id, query_text=query, node_id=node_id, top_k=3)
+        documents = self.resource_service.search_knowledge_base(
+            course_id=course_id,
+            query_text=query,
+            node_id=node_id,
+            top_k=3,
+        )
+        if node_id and any(term in query for term in ("冲突", "链式地址", "负载因子", "扩容")):
+            related = self.resource_service.search_knowledge_base(
+                course_id=course_id,
+                query_text="哈希冲突 链式地址 负载因子 扩容",
+                node_id=None,
+                top_k=20,
+            )
+            relevance_terms = ("哈希冲突", "链式地址", "负载因子", "hash_collision", "hash_map_chaining")
+            related = sorted(
+                (
+                    item
+                    for item in related
+                    if any(
+                        term in f"{item.id} {item.title} {item.content}".lower()
+                        for term in relevance_terms
+                    )
+                ),
+                key=lambda item: (
+                    "hash_collision" in item.id.lower(),
+                    sum(
+                        term in f"{item.id} {item.title} {item.content}".lower()
+                        for term in relevance_terms
+                    ),
+                ),
+                reverse=True,
+            )
+            known_ids = {item.id for item in documents}
+            documents.extend(item for item in related if item.id not in known_ids)
+        return documents[:5]
 
     def _build_script(self, node_name: str, learning_goal: str, documents: list[RetrievedDocument], profile_summary: str | None) -> str:
         source = "；".join(document.title for document in documents[:3]) or "课程默认材料"

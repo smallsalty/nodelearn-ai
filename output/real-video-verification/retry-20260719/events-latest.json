@@ -1,0 +1,352 @@
+﻿{
+    "code":  200,
+    "message":  "success",
+    "data":  [
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "start",
+                     "stepName":  "queued",
+                     "progress":  0.0,
+                     "message":  "ä»»å¡å·²åå»º",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:52:11.345209+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "generate_script",
+                     "progress":  5.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼generate_script",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:52:11.378842+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "context_building",
+                     "progress":  5.0,
+                     "message":  "æ­£å¨è¯»åèç¹ãå®æ´ç»åãçå®éå ãç»ä¹ å RAG",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:52:11.378842+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "generate_script",
+                     "progress":  12.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼generate_script",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:52:11.379986+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "teaching_strategy",
+                     "progress":  12.0,
+                     "message":  "æ­£å¨çæç¡®å®æ§ä¸ªæ§åæå­¦ç­ç¥",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:52:11.379986+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "generate_script",
+                     "progress":  20.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼generate_script",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:52:32.125200+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "narrative_planning",
+                     "progress":  20.0,
+                     "message":  "æ­£å¨è§åæå­¦åäºé¡ºåº",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:52:32.125200+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "generate_storyboard",
+                     "progress":  30.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼generate_storyboard",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:30.816245+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "storyboard_generation",
+                     "progress":  30.0,
+                     "message":  "æ­£å¨çæä¸¥æ ¼ Scene DSL",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:30.816245+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "audit_storyboard",
+                     "progress":  40.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼audit_storyboard",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:30.821750+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "storyboard_validation",
+                     "progress":  40.0,
+                     "message":  "æ­£å¨æ ¡éªæ¼åãå¨ä½ãå¼ç¨åå®å\u0085¨çº¦æ",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:30.821750+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "audit_storyboard",
+                     "progress":  46.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼audit_storyboard",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:30.824750+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "scene_template_resolution",
+                     "progress":  46.0,
+                     "message":  "æ­£å¨è§£æåºæ¯æ¨¡æ¿ãæ§½ä½ä¸è¿ç»­å¯¹è±¡",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:30.824750+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "tts_generation",
+                     "progress":  50.0,
+                     "message":  "æ­£å¨éåºæ¯åæè®²è§£é³é¢",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:31.140114+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "synthesize_audio",
+                     "progress":  50.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼synthesize_audio",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:31.140114+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "tts_generation",
+                     "progress":  52.666666666666664,
+                     "message":  "æ­£å¨éåºæ¯åæè®²è§£é³é¢",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:33.333892+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "synthesize_audio",
+                     "progress":  52.666666666666664,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼synthesize_audio",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:33.333892+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "tts_generation",
+                     "progress":  55.333333333333336,
+                     "message":  "æ­£å¨éåºæ¯åæè®²è§£é³é¢",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:35.637117+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "synthesize_audio",
+                     "progress":  55.333333333333336,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼synthesize_audio",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:35.637117+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "tts_generation",
+                     "progress":  58.0,
+                     "message":  "æ­£å¨éåºæ¯åæè®²è§£é³é¢",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:37.942552+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "synthesize_audio",
+                     "progress":  58.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼synthesize_audio",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:37.942552+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "tts_generation",
+                     "progress":  60.666666666666664,
+                     "message":  "æ­£å¨éåºæ¯åæè®²è§£é³é¢",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:40.235086+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "synthesize_audio",
+                     "progress":  60.666666666666664,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼synthesize_audio",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:40.235086+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "tts_generation",
+                     "progress":  63.333333333333336,
+                     "message":  "æ­£å¨éåºæ¯åæè®²è§£é³é¢",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:42.782313+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "synthesize_audio",
+                     "progress":  63.333333333333336,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼synthesize_audio",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:42.782313+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "synthesize_audio",
+                     "progress":  68.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼synthesize_audio",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:45.689286+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "audio_duration_analysis",
+                     "progress":  68.0,
+                     "message":  "æ­£å¨è¯»åéåºæ¯çå®é³é¢æ¶é¿",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:45.689286+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "synthesize_audio",
+                     "progress":  72.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼synthesize_audio",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:45.689286+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "animation_timing_resolution",
+                     "progress":  72.0,
+                     "message":  "æ­£å¨æå¨ä½æ¯ä¾è§£æä¸ºç¡®å®å¸§",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:45.689286+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "render_video",
+                     "progress":  78.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼render_video",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:45.693293+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "remotion_rendering",
+                     "progress":  78.0,
+                     "message":  "æ­£å¨ä½¿ç¨ Remotion æ¸²æè§é¢",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:53:45.693293+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "audit_resource",
+                     "progress":  88.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼audit_resource",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:54:47.982749+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "video_validation",
+                     "progress":  88.0,
+                     "message":  "æ­£å¨éªè¯åªä½åæ°å¹¶æ§è¡æç»å®¡æ ¸",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:54:47.982749+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "persist",
+                     "progress":  96.0,
+                     "message":  "è§é¢ä»»å¡æ­£å¨æ§è¡ï¼persist",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:54:48.369668+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "persistence",
+                     "progress":  96.0,
+                     "message":  "æ­£å¨åå¸éè¿å®¡æ ¸çè§é¢èµæº",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:54:48.370864+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "audit_resource",
+                     "progress":  90.0,
+                     "message":  "èµæºå·²éè¿å®å\u0085¨æ ¡éª",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:54:48.411499+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "step",
+                     "stepName":  "persist_resource",
+                     "progress":  96.0,
+                     "message":  "èµæºå·²ä¿å­",
+                     "payload":  {
+                                     "resourceId":  "resource_knowledge_video_09ac0adb7d67"
+                                 },
+                     "createdAt":  "2026-07-19T10:54:48.411499+00:00"
+                 },
+                 {
+                     "taskId":  "multimodal_video_task_d799df50c594",
+                     "eventType":  "done",
+                     "stepName":  "done",
+                     "progress":  100.0,
+                     "message":  "ä»»å¡å®æ",
+                     "payload":  null,
+                     "createdAt":  "2026-07-19T10:54:48.412029+00:00"
+                 }
+             ],
+    "traceId":  "trace_5b307b52464d49688ac7abbbabd8e360",
+    "timestamp":  "2026-07-19T10:54:48.436049+00:00"
+}
