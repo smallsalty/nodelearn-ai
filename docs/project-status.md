@@ -31,6 +31,8 @@
 
 ### 已完成
 
+- 2026-07-19 完成视频讲解与推荐更新的腾讯云生产部署：通过 `ssh-manager` 将 `/root/nodelearn-ai` 的 `codex/测试` 从 `cc5b2d3` 快进到 `af78d00`，仅重建并替换 backend/frontend；PostgreSQL、Judge0、Caddy 及数据卷保持原容器运行。部署前备份位于 `/root/backups/nodelearn-predeploy-20260719T115004Z`，数据库 dump SHA-256 为 `08a89f42a5797a881331e63b39307700511192be58930027b45ab0d473354881`，旧前后端镜像保留 `predeploy-20260719T115004Z` 回滚标签。
+- 2026-07-19 腾讯云部署验收结果：服务器 Compose 构建、后端幂等迁移、容器内健康检查、HTTPS 首页、视频讲解深链和 `user_demo_001` 推荐接口均通过，backend/frontend 近十分钟错误日志计数均为 0；`backend/.env` 仍为 `600`。系统健康详情中的旧 `iflytekTts` 因未配置旧讯飞 TTS 地址/音色保持 `error`，知识视频实际使用的豆包 TTS API Key、资源 ID 与 `zh_female_vv_uranus_bigtts` 音色配置完整，本次未执行付费生成调用。
 - 2026-07-19 完成知识视频目标时长缺陷修复：`targetDurationSeconds` 已进入内部 storyboard 规划，estimated timeline 和真实音频 timeline 均执行 ±15% 发布门禁；120 秒哈希教学 storyboard 从固定六场景扩展为十场景，并补充真实 Hello Algo“哈希冲突”章节来源。定向测试 `50 passed`，Renderer 类型检查和 15 场景烟测通过。
 - 2026-07-19 执行哈希表真实视频验收，两次正式任务均完成 DeepSeek、豆包 TTS、Remotion H.264/AAC 和审核，但实际时长分别为 62.762667 秒与 62.677333 秒，均因相对 120 秒误差约 47.7% 判定失败。第二次请求误由残留旧 8011 子进程处理，未加载修复；已将两条资源改为 `failed`、清空 `fileUrl`、撤下公开媒体并排除推荐，原始 MP4/音频/JSON/事件/抽帧保留。详见 `docs/real-video-verification-2026-07-19.md`。
 - 2026-07-19 视频时长修复最终非付费回归：运行完整后端测试为 `217 passed, 2 skipped`，前端 `npm run build` 通过，`video-renderer` `npm run typecheck` 通过；Playwright 验证失败视频不会进入推荐或详情，页面访问无生成 POST，375px 无横向溢出且控制台零错误/警告。
