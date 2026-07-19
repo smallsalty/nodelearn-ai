@@ -733,6 +733,11 @@ class ResourceService:
         )
 
     async def recommend_resources(self, payload: RecommendationRequest) -> list[ResourceRecommendation]:
+        self.sync_existing_knowledge_video_recommendations(
+            user_id=payload.user_id,
+            course_id=payload.course_id,
+            node_id=payload.node_id,
+        )
         existing = self.repository.list_recommendations(
             user_id=payload.user_id,
             course_id=payload.course_id,
@@ -757,7 +762,80 @@ class ResourceService:
         return recommendations[: payload.limit] if payload.limit else recommendations
 
     def list_user_recommendations(self, user_id: str) -> list[ResourceRecommendation]:
+        self.sync_existing_knowledge_video_recommendations(user_id=user_id)
         return self.repository.list_recommendations(user_id=user_id)
+
+    def register_knowledge_video_recommendation(
+        self,
+        resource: GeneratedResource,
+        *,
+        profile: StudentProfile | None = None,
+        node: KnowledgeNode | None = None,
+    ) -> ResourceRecommendation | None:
+        if not self._is_recommendable_knowledge_video(resource):
+            return None
+
+        existing = next(
+            (
+                recommendation
+                for recommendation in self.repository.list_recommendations(user_id=resource.user_id)
+                if recommendation.resource_id == resource.id
+            ),
+            None,
+        )
+        resolved_profile = profile or self.profile_repository.get_by_user_id(resource.user_id)
+        resolved_node = node or (self.learning_path_repository.get_node(resource.node_id) if resource.node_id else None)
+        recommendation = existing or self.repository.save_recommendation(
+            self._build_recommendation(resource, resolved_profile, resolved_node)
+        )
+
+        has_push_record = any(
+            record.resource_id == resource.id for record in self.repository.list_push_records(resource.user_id)
+        )
+        if not has_push_record:
+            self.repository.save_push_record(self._build_push_record(resource, recommendation.reason))
+        return recommendation
+
+    def sync_existing_knowledge_video_recommendations(
+        self,
+        *,
+        user_id: str,
+        course_id: str | None = None,
+        node_id: str | None = None,
+    ) -> None:
+        resources_by_id = {
+            resource.id: resource
+            for resource in self.repository.list_user_resources(user_id)
+            if (course_id is None or resource.course_id == course_id)
+            and (node_id is None or resource.node_id == node_id)
+        }
+        if not settings.enable_mock:
+            with session_context() as session:
+                query = select(GeneratedResourceModel).where(
+                    GeneratedResourceModel.user_id == user_id,
+                    GeneratedResourceModel.resource_type == ResourceType.knowledge_video.value,
+                    GeneratedResourceModel.status == TaskStatus.success.value,
+                    GeneratedResourceModel.audit_status == AuditStatus.passed.value,
+                    GeneratedResourceModel.file_url.is_not(None),
+                    GeneratedResourceModel.file_url != "",
+                )
+                if course_id is not None:
+                    query = query.where(GeneratedResourceModel.course_id == course_id)
+                if node_id is not None:
+                    query = query.where(GeneratedResourceModel.node_id == node_id)
+                for model in session.scalars(query.order_by(GeneratedResourceModel.created_at.desc())).all():
+                    resources_by_id[model.id] = generated_resource_from_model(model)
+
+        for resource in resources_by_id.values():
+            self.register_knowledge_video_recommendation(resource)
+
+    def _is_recommendable_knowledge_video(self, resource: GeneratedResource) -> bool:
+        return (
+            ResourceType(resource.resource_type) == ResourceType.knowledge_video
+            and TaskStatus(resource.status) == TaskStatus.success
+            and AuditStatus(resource.audit_status) == AuditStatus.passed
+            and bool(resource.file_url and resource.file_url.strip())
+        )
 
     def mark_recommendation_viewed(self, recommendation_id: str) -> bool:
         return self.repository.mark_recommendation_viewed(recommendation_id)
@@ -1169,7 +1247,7 @@ class ResourceService:
             title=resource.title,
             reason=reason,
             score=0.9,
-            created_at=DEMO_TIME,
+            created_at=resource.created_at,
         )
 
     def _build_push_record(self, resource: GeneratedResource, reason: str) -> ResourcePushRecord:
@@ -1181,8 +1259,8 @@ class ResourceService:
             reason=reason,
             viewed=False,
             viewed_at=None,
-            created_at=DEMO_TIME,
-            updated_at=DEMO_TIME,
+            created_at=resource.created_at,
+            updated_at=resource.updated_at,
         )
 
     def _persist_generated_resource(self, resource: GeneratedResource) -> None:

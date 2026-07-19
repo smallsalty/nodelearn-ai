@@ -11,7 +11,8 @@ import {
   Management,
   Notebook,
   Share,
-  User
+  User,
+  VideoPlay
 } from "@element-plus/icons-vue";
 import AcademicTopbar from "@/components/layout/AcademicTopbar.vue";
 import DetailDrawer from "@/components/layout/DetailDrawer.vue";
@@ -87,6 +88,14 @@ const navGroups = computed<SidebarNavGroup[]>(() => [
         description: "生成知识结构图",
         icon: Share,
         match: { path: "/resources", action: "mind_map" }
+      },
+      {
+        id: "knowledge-video",
+        to: { path: "/resources", query: { action: "knowledge_video" } },
+        label: "视频讲解",
+        description: "生成动态知识讲解",
+        icon: VideoPlay,
+        match: { path: "/resources", action: "knowledge_video" }
       },
       {
         id: "digital-human-answer",

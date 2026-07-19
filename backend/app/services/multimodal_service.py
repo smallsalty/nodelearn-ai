@@ -545,6 +545,12 @@ class MultimodalService:
             audit_status=AuditStatus.passed,
             status=TaskStatus.success,
         )
+        if resource_type == ResourceType.knowledge_video:
+            self.resource_service.register_knowledge_video_recommendation(
+                resource,
+                profile=profile,
+                node=node,
+            )
         self._step(task_id, "audit_resource", 90, "资源已通过安全校验")
         self._step(task_id, "persist_resource", 96, "资源已保存", {"resourceId": resource.id})
         task = self.repository.update_task(

@@ -61,7 +61,16 @@ function openPractice() {
 
 function openMindMap() {
   if (!node.value) return;
+  appState.selectedChapterId = node.value.chapterId ?? null;
+  appState.selectedNodeId = node.value.id;
   void router.push({ path: "/resources", query: { nodeId: node.value.id, action: "mind_map" } });
+}
+
+function openKnowledgeVideo() {
+  if (!node.value) return;
+  appState.selectedChapterId = node.value.chapterId ?? null;
+  appState.selectedNodeId = node.value.id;
+  void router.push({ path: "/resources", query: { nodeId: node.value.id, action: "knowledge_video" } });
 }
 </script>
 
@@ -76,7 +85,8 @@ function openMindMap() {
       <div class="button-row">
         <el-button @click="backToGraph">返回图谱</el-button>
         <el-button plain :disabled="!node" @click="openPractice">进入练习</el-button>
-        <el-button type="primary" :disabled="!node" @click="openMindMap">生成思维导图</el-button>
+        <el-button plain :disabled="!node" @click="openMindMap">生成思维导图</el-button>
+        <el-button type="primary" :disabled="!node" @click="openKnowledgeVideo">视频讲解</el-button>
       </div>
     </header>
 

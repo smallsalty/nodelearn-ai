@@ -566,7 +566,16 @@ function openPractice() {
 
 function openMindMap() {
   if (!selectedNodeId.value) return;
+  appState.selectedChapterId = selectedKnowledgeNode.value?.chapterId ?? null;
+  appState.selectedNodeId = selectedNodeId.value;
   void router.push({ path: "/resources", query: { nodeId: selectedNodeId.value, action: "mind_map" } });
+}
+
+function openKnowledgeVideo() {
+  if (!selectedNodeId.value) return;
+  appState.selectedChapterId = selectedKnowledgeNode.value?.chapterId ?? null;
+  appState.selectedNodeId = selectedNodeId.value;
+  void router.push({ path: "/resources", query: { nodeId: selectedNodeId.value, action: "knowledge_video" } });
 }
 </script>
 
@@ -629,6 +638,7 @@ function openMindMap() {
             <el-button type="primary" @click="openNodeContent">查看正文</el-button>
             <el-button plain @click="openPractice">课后测试</el-button>
             <el-button plain @click="openMindMap">生成思维导图</el-button>
+            <el-button plain @click="openKnowledgeVideo">视频讲解</el-button>
           </div>
         </article>
       </el-tab-pane>

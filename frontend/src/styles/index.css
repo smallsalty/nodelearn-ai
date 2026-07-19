@@ -1293,6 +1293,28 @@ a:focus-visible,
   padding: 14px;
 }
 
+button.resource-chip-card {
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.resource-chip-card:hover {
+  transform: translateY(-2px);
+}
+
+button.resource-chip-card:focus-visible {
+  box-shadow: var(--nl-focus-ring);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.resource-chip-card:hover {
+    transform: none;
+  }
+}
+
 .dashboard-page .resource-chip-card:nth-child(2n),
 .learning-path-page .task-card:nth-child(2n + 1) {
   border-color: transparent;

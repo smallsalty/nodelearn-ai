@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import MetricCard from "@/components/cards/MetricCard.vue";
 import StateBlock from "@/components/StateBlock.vue";
 import { usersApi } from "@/api/modules/users";
@@ -18,9 +19,11 @@ import type { StudentProfile } from "@/types/profile";
 import type { LearningEvaluation } from "@/types/report";
 import type { GeneratedResource, ResourceRecommendation } from "@/types/resource";
 import { DEFAULT_COURSE_ID, DEFAULT_USER_ID, joinText, percent, resourceTypeLabel } from "@/utils/format";
+import { resourceRecommendationRoute } from "@/utils/resourceNavigation";
 
 type PanelKey = "user" | "courses" | "profile" | "paths" | "recommendations" | "evaluation" | "resources";
 
+const router = useRouter();
 const user = ref<User | null>(null);
 const courses = ref<Course[]>([]);
 const profile = ref<StudentProfile | null>(null);
@@ -42,6 +45,11 @@ const errors = reactive<Record<PanelKey, string>>({
 const currentCourse = computed(() => courses.value[0] ?? appState.currentCourse);
 const currentPath = computed(() => paths.value[0]);
 const weakNodes = computed(() => evaluation.value?.weakNodeIds ?? profile.value?.weakNodeIds ?? []);
+const sortedRecommendations = computed(() =>
+  [...recommendations.value].sort(
+    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+  )
+);
 
 onMounted(() => {
   void loadDashboard();
@@ -110,6 +118,15 @@ async function loadRecommendations() {
   } catch (error) {
     errors.recommendations = getErrorMessage(error);
   }
+}
+
+async function openRecommendation(item: ResourceRecommendation) {
+  try {
+    await recommendationsApi.markViewed(item.id);
+  } catch {
+    // Viewing the resource remains available if the tracking request fails.
+  }
+  await router.push(resourceRecommendationRoute(item));
 }
 
 async function loadEvaluation() {
@@ -207,11 +224,18 @@ function clearErrors() {
         <el-card class="learning-card span-2" shadow="never">
           <template #header>推荐资源</template>
           <div class="resource-strip">
-            <article v-for="item in recommendations.slice(0, 4)" :key="item.id" class="resource-chip-card">
+            <button
+              v-for="item in sortedRecommendations.slice(0, 4)"
+              :key="item.id"
+              type="button"
+              class="resource-chip-card recommendation-card"
+              :aria-label="`打开推荐资源：${item.title}`"
+              @click="openRecommendation(item)"
+            >
               <strong>{{ item.title }}</strong>
               <span>{{ resourceTypeLabel(item.resourceType) }}</span>
               <p>{{ item.reason }}</p>
-            </article>
+            </button>
           </div>
         </el-card>
       </StateBlock>

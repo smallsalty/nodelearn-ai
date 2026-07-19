@@ -6,6 +6,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.repositories.resource_repository import ResourceRepository
+from app.schemas.resource import GeneratedResource
+from app.services.resource_service import ResourceService
 
 RESOURCE_RECOMMENDATION_FIELDS = {
     "id",
@@ -99,3 +102,101 @@ def test_failed_audit_resource_is_not_recommended():
 
     assert generated["status"] == "failed"
     assert all(item["resourceId"] != failed_resource_id for item in recommendations)
+
+
+def build_knowledge_video(
+    *,
+    resource_id: str,
+    user_id: str,
+    status: str = "success",
+    audit_status: str = "passed",
+    file_url: str | None = "/storage/generated_resources/video/lesson.mp4",
+    created_at: str = "2026-07-19T08:00:00Z",
+) -> GeneratedResource:
+    return GeneratedResource(
+        id=resource_id,
+        user_id=user_id,
+        course_id="course_ds_001",
+        node_id="node_stack_001",
+        title="栈的视频讲解",
+        resource_type="knowledge_video",
+        content='{"schemaVersion":"2.0","scenes":[]}',
+        file_url=file_url,
+        status=status,
+        audit_status=audit_status,
+        created_at=created_at,
+        updated_at=created_at,
+    )
+
+
+def test_existing_successful_knowledge_video_is_backfilled_idempotently():
+    repository = ResourceRepository()
+    service = ResourceService(repository=repository)
+    resource = build_knowledge_video(
+        resource_id="resource_knowledge_video_existing_001",
+        user_id="user_knowledge_video_existing_001",
+    )
+    repository.save_resource(resource)
+
+    first = service.list_user_recommendations(resource.user_id)
+    second = service.list_user_recommendations(resource.user_id)
+    push_records = service.list_push_records(resource.user_id)
+
+    assert [item.resource_id for item in first] == [resource.id]
+    assert [item.resource_id for item in second] == [resource.id]
+    assert [item.resource_id for item in push_records] == [resource.id]
+
+
+def test_unusable_knowledge_videos_are_excluded_from_recommendations():
+    repository = ResourceRepository()
+    service = ResourceService(repository=repository)
+    user_id = "user_knowledge_video_excluded_001"
+    repository.save_resource(
+        build_knowledge_video(resource_id="video_failed", user_id=user_id, status="failed")
+    )
+    repository.save_resource(
+        build_knowledge_video(resource_id="video_unchecked", user_id=user_id, audit_status="unchecked")
+    )
+    repository.save_resource(
+        build_knowledge_video(resource_id="video_without_file", user_id=user_id, file_url=None)
+    )
+
+    assert service.list_user_recommendations(user_id) == []
+    assert service.list_push_records(user_id) == []
+
+
+def test_knowledge_video_recommendations_are_sorted_newest_first():
+    repository = ResourceRepository()
+    service = ResourceService(repository=repository)
+    user_id = "user_knowledge_video_order_001"
+    repository.save_resource(
+        build_knowledge_video(
+            resource_id="video_older",
+            user_id=user_id,
+            created_at="2026-07-18T08:00:00Z",
+        )
+    )
+    repository.save_resource(
+        build_knowledge_video(
+            resource_id="video_newer",
+            user_id=user_id,
+            created_at="2026-07-19T08:00:00Z",
+        )
+    )
+
+    recommendations = service.list_user_recommendations(user_id)
+
+    assert [item.resource_id for item in recommendations] == ["video_newer", "video_older"]
+
+
+def test_recommendation_reads_never_invoke_video_generation():
+    class VideoGenerationMustNotRun:
+        async def generate(self, **kwargs):
+            raise AssertionError("recommendation reads must not generate videos")
+
+    service = ResourceService(
+        repository=ResourceRepository(),
+        video_generation_service=VideoGenerationMustNotRun(),
+    )
+
+    assert service.list_user_recommendations("user_recommendation_read_only_001") == []

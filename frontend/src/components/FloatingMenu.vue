@@ -21,6 +21,7 @@ import type { PracticeQuestion } from "@/types/practice";
 import type { ResourceRecommendation } from "@/types/resource";
 import type { ChatMessage } from "@/types/agent";
 import { difficultyLabel, formatDate, questionTypeLabel } from "@/utils/format";
+import { resourceRecommendationRoute } from "@/utils/resourceNavigation";
 
 const router = useRouter();
 
@@ -34,6 +35,11 @@ const noteContent = ref("");
 const notes = ref<Note[]>([]);
 const wrongQuestions = ref<PracticeQuestion[]>([]);
 const recommendations = ref<ResourceRecommendation[]>([]);
+const sortedRecommendations = computed(() =>
+  [...recommendations.value].sort(
+    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+  )
+);
 const loading = ref(false);
 const errorMessage = ref("");
 
@@ -161,6 +167,16 @@ function openNote(note: Note) {
   void router.push({ path: "/notes", query: { noteId: note.id } });
 }
 
+async function openRecommendation(item: ResourceRecommendation) {
+  closeFloatingMenu();
+  try {
+    await recommendationsApi.markViewed(item.id);
+  } catch {
+    // Viewing the resource remains available if the tracking request fails.
+  }
+  await router.push(resourceRecommendationRoute(item));
+}
+
 async function toggleNotePin(note: Note) {
   loading.value = true;
   errorMessage.value = "";
@@ -256,10 +272,17 @@ function movePanel() {
 
     <section v-else class="floating-body">
       <el-empty v-if="!recommendations.length" description="暂无推荐资源" />
-      <article v-for="item in recommendations" :key="item.id" class="mini-list-item">
+      <button
+        v-for="item in sortedRecommendations"
+        :key="item.id"
+        type="button"
+        class="mini-list-item floating-recommendation"
+        :aria-label="`打开推荐资源：${item.title}`"
+        @click="openRecommendation(item)"
+      >
         <strong>{{ item.title }}</strong>
         <span>{{ item.reason }}</span>
-      </article>
+      </button>
     </section>
   </section>
 </template>
@@ -333,6 +356,24 @@ function movePanel() {
 .floating-note-item > button:hover,
 .floating-note-item > button:focus-visible {
   background: var(--nl-primary-soft);
+  outline: none;
+}
+
+.floating-recommendation {
+  width: 100%;
+  color: var(--nl-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.floating-recommendation:hover {
+  border-color: var(--nl-primary);
+  background: var(--nl-primary-tint);
+}
+
+.floating-recommendation:focus-visible {
+  box-shadow: var(--nl-focus-ring);
   outline: none;
 }
 </style>
