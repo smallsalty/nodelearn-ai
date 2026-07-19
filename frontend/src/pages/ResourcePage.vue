@@ -99,10 +99,10 @@ const pageTitle = computed(() => {
 });
 const pageDescription = computed(() => {
   if (isMindMapEntry.value) return "当前知识点和思维导图类型已预选，确认学习目标后即可生成。";
-  if (isDigitalHumanAnswer.value) return "围绕当前知识点与数字人实时对话，不产生讲解视频。";
+  if (isDigitalHumanAnswer.value) return "围绕当前知识点与数字人实时对话。";
   if (generatorMode.value === "knowledge_video") return "兼容旧知识点教学视频深链接与生成流程。";
   if (generatorMode.value === "digital_human_video") return "兼容旧数字人讲解深链接与生成流程。";
-  return "生成讲解文档与拓展材料阅读，全部内容继续经过后端审计流程。";
+  return "生成讲解文档与拓展材料阅读。";
 });
 
 const selectedVideoContent = computed<AnimationScriptContent | null>(() => {

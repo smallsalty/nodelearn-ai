@@ -576,7 +576,6 @@ function openMindMap() {
       <header class="panel-header">
         <div>
           <h2>知识图谱</h2>
-          <p>章节与节点使用固定布局；节点不可拖动，画布可平移和缩放。</p>
         </div>
         <div class="button-row">
           <el-button @click="zoomIn">放大</el-button>

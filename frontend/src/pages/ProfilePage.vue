@@ -226,7 +226,7 @@ function createMessage(role: "user" | "assistant", content: string): ChatMessage
       <header class="panel-header">
         <div>
           <h2>画像对话</h2>
-          <p>输入学习背景，调用画像抽取接口生成可确认字段。</p>
+          <p>请输入学习背景。</p>
         </div>
       </header>
 
