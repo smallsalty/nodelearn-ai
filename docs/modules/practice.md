@@ -24,10 +24,11 @@
 - 页面：`frontend/src/pages/PracticePage.vue`
 - API：`frontend/src/api/modules/practice.ts`
 - 类型：`frontend/src/types/practice.ts`
-- 状态变量：`selectedQuestionId`
+- 状态变量：`selectedQuestionId`、`selectedNodeId`、`nodes`
 - 练习测评只保留在侧栏“学习入口”中，不再在学习工具或其他分组重复显示；`/practice` 路由与既有兼容重定向保持不变。
 - 页面统一展示 `single_choice`、`short_answer` 和真实 Judge0 编程题；总生成按钮按该顺序调用既有练习与编程接口。
 - 某个题型生成失败时保留已成功结果并继续后续题型，允许按题型重试。
+- 页面通过课程节点接口建立 `nodeId -> name` 映射；页头、普通题标签和错题列表只展示中文节点名称，内部 ID 仅用于路由、筛选和请求。节点不存在时显示中文错误状态并禁用生成，不得回退展示内部 ID。
 
 ## 后端
 

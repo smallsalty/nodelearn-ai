@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { Close, Notebook, Position } from "@element-plus/icons-vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { Close, Notebook, Position, Star, StarFilled } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
 import MarkdownContent from "@/components/MarkdownContent.vue";
 import { chatApi } from "@/api/modules/chat";
@@ -11,6 +11,7 @@ import { getErrorMessage } from "@/api/client";
 import {
   appState,
   closeFloatingMenu,
+  notifyNotesChanged,
   switchFloatingTab,
   toggleFloatingMenu,
   updateFloatingPosition
@@ -46,6 +47,15 @@ const panelStyle = computed(() => ({
 onMounted(() => {
   void loadTabData();
 });
+
+watch(
+  () => appState.notesRevision,
+  () => {
+    if (appState.floatingMenuState.visible && appState.floatingMenuState.activeTab === "note") {
+      void loadTabData();
+    }
+  }
+);
 
 async function loadTabData() {
   if (!appState.floatingMenuState.visible) return;
@@ -108,13 +118,16 @@ async function saveNote() {
       userId: userId.value,
       courseId: courseId.value,
       nodeId: appState.selectedNodeId ?? undefined,
+      questionId: appState.selectedQuestionId ?? undefined,
       title: noteTitle.value.trim(),
       content: noteContent.value.trim(),
-      tags: ["floating"]
+      tags: [],
+      relationType: appState.selectedQuestionId ? "question" : appState.selectedNodeId ? "node" : undefined,
+      relationId: appState.selectedQuestionId ?? appState.selectedNodeId ?? undefined
     });
     noteTitle.value = "";
     noteContent.value = "";
-    notes.value = (await noteApi.getUserNotes(userId.value)).data;
+    notifyNotesChanged();
   } catch (error) {
     errorMessage.value = getErrorMessage(error);
   } finally {
@@ -136,6 +149,29 @@ function togglePanel() {
 function openQaHistory() {
   closeFloatingMenu();
   void router.push("/chat");
+}
+
+function manageNotes() {
+  closeFloatingMenu();
+  void router.push("/notes");
+}
+
+function openNote(note: Note) {
+  closeFloatingMenu();
+  void router.push({ path: "/notes", query: { noteId: note.id } });
+}
+
+async function toggleNotePin(note: Note) {
+  loading.value = true;
+  errorMessage.value = "";
+  try {
+    await noteApi.pinNote(note.id, { pinned: !note.pinned });
+    notifyNotesChanged();
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error);
+  } finally {
+    loading.value = false;
+  }
 }
 
 function movePanel() {
@@ -193,12 +229,20 @@ function movePanel() {
     </section>
 
     <section v-else-if="appState.floatingMenuState.activeTab === 'note'" class="floating-body">
+      <div class="floating-note-context">
+        <strong>{{ appState.currentCourse?.name ?? '当前课程' }}</strong>
+        <span>{{ appState.selectedNodeId ? '将关联当前知识点' : '课程级笔记' }}</span>
+      </div>
       <el-input v-model="noteTitle" placeholder="笔记标题" aria-label="笔记标题" />
-      <el-input v-model="noteContent" type="textarea" :rows="3" placeholder="记录当前疑问或结论" aria-label="笔记内容" />
+      <el-input v-model="noteContent" type="textarea" :rows="4" placeholder="用 Markdown 记录当前疑问、结论或代码思路" aria-label="笔记内容" />
       <el-button type="primary" :loading="loading" :disabled="!noteTitle.trim() || !noteContent.trim()" @click="saveNote">保存笔记</el-button>
-      <article v-for="note in notes" :key="note.id" class="mini-list-item">
-        <strong>{{ note.title }}</strong>
-        <span>{{ note.content }}</span>
+      <div class="floating-note-list-header"><strong>最近笔记</strong><el-button text @click="manageNotes">管理全部</el-button></div>
+      <el-empty v-if="!notes.length" description="还没有学习笔记" :image-size="58" />
+      <article v-for="note in notes.slice(0, 5)" :key="note.id" class="mini-list-item floating-note-item" tabindex="0" @click="openNote(note)" @keydown.enter="openNote(note)">
+        <div><strong>{{ note.title }}</strong><span>{{ note.content }}</span></div>
+        <button type="button" :aria-label="note.pinned ? '取消置顶' : '置顶笔记'" @click.stop="toggleNotePin(note)">
+          <el-icon><StarFilled v-if="note.pinned" /><Star v-else /></el-icon>
+        </button>
       </article>
     </section>
 
@@ -219,3 +263,76 @@ function movePanel() {
     </section>
   </section>
 </template>
+
+<style scoped>
+.floating-note-context,
+.floating-note-list-header,
+.floating-note-item,
+.floating-note-item > div {
+  display: flex;
+}
+
+.floating-note-context,
+.floating-note-list-header,
+.floating-note-item {
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.floating-note-context {
+  padding: 10px 12px;
+  border-radius: var(--nl-radius-sm);
+  background: var(--nl-primary-tint);
+}
+
+.floating-note-context span {
+  color: var(--nl-text-muted);
+  font-size: 12px;
+}
+
+.floating-note-list-header {
+  margin-top: 4px;
+}
+
+.floating-note-item {
+  cursor: pointer;
+}
+
+.floating-note-item:focus-visible {
+  box-shadow: var(--nl-focus-ring);
+  outline: none;
+}
+
+.floating-note-item > div {
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.floating-note-item > div span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.floating-note-item > button {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--nl-warning);
+  cursor: pointer;
+}
+
+.floating-note-item > button:hover,
+.floating-note-item > button:focus-visible {
+  background: var(--nl-primary-soft);
+  outline: none;
+}
+</style>

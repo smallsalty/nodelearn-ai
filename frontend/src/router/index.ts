@@ -30,6 +30,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/pages/KnowledgeNodeContentPage.vue")
   },
   { path: "/practice", name: "practice", component: () => import("@/pages/PracticePage.vue") },
+  { path: "/notes", name: "notes", component: () => import("@/pages/NotePage.vue") },
   {
     path: "/programming",
     name: "programming",

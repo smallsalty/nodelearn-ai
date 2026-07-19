@@ -15,12 +15,34 @@ from app.db.base import Base
 from app.models import ChapterModel, GeneratedResourceModel, KnowledgeNodeModel, KnowledgeRelationModel
 from app.schemas.course import KnowledgeNodeCreateRequest
 from app.services.course_service import CourseService
+from app.services import hello_algo_import_service
 from app.services.hello_algo_import_service import (
+    get_repo_commit,
     import_hello_algo_dataset,
     parse_hello_algo_repo,
     publish_assets,
+    rewrite_images,
     stable_id,
 )
+
+
+def test_get_repo_commit_accepts_explicit_commit_when_git_is_unavailable(monkeypatch, tmp_path):
+    def raise_missing_git(*args, **kwargs):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(hello_algo_import_service, "run_git", raise_missing_git)
+
+    assert get_repo_commit(tmp_path, "ABCDEF1234567") == "abcdef1234567"
+
+
+def test_get_repo_commit_requires_explicit_commit_when_git_is_unavailable(monkeypatch, tmp_path):
+    def raise_missing_git(*args, **kwargs):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(hello_algo_import_service, "run_git", raise_missing_git)
+
+    with pytest.raises(RuntimeError, match="requires an explicit source commit"):
+        get_repo_commit(tmp_path)
 
 
 @pytest.fixture(scope="module")
@@ -143,6 +165,8 @@ def test_hello_algo_content_is_normalized_while_reading_material_keeps_provenanc
     assert len(dataset.relations) == 68
     assert all(chapter.content.strip() for chapter in dataset.chapters)
     assert all(node.content.strip() for node in dataset.nodes)
+    assert dataset.assets
+    assert all(asset.public_url.startswith("/storage/course-content/hello-algo/") for asset in dataset.assets)
     display_content = "\n".join([*(chapter.content for chapter in dataset.chapters), *(node.content for node in dataset.nodes)])
     assert "Source:" not in display_content
     assert "Commit:" not in display_content
@@ -158,6 +182,34 @@ def test_hello_algo_content_is_normalized_while_reading_material_keeps_provenanc
     version_root = tmp_path / "course-content" / "hello-algo" / dataset.source_commit
     assert len([path for path in version_root.rglob("*") if path.is_file()]) == 3
     assert not (version_root.parent / f".{dataset.source_commit}.tmp").exists()
+
+
+def test_hello_algo_image_urls_are_same_origin_and_non_ascii_paths_are_encoded_once(tmp_path):
+    repo_path = tmp_path / "hello-algo"
+    markdown_path = repo_path / "docs" / "chapter_demo" / "index.md"
+    asset_path = markdown_path.parent / "示例图.png"
+    asset_path.parent.mkdir(parents=True)
+    markdown_path.write_text("# 示例", encoding="utf-8")
+    asset_path.write_bytes(b"image")
+
+    content, assets = rewrite_images(
+        repo_path,
+        markdown_path,
+        "![本地图片](%E7%A4%BA%E4%BE%8B%E5%9B%BE.png)\n\n![外部图片](https://example.com/demo.png)",
+        "abcdef1234567",
+        "/storage",
+    )
+
+    expected_url = (
+        "/storage/course-content/hello-algo/abcdef1234567/"
+        "docs/chapter_demo/%E7%A4%BA%E4%BE%8B%E5%9B%BE.png"
+    )
+    assert expected_url in content
+    assert "%25E7" not in content
+    assert "https://example.com/demo.png" in content
+    assert [(asset.source_path, asset.public_url) for asset in assets] == [
+        ("docs/chapter_demo/示例图.png", expected_url)
+    ]
 
 
 def test_hello_algo_import_deletes_overview_relations_before_nodes_and_is_idempotent(hello_algo_dataset):

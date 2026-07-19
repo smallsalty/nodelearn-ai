@@ -167,7 +167,7 @@ def get_repo_commit(repo_dir: Path, explicit_commit: str | None = None) -> str:
         if top_level != repo_dir.resolve():
             raise RuntimeError(f"Hello Algo source is not its own Git worktree: {repo_dir}")
         return run_git(["rev-parse", "HEAD"], cwd=repo_dir)
-    except (subprocess.CalledProcessError, RuntimeError):
+    except (OSError, subprocess.CalledProcessError, RuntimeError):
         if explicit_commit and re.fullmatch(r"[0-9a-fA-F]{7,40}", explicit_commit):
             return explicit_commit.lower()
         raise RuntimeError("non-git Hello Algo source requires an explicit source commit")
@@ -185,7 +185,7 @@ def parse_hello_algo_repo(
     docs_root = resolve_docs_root(repo_path, doc_language)
     allowed_languages = normalize_code_languages(code_languages)
     nav_chapters = parse_mkdocs_navigation(repo_path, docs_root)
-    public_base = (asset_public_base_url or settings.file_storage_public_base_url).rstrip("/")
+    public_base = (asset_public_base_url or settings.file_storage_url_prefix).rstrip("/")
 
     course = CourseModel(
         id=HELLO_ALGO_COURSE_ID,

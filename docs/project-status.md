@@ -1,6 +1,6 @@
 # NodeLearn AI 项目状态
 
-最后更新：2026-07-17
+最后更新：2026-07-19
 
 本文件是 Codex 工作的长期项目状态记录。每次任务开始前必须阅读本文件；如果任务改变了项目进度、阻塞项或下一步，任务结束前必须同步更新本文件。
 
@@ -30,6 +30,19 @@
 ## 当前进度
 
 ### 已完成
+
+- 2026-07-19 完成 PostgreSQL 持久化学习笔记：新增左侧“学习工具 / 学习笔记”入口和 `/notes` 整理回顾页，支持关键词、课程、知识点、标签、置顶组合筛选，Markdown 安全预览、显式保存、`Ctrl/Cmd + S`、未保存确认、硬删除与 `noteId` 深链；学习浮窗复用同一笔记 API，展示最近五条并支持快速创建、置顶、打开详情，页面与浮窗通过 `notesRevision` 写后回读同步。
+- 2026-07-19 完成笔记真实存储与迁移：`ENABLE_MOCK=false` 使用规范化 `note`、`note_tag`、`note_relation` 三表 repository，标签与主关联在同一事务内替换并级联删除；幂等迁移纳入 `init_db()` 和后端 Docker 启动链，首次真实 PostgreSQL 执行创建 3 张表、重复执行创建 0 张表。真实 API 创建笔记后完整停止并重启后端，标题、正文、标签、关联、置顶和时间字段均成功恢复，笔记持久化状态更新为 `PASS_REAL`。
+- 2026-07-19 笔记回归结果：后端完整测试 `210 passed, 2 skipped`，前端生产构建、Python 编译、页面/组件无直接 `fetch` / `axios` 检查和 `git diff --check` 通过；Playwright 使用真实 PostgreSQL 验证页面创建、快捷键保存、Markdown/代码预览、浮窗创建与双向刷新、浮窗置顶、未保存确认、深链和删除，1440/1024/768/375px 无横向溢出，洁净会话控制台 0 error/0 warning、业务请求全部 200，验收临时笔记已清理。
+
+- 2026-07-19 完成课程正文图片与练习节点名称修复：Hello Algo 导入正文的内部图片改用 `FILE_STORAGE_URL_PREFIX` 生成同源 `/storage/` 地址，避免 HTTPS 页面拦截旧 HTTP IP 图片；统一练习页复用课程节点接口建立名称映射，页头、普通题标签和错题列表只显示中文知识点名称，无效节点显示中文状态并禁用生成，路由、筛选和请求仍保留内部 `nodeId`。
+- 2026-07-19 回归与部署结果：Hello Algo 定向测试 `7 passed`，后端完整测试 `204 passed, 2 skipped`，前端生产构建通过，页面和组件无直接 `fetch` / `axios`，`git diff --check` 无内容错误。腾讯云已在 `/root/backups/nodelearn-import-20260718T163812Z/` 完成 PostgreSQL 备份，并从固定 Hello Algo 提交 `4935d2d3877a6205008d89def8d2ba43f7e06275` 幂等重导入；生产数据保持 20 章、85 个节点、68 条关系、318 条来源资源和 506 个图片文件，章节/节点正文中的旧 HTTP IP 图片地址均为 0。两个域名的健康接口和抽样图片均返回 HTTP 200；Playwright 经 SSH 隧道验证“2.1 算法效率评估”练习页不显示内部 ID、生成按钮可用、接口全部 200、控制台 0 error/0 warning，并验证该章节 20 张图片均使用同源 `/storage/`、完成加载且宽度有效。公网浏览器仍可能受既有腾讯云 ICP 边界连接重置影响，不属于本次数据导入或前端显示修复。
+
+- 2026-07-18 完成腾讯云生产部署：新增仅公开 `80` 的服务器 Compose，前端 Nginx 同源代理 `/api/` 与 `/storage/`，后端、NodeLearn PostgreSQL、Judge0 server/worker 及其 PostgreSQL/Redis 仅使用 Docker 内网；代码通过 `ssh-manager` 从 `codex/测试` 分支稀疏 Git 克隆到 `/root/nodelearn-ai`，真实后端环境文件以 `600` 权限单独上传并生成服务器专用 `JWT_SECRET`。
+- 2026-07-18 完成部署构建适配：后端 Debian、Python 和前端/渲染器 npm 依赖改用区域镜像并保留重试；服务器持久挂载 `data_sources`，Hello Algo 数据源对齐提交 `4935d2d3877a6205008d89def8d2ba43f7e06275` 后导入真实 PostgreSQL，结果为 20 章、85 个节点、68 条关系和 318 个来源资源；导入器支持容器缺少 Git 二进制时使用显式校验过的提交号。
+- 2026-07-18 部署验收结果：本地前端构建通过，后端契约测试 `33 passed`，Hello Algo 定向测试 `6 passed`，服务器 Compose 校验通过；公网 `http://110.40.155.206/` 与 `/api/v1/system/health` 均返回 `200`，真实存储图片经 `/storage/` 返回 `200 image/png`，Judge0 Python 样例返回 `Accepted` 和 `42`；宿主机仅监听 `22/80`。旧 AuditPilot 容器、卷和目录已删除，数据库与上传文件备份保留于 `/root/backups/auditpilot-20260718T141210Z`。
+- 2026-07-18 完成腾讯云双域名 HTTPS 部署：服务器 Compose 新增固定版本 `caddy:2.11.4-alpine`，Caddy 接管公网 `80/443` 并将请求转发到仅在 Docker 内网暴露的前端 Nginx；`smalllightsalty.top` 与 `www.smalllightsalty.top` 均使用自动 HTTPS 且不互相跳转，公网 IP 的 HTTP 访问跳转至根域名。Caddy 显式限制为 HTTP/1.1 与 HTTP/2，证书和配置分别持久化在 `caddy_data`、`caddy_config` 卷；后端资源公网基址更新为 `https://smalllightsalty.top/storage`。
+- 2026-07-18 双域名 HTTPS 验收结果：Compose 静态校验、Caddyfile 真实镜像校验和前端 Nginx `nginx -t` 均通过；Let's Encrypt 分别为根域名与 `www` 域名成功签发有效证书，服务器本机访问两个域名的 HTTP 均返回 `308` 并跳转到自身 HTTPS，公网 HTTPS 首页与 `/api/v1/system/health` 均返回 `200`，真实存储图片在两个域名下均返回 `200 image/png`。宿主机最终仅监听 `22/80/443`，443 已可公网访问，因此无需修改腾讯云防火墙规则；但上海公网 HTTP 被腾讯云边界返回 `302` 并跳转至 DNSPod `webblock`，确认存在未备案或未在腾讯云接入备案拦截，域名长期稳定开放仍需完成 ICP 备案/接入备案。本地 Docker Desktop 未运行，容器级配置校验改在腾讯云一次性容器中完成。
 
 - 2026-07-17 完成问答助手、共享历史、画像中文化与个性化学习路径真实改造：界面将“对话学习”统一改为“问答助手”，删除问答页知识节点和引用步骤面板，改为“开始问答 / 问答历史”；问答助手与学习侧栏复用同一个 PostgreSQL 会话，显式复用时校验会话归属。`ENABLE_MOCK=false`、`LLM_PROVIDER=deepseek`、`LLM_MODEL_NAME=deepseek-v4-pro` 下完成两轮真实问答，会话 `session_chat_71868202e9c1` 含 4 条唯一消息，两条回答各保存 3 条课程引用，后端重启后仍可读取；真实学习路径 `path_236b5e908d5d` 生成 6 个中文任务，覆盖栈、递归、哈希表及必要薄弱点/前置节点，全部写入逐日 20:00 建议完成时间，每个任务展示 3 种学习工具及可直接复制的中文提示词。学生画像不再直接显示内部节点编号和英文枚举。后端完整测试 `201 passed, 2 skipped, 1 warning`、前端生产构建、Python 编译、直接请求静态检查和 `git diff --check` 通过；独立 Playwright 洁净会话控制台 0 error/0 warning、业务请求全部 200，375px 无横向溢出。问答与问答历史为 `PASS_REAL`，学习路径生成为 `PASS_REAL`，路径存储仍为 `PASS_PLACEHOLDER`；报告见 `docs/qa-learning-path-real-verification-2026-07-17.md`，证据见 `output/playwright/qa-learning-path-real-2026-07-17/`。
 
@@ -206,7 +219,7 @@
 
 ### 进行中
 
-- 继续将验收中标记为 `PASS_PLACEHOLDER` 的画像、学习路径、笔记、学习记录和报告模块推进为真实持久化业务。
+- 继续将验收中标记为 `PASS_PLACEHOLDER` 的画像、学习路径、学习记录和报告模块推进为真实持久化业务。
 - 项目状态和 Codex 同步文档维护。
 
 ### 未开始
@@ -218,11 +231,12 @@
 - 结合图谱和错题上下文的增强智能答疑。
 - 超出当前真实题目生成与 Judge0 客观执行范围的主观批改、错因分析和反馈。
 - 超出模拟行为的学习记录、评估指标、报告生成、图表数据和 PDF 导出。
-- 笔记持久化和完整笔记/错题复习业务流程。
+- 超出当前搜索、标签、上下文与置顶回顾范围的错题复习、复习提醒和间隔重复流程。
 - 通用版本化迁移管理、自动回滚编排和真实持久化发布流水线。
 
 ### 阻塞
 
+- `smalllightsalty.top` 与 `www.smalllightsalty.top` 已完成 Caddy HTTPS、证书和应用链路部署，但腾讯云上海地域 Lighthouse 对公网 HTTP 返回未备案 `webblock`；需根据域名当前备案状态在腾讯云完成首次 ICP 备案或接入备案，审核通过前不能将双域名稳定公网开放视为最终验收通过。
 - 新增 API 路径、字段、枚举值、数据库字段、页面状态变量或模拟字段时，必须同步更新 `docs/interface-contract.md`、后端、前端、测试和项目状态；不再因缺少既有契约定义而停止开发。
 
 - 当前开发阶段已允许通过统一 `LLMService` 接入真实 DeepSeek；向量库、图数据库、Redis 或缓存仍只保留接口和占位。
@@ -230,7 +244,7 @@
 - 真实视频的 storyboard schema 对齐阻塞已由 v2 Visual Director 解除；暖白学院主题已完成真实 DeepSeek、豆包 TTS 与 Remotion 付费回归。黑板讲解和技术蓝图主题仍只完成 renderer fixture/类型与常规测试，后续凭证或主题实现变化时再显式运行付费回归。
 - 当前工作区已有未提交和未跟踪改动。后续实现必须保留无关的用户改动或生成改动，未经明确要求不得回退。
 - 文件上传/删除存储、在线知识库构建和 embedding provider 仍未配置，真实模式按契约返回明确 501/404；独立数字人讲解没有对应 provider，真实模式返回明确错误，不允许回退 mock。
-- 普通问答 `chat_session` / `chat_message` 已在真实模式接入 PostgreSQL，并于 2026-07-17 验证后端重启后可恢复；画像、学习路径、笔记、学习记录、评估和报告仍包含内存或固定占位实现，相关存储能力不得作为生产持久化能力宣传。
+- 普通问答 `chat_session` / `chat_message` 与学习笔记 `note` / `note_tag` / `note_relation` 已在真实模式接入 PostgreSQL，并分别于 2026-07-17、2026-07-19 验证后端重启后可恢复；画像、学习路径、学习记录、评估和报告仍包含内存或固定占位实现，相关存储能力不得作为生产持久化能力宣传。
 - 编程题与提交记录当前仍保存在后端进程内存中；同一进程内刷新可以恢复，但后端重启会丢失。2026-07-15 已确认真实 DeepSeek 出题和 Judge0 执行为 `PASS_REAL`，存储能力仍为 `PASS_PLACEHOLDER`。
 
 ## 功能待办
@@ -246,7 +260,7 @@
 ### 第二优先级
 
 - 将前端 TODO 页面升级为可演示视图，并调用现有 API 模块。
-- 使用模拟或空实现推进画像、对话、资源生成、学习路径、练习、报告和笔记流程，保持契约一致。
+- 使用模拟或空实现推进画像、资源生成、学习路径、练习和报告等尚未真实化的流程，保持契约一致。
 - 增加前端 API 模块、路由路径、响应包装、枚举值和数据库字段的契约测试。
 - 豆包凭证或媒体依赖变更后，显式运行 `RUN_REAL_VIDEO_TESTS=true` 的付费真实视频流程回归测试。
 

@@ -84,6 +84,8 @@ note_relation
 study_report
 ```
 
+`note` 保存 `id`、`user_id`、可空 `course_id` / `node_id` / `question_id`、`title`、`content`、`pinned`、`created_at`、`updated_at`。`note_tag` 保存唯一的 `note_id + tag`，`note_relation` 保存每条笔记最多一个 `relation_type + relation_id` 主关联；两个子表均在笔记硬删除时级联删除。`user_id + pinned + updated_at`、课程、节点、标签和关联目标均建立查询索引。
+
 ### 日志与安全
 
 ```sql

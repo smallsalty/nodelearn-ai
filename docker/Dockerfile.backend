@@ -4,8 +4,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN apt-get -o Acquire::Retries=5 update \
-    && apt-get -o Acquire::Retries=5 install -y --no-install-recommends chromium ffmpeg fonts-noto-cjk \
+RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.cloud.tencent.com/debian|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get -o Acquire::Retries=10 update \
+    && apt-get -o Acquire::Retries=10 install -y --no-install-recommends chromium ffmpeg fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
@@ -14,10 +15,16 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 COPY backend/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install --no-cache-dir \
+    --index-url https://mirrors.cloud.tencent.com/pypi/simple \
+    --retries 10 \
+    --timeout 120 \
+    -r /app/requirements.txt
 
 COPY video-renderer/package*.json /video-renderer/
-RUN cd /video-renderer && npm install
+RUN npm config set registry https://registry.npmmirror.com \
+    && cd /video-renderer \
+    && npm install
 COPY video-renderer /video-renderer
 
 COPY backend /app
@@ -29,4 +36,4 @@ ENV FFPROBE_BINARY=/usr/bin/ffprobe
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python -m app.db.migrations.knowledge_node_content --wait-seconds 90 && python -m app.db.migrations.course_content --wait-seconds 90 && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python -m app.db.migrations.knowledge_node_content --wait-seconds 90 && python -m app.db.migrations.course_content --wait-seconds 90 && python -m app.db.migrations.notes --wait-seconds 90 && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]

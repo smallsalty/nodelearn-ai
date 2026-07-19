@@ -1,0 +1,121 @@
+name: nodelearn-ai
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    expose:
+      - "80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    env_file:
+      - path: ../backend/.env.example
+        required: true
+      - path: ../backend/.env
+        required: true
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://nodelearn:nodelearn@postgres:5432/nodelearn
+      JUDGE0_BASE_URL: http://judge0-server:2358
+      JUDGE0_AUTH_TOKEN: ""
+      FILE_STORAGE_PATH: /app/storage
+      FILE_STORAGE_PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://smalllightsalty.top}/storage
+      VIDEO_RENDER_PROJECT_PATH: /video-renderer
+      VIDEO_RENDER_BROWSER_EXECUTABLE: /usr/bin/chromium
+      FFMPEG_BINARY: /usr/bin/ffmpeg
+      FFPROBE_BINARY: /usr/bin/ffprobe
+    volumes:
+      - ../storage:/app/storage
+      - ../data_sources:/app/data_sources
+    depends_on:
+      postgres:
+        condition: service_healthy
+      judge0-server:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nodelearn
+      POSTGRES_USER: nodelearn
+      POSTGRES_PASSWORD: nodelearn
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nodelearn -d nodelearn"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    depends_on:
+      judge0-postgres:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_started
+    restart: unless-stopped
+
+  judge0-worker:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    depends_on:
+      judge0-postgres:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_started
+    restart: unless-stopped
+
+  judge0-postgres:
+    image: postgres:16.2
+    env_file:
+      - judge0.conf
+    volumes:
+      - judge0_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0 -d judge0"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  judge0-redis:
+    image: redis:7.2.4
+    command: ["bash", "-c", "docker-entrypoint.sh --appendonly no --requirepass $$REDIS_PASSWORD"]
+    env_file:
+      - judge0.conf
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  judge0_postgres_data:

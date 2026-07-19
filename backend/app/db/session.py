@@ -22,8 +22,10 @@ def init_db() -> None:
 
     Base.metadata.create_all(bind=engine)
     from app.db.migrations.knowledge_node_content import migrate_knowledge_node_content
+    from app.db.migrations.notes import migrate_notes
 
     migrate_knowledge_node_content(engine, create_tables=False)
+    migrate_notes(engine)
 
 
 @contextmanager

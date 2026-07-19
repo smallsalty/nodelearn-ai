@@ -858,7 +858,7 @@ interface CourseContent {
 }
 ```
 
-`chapters` 按 `orderIndex` 升序返回，`sections` 按所属章节内的 `orderIndex` 升序返回。课程不存在时返回 HTTP 404；课程存在但没有章节总览或小节正文时返回空 `chapters`，不得回退到其他课程。前端章节与小节锚点分别固定为 `chapter-{chapterId}`、`node-{nodeId}`。
+`chapters` 按 `orderIndex` 升序返回，`sections` 按所属章节内的 `orderIndex` 升序返回。课程不存在时返回 HTTP 404；课程存在但没有章节总览或小节正文时返回空 `chapters`，不得回退到其他课程。前端章节与小节锚点分别固定为 `chapter-{chapterId}`、`node-{nodeId}`。Hello Algo 导入正文中的内部图片必须使用 `FILE_STORAGE_URL_PREFIX` 生成同源 URL；`FILE_STORAGE_PUBLIC_BASE_URL` 仅用于必须返回绝对地址的生成资源。
 
 ## 6.10 接口列表
 
@@ -2221,6 +2221,8 @@ interface PracticeGenerationStep {
 
 统一练习页按 `single_choice -> short_answer -> coding` 顺序调用既有接口；单步失败不得清空已成功结果，也不得阻止后续步骤。
 
+统一练习页通过 `GET /api/v1/courses/{courseId}/nodes` 将内部 `nodeId` 映射为知识点名称。页头、普通题标签和错题列表不得直接展示内部 ID；未选择节点或节点不属于当前课程时显示中文状态，其中无效节点必须禁用生成。
+
 ## 14.3 PracticeSubmitRequest
 
 ```ts
@@ -2328,7 +2330,13 @@ interface ProgrammingJudgeResult {
 
 # 15. 笔记与浮窗菜单接口
 
-## 15.1 Note
+## 15.1 NoteRelationType
+
+```ts
+type NoteRelationType = "node" | "question" | "resource" | "path";
+```
+
+## 15.2 Note
 
 ```ts
 interface Note {
@@ -2340,7 +2348,7 @@ interface Note {
   title: string;
   content: string;
   tags: string[];
-  relationType?: "node" | "question" | "resource" | "path";
+  relationType?: NoteRelationType;
   relationId?: string;
   pinned: boolean;
   createdAt: string;
@@ -2356,7 +2364,7 @@ note_tag
 note_relation
 ```
 
-字段：
+`note` 字段：
 
 ```sql
 id
@@ -2366,17 +2374,38 @@ node_id
 question_id
 title
 content
-tags
-relation_type
-relation_id
 pinned
 created_at
 updated_at
 ```
 
+`note_tag` 字段：
+
+```sql
+id
+note_id
+tag
+created_at
+UNIQUE (note_id, tag)
+```
+
+`note_relation` 字段：
+
+```sql
+id
+note_id
+relation_type
+relation_id
+created_at
+updated_at
+UNIQUE (note_id)
+```
+
+`note_tag.note_id` 与 `note_relation.note_id` 在笔记删除时级联删除。`Note.tags`、`Note.relationType` 和 `Note.relationId` 由 repository 聚合返回，不在 `note` 表重复保存 JSON 标签或多态关联字段。
+
 ---
 
-## 15.2 NoteCreateRequest
+## 15.3 NoteCreateRequest
 
 ```ts
 interface NoteCreateRequest {
@@ -2387,12 +2416,55 @@ interface NoteCreateRequest {
   title: string;
   content: string;
   tags?: string[];
-  relationType?: "node" | "question" | "resource" | "path";
+  relationType?: NoteRelationType;
   relationId?: string;
 }
 ```
 
-## 15.3 FloatingMenuState
+## 15.4 NoteUpdateRequest
+
+```ts
+interface NoteUpdateRequest {
+  courseId?: string | null;
+  nodeId?: string | null;
+  questionId?: string | null;
+  title?: string;
+  content?: string;
+  tags?: string[];
+  relationType?: NoteRelationType | null;
+  relationId?: string | null;
+}
+```
+
+## 15.5 NoteQuery
+
+```ts
+interface NoteQuery extends PageRequest {
+  userId: string;
+  courseId?: string;
+  nodeId?: string;
+  tag?: string;
+  pinned?: boolean;
+  relationType?: NoteRelationType;
+}
+```
+
+关键词不区分大小写匹配标题、正文与标签。默认排序为 `pinned DESC, updated_at DESC, id DESC`；`sortBy` 仅允许 `updatedAt`、`createdAt`、`title`，且置顶始终为第一排序键。
+
+## 15.6 PinNoteRequest 与 NoteRelationRequest
+
+```ts
+interface PinNoteRequest {
+  pinned: boolean;
+}
+
+interface NoteRelationRequest {
+  relationType: NoteRelationType;
+  relationId: string;
+}
+```
+
+## 15.7 FloatingMenuState
 
 ```ts
 interface FloatingMenuState {
@@ -2406,7 +2478,7 @@ interface FloatingMenuState {
 }
 ```
 
-## 15.4 浮窗前端保留函数
+## 15.8 浮窗前端保留函数
 
 ```ts
 function openFloatingMenu(): void;
@@ -2416,19 +2488,19 @@ function switchFloatingTab(tab: FloatingMenuState["activeTab"]): void;
 function updateFloatingPosition(x: number, y: number): void;
 ```
 
-## 15.5 接口列表
+## 15.9 接口列表
 
 | 方法 | 路径 | 说明 | 请求体 | 返回 |
 |---|---|---|---|---|
 | POST | `/api/v1/notes` | 创建笔记 | `NoteCreateRequest` | `ApiResponse<Note>` |
-| GET | `/api/v1/notes` | 获取笔记列表 | `PageRequest` | `ApiResponse<PageResult<Note>>` |
+| GET | `/api/v1/notes?userId={userId}` | 获取笔记列表 | `NoteQuery` | `ApiResponse<PageResult<Note>>` |
 | GET | `/api/v1/notes/{noteId}` | 获取笔记详情 | 无 | `ApiResponse<Note>` |
-| PUT | `/api/v1/notes/{noteId}` | 更新笔记 | `Partial<Note>` | `ApiResponse<Note>` |
+| PUT | `/api/v1/notes/{noteId}` | 更新笔记 | `NoteUpdateRequest` | `ApiResponse<Note>` |
 | DELETE | `/api/v1/notes/{noteId}` | 删除笔记 | 无 | `ApiResponse<boolean>` |
-| POST | `/api/v1/notes/{noteId}/pin` | 置顶笔记 | `{ pinned: boolean }` | `ApiResponse<Note>` |
-| POST | `/api/v1/notes/{noteId}/relations` | 建立笔记关联 | `{ relationType: string; relationId: string }` | `ApiResponse<Note>` |
+| POST | `/api/v1/notes/{noteId}/pin` | 置顶笔记 | `PinNoteRequest` | `ApiResponse<Note>` |
+| POST | `/api/v1/notes/{noteId}/relations` | 建立或替换笔记主关联 | `NoteRelationRequest` | `ApiResponse<Note>` |
 | GET | `/api/v1/users/{userId}/notes` | 获取用户笔记 | 无 | `ApiResponse<Note[]>` |
-| GET | `/api/v1/nodes/{nodeId}/notes` | 获取节点笔记 | 无 | `ApiResponse<Note[]>` |
+| GET | `/api/v1/nodes/{nodeId}/notes?userId={userId}` | 获取用户在节点下的笔记 | 无 | `ApiResponse<Note[]>` |
 
 ---
 
@@ -2742,6 +2814,7 @@ const routes = [
   "/nodes/:nodeId/content",
   "/reports",
   "/practice",
+  "/notes",
   "/programming", // 兼容入口，重定向到 /practice?tab=coding
   "/admin/knowledge-base"
 ];
@@ -2762,6 +2835,7 @@ const routes = [
 | 知识节点正文兼容入口 | `/api/v1/nodes/{nodeId}`，读取后重定向至课程全文锚点 |
 | 学习报告页 | `/api/v1/reports/generate`, `/api/v1/users/{userId}/reports` |
 | 练习测评页 | `/api/v1/practices/generate`, `/api/v1/practices/submit`, `/api/v1/programming/questions/generate`, `/api/v1/programming/submissions` |
+| 学习笔记页 | `/api/v1/notes`, `/api/v1/notes/{noteId}`, `/api/v1/notes/{noteId}/pin`, `/api/v1/notes/{noteId}/relations` |
 | 学习侧栏 | `/api/v1/chat/sessions`, `/api/v1/chat/sessions/{sessionId}/messages`, `/api/v1/chat/send`, `/api/v1/notes`, `/api/v1/users/{userId}/wrong-questions` |
 | 知识库管理页 | `/api/v1/files/upload`, `/api/v1/knowledge-base/build`, `/api/v1/courses/{courseId}/nodes` |
 
@@ -2784,6 +2858,7 @@ const graphOverviewRequestId = ref(0);
 const selectedResourceId = ref<string | null>(null);
 const selectedQuestionId = ref<string | null>(null);
 const selectedNoteId = ref<string | null>(null);
+const notesRevision = ref(0);
 
 const loading = ref(false);
 const errorMessage = ref("");
@@ -2803,6 +2878,8 @@ const floatingMenuState = ref<FloatingMenuState>({
 `selectedChapterId` 表示当前章节上下文；章节总览选中时 `selectedNodeId` 必须为 `null`，真实知识节点选中时两者分别保存所属章节和节点 ID。章节总览是基于 `Chapter.content` 的前端导航目标，不属于 `KnowledgeNode`，不得为此恢复或伪造重名节点。
 
 `graphOverviewRequestId` 是仅存在于前端内存的单调递增导航信号。“课程管理 → 知识节点”每次激活时清空章节/节点选择并增加该值，图谱页据此恢复完整章节总览、默认缩放和平移、关闭筛选并切回节点详情；该值不持久化，也不作为 HTTP 参数传递。顶部选择器和正文返回图谱不增加该值，继续保留定点展开与高亮行为。
+
+`notesRevision` 是仅存在于前端内存的单调递增同步信号。学习笔记页或学习浮窗完成创建、更新、置顶、关联或删除后增加该值；两个入口监听变化并重新读取 PostgreSQL API，不将笔记正文缓存作为最终数据源。
 
 ---
 
@@ -3016,6 +3093,8 @@ VITE_ENABLE_MOCK=false
 VITE_ENABLE_STREAM=true
 VITE_GRAPH_RENDERER=react-flow
 ```
+
+生产环境使用前端同源代理时，`VITE_API_BASE_URL=/api/v1`；容器 Nginx 必须同时代理 `/api/` 和 `/storage/` 到后端。
 
 ## 24.3 Judge0 环境变量
 
