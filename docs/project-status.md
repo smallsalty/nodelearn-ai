@@ -31,6 +31,8 @@
 
 ### 已完成
 
+- 2026-07-20 完成腾讯云数字人交互凭据轮换与真实验收：通过 `ssh-manager` 仅更新服务器 `backend/.env` 的 APPID、API Key、API Secret 与接口服务 ID，文件保持 `600 root:root`，旧配置备份为 `/root/nodelearn-ai/backend/.env.bak.20260720_133810`；仅重建 backend，frontend、PostgreSQL、Judge0、Caddy 和数据卷保持原容器。独立接口服务问答、在线虚拟人 start/stop 和最短文本驱动均真实成功；发现新授权下首段文本过早发送会触发 `31111 Inner error` 后，将直播链路改为首个 HLS 播放列表就绪再发送 `text_driver`，新增时序回归，后端完整测试 `218 passed, 2 skipped`。服务器页面真实问答返回中文课程回答与 provider task，直播会话/HLS 清单/HLS 分片均成功，主动 stop 返回 HTTP 200 且无 FFmpeg 残留；两个域名健康接口返回 HTTP 200，数字人对话与在线虚拟人健康项为 `ok`。旧独立讯飞 TTS 健康项仍为 `error`，不影响本次由在线虚拟人内部 TTS 完成的实时播报。
+
 - 2026-07-20 完成首页学生画像摘要最小中文化及腾讯云前端部署：仅调整 `HomePage.vue` 展示层，基于结构化画像字段生成中文摘要，将课程编号、薄弱节点编号、难度、认知风格、练习偏好和资源偏好转换为中文，并对重复知识点名称保序去重；节点名称解析失败时显示中文占位，不回显内部 ID。本地与服务器前端生产构建通过，腾讯云精确使用提交 `cfe6736` 仅重建并替换 frontend，backend、PostgreSQL、Judge0、Caddy 和数据卷保持原容器；旧前端镜像保留为 `nodelearn-ai-frontend:pre-cfe6736-20260720T024531Z`。两个域名首页和健康接口均返回 HTTP 200；Playwright 经 SSH 隧道验证画像摘要、基础水平、认知风格、练习偏好和薄弱知识点均为中文，画像区域不显示内部 ID，业务请求全部 200、控制台 0 error/0 warning，除登录外无 POST。服务器 `output/` 在部署前后均不存在，未运行清理命令或调整 sparse-checkout。
 
 - 2026-07-19 完成 7 分钟智能体演示交付包：新增逐镜头录制手册、完整口播、SRT、剪辑时间线、镜头清单、ASS 技术标签、可编辑片头/总结卡、83 秒 1080P 审片样片，以及 `06:45.033`、H.264/AAC、1920×1080、30fps 的完整无口播剪辑草案；完整草案已烧录口播字幕、技术标签和真实生成加速提示，知识视频片段保留原声。交付文件位于 `docs/demo-video/`，腾讯云取景与样片位于 `output/playwright/demo-video-2026-07-19/`。本次未修改接口、字段、数据库结构或业务实现。
