@@ -1,0 +1,31 @@
+{
+  "title": "NodeLearn AI——多智能体个性化学习平台",
+  "durationSeconds": 405,
+  "canvas": { "width": 1920, "height": 1080, "fps": 30 },
+  "environment": {
+    "primary": "tencent-cloud-public-after-icp-verification",
+    "fallback": "tencent-cloud-via-ssh-tunnel",
+    "demoUser": "demo_student",
+    "course": "Hello 算法"
+  },
+  "shots": [
+    { "id": "S01", "start": 0, "end": 20, "artifact": "title-card.png", "source": "cards/title.svg" },
+    { "id": "S02", "start": 20, "end": 45, "artifact": "02-login-home.webm" },
+    { "id": "S03", "start": 45, "end": 80, "artifact": "03-knowledge-graph.webm" },
+    { "id": "S04", "start": 80, "end": 120, "artifact": "04-profile-learning-path.webm" },
+    { "id": "S05", "start": 120, "end": 170, "artifact": "05-rag-chat.webm", "accelerated": true },
+    { "id": "S06", "start": 170, "end": 205, "artifact": "06-mind-map.webm", "accelerated": true },
+    { "id": "S07", "start": 205, "end": 255, "artifact": "07-knowledge-video-excerpt.mp4", "source": "multimodal_video_task_c112e78067a0", "status": "success", "auditStatus": "passed" },
+    { "id": "S08", "start": 255, "end": 315, "artifact": "08-digital-human-entry.webm", "broll": "../digital-human-live-recovery-2026-07-17/02-round-1.png", "accelerated": true },
+    { "id": "S09", "start": 315, "end": 360, "artifact": "../programming-judge0-2026-07-15/real-browser-ac.png", "entryArtifact": "09-judge0.webm", "persistence": "process-memory" },
+    { "id": "S10", "start": 360, "end": 385, "artifact": "10-notes.webm" },
+    { "id": "S11", "start": 385, "end": 405, "artifact": "summary-card.png", "source": "cards/summary.svg" }
+  ],
+  "forbiddenClaims": [
+    "真实向量库检索",
+    "真实图数据库检索",
+    "学习路径已生产持久化",
+    "编程题记录已生产持久化",
+    "学习报告已生产持久化"
+  ]
+}

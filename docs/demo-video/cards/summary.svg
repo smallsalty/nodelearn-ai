@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#f4f6f2"/>
+  <rect x="110" y="95" width="1700" height="890" rx="48" fill="#ffffff"/>
+  <text x="190" y="225" font-family="Microsoft YaHei, sans-serif" font-size="64" font-weight="700" fill="#17352d">NodeLearn AI：完整学习闭环</text>
+  <text x="190" y="300" font-family="Microsoft YaHei, sans-serif" font-size="30" fill="#64766f">多个智能体围绕同一名学生、同一门课程和同一知识上下文持续协同</text>
+  <g font-family="Microsoft YaHei, sans-serif">
+    <g transform="translate(190 390)">
+      <rect width="430" height="170" rx="30" fill="#fff7d8"/><text x="36" y="68" font-size="34" font-weight="700" fill="#17352d">01 知识定位与规划</text><text x="36" y="120" font-size="25" fill="#51655e">知识图谱 · 学生画像 · 学习路径</text>
+    </g>
+    <g transform="translate(745 390)">
+      <rect width="430" height="170" rx="30" fill="#eaf6ec"/><text x="36" y="68" font-size="34" font-weight="700" fill="#17352d">02 理解与生成</text><text x="36" y="120" font-size="25" fill="#51655e">RAG 问答 · 导图 · 教学视频</text>
+    </g>
+    <g transform="translate(1300 390)">
+      <rect width="430" height="170" rx="30" fill="#edf1ef"/><text x="36" y="68" font-size="34" font-weight="700" fill="#17352d">03 实时辅导</text><text x="36" y="120" font-size="25" fill="#51655e">讯飞对话 · 在线虚拟人 · HLS</text>
+    </g>
+    <g transform="translate(465 650)">
+      <rect width="430" height="170" rx="30" fill="#17352d"/><text x="36" y="68" font-size="34" font-weight="700" fill="#ffffff">04 练习与判定</text><text x="36" y="120" font-size="25" fill="#dce9e2">DeepSeek 出题 · Judge0 沙箱</text>
+    </g>
+    <g transform="translate(1025 650)">
+      <rect width="430" height="170" rx="30" fill="#f3c642"/><text x="36" y="68" font-size="34" font-weight="700" fill="#17352d">05 学习沉淀</text><text x="36" y="120" font-size="25" fill="#334c44">Markdown 笔记 · PostgreSQL</text>
+    </g>
+  </g>
+  <text x="960" y="930" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="30" fill="#6a7b75">可追踪 · 可审核 · 可使用</text>
+</svg>

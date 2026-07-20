@@ -13,12 +13,21 @@ import { resourceApi } from "@/api/modules/resource";
 import { getErrorMessage } from "@/api/client";
 import { appState, setCurrentCourse, setCurrentProfile, setCurrentUser } from "@/stores";
 import type { User } from "@/types/auth";
-import type { Course } from "@/types/course";
+import type { Course, KnowledgeNode } from "@/types/course";
 import type { LearningPath } from "@/types/learningPath";
 import type { StudentProfile } from "@/types/profile";
 import type { LearningEvaluation } from "@/types/report";
 import type { GeneratedResource, ResourceRecommendation } from "@/types/resource";
-import { DEFAULT_COURSE_ID, DEFAULT_USER_ID, joinText, percent, resourceTypeLabel } from "@/utils/format";
+import {
+  cognitiveStyleLabel,
+  DEFAULT_COURSE_ID,
+  DEFAULT_USER_ID,
+  difficultyLabel,
+  joinText,
+  percent,
+  practicePreferenceLabel,
+  resourceTypeLabel
+} from "@/utils/format";
 import { resourceRecommendationRoute } from "@/utils/resourceNavigation";
 
 type PanelKey = "user" | "courses" | "profile" | "paths" | "recommendations" | "evaluation" | "resources";
@@ -27,6 +36,7 @@ const router = useRouter();
 const user = ref<User | null>(null);
 const courses = ref<Course[]>([]);
 const profile = ref<StudentProfile | null>(null);
+const nodeNameMap = ref<Record<string, string>>({});
 const paths = ref<LearningPath[]>([]);
 const recommendations = ref<ResourceRecommendation[]>([]);
 const evaluation = ref<LearningEvaluation | null>(null);
@@ -45,6 +55,36 @@ const errors = reactive<Record<PanelKey, string>>({
 const currentCourse = computed(() => courses.value[0] ?? appState.currentCourse);
 const currentPath = computed(() => paths.value[0]);
 const weakNodes = computed(() => evaluation.value?.weakNodeIds ?? profile.value?.weakNodeIds ?? []);
+const legacyNodeNameMap: Record<string, string> = {
+  node_linked_list_001: "链表",
+  node_recursion_001: "递归"
+};
+const currentProfileCourseName = computed(() => {
+  const courseId = profile.value?.currentCourseId ?? currentCourse.value?.id ?? DEFAULT_COURSE_ID;
+  if (courseId === DEFAULT_COURSE_ID) return "数据结构";
+  return courses.value.find((course) => course.id === courseId)?.name ?? "待确认的课程";
+});
+const profileWeakNodeNames = computed(() => resolveNodeNames(profile.value?.weakNodeIds));
+const weakNodeNames = computed(() => resolveNodeNames(weakNodes.value));
+const localizedProfileSummary = computed(() => {
+  const currentProfile = profile.value;
+  if (!currentProfile) return "画像正在等待对话抽取。";
+  const parts = [
+    currentProfile.major ? `专业：${currentProfile.major}` : "",
+    currentProfile.grade ? `年级：${currentProfile.grade}` : "",
+    currentProfile.currentCourseId || currentCourse.value ? `当前课程：${currentProfileCourseName.value}` : "",
+    currentProfile.learningGoal ? `学习目标：${currentProfile.learningGoal}` : "",
+    currentProfile.knowledgeBaseLevel ? `知识基础水平：${difficultyLabel(currentProfile.knowledgeBaseLevel)}` : "",
+    currentProfile.learningProgress ? `学习进度：${currentProfile.learningProgress}` : "",
+    profileWeakNodeNames.value.length ? `薄弱知识点：${joinText(profileWeakNodeNames.value)}` : "",
+    currentProfile.cognitiveStyle ? `认知风格：${cognitiveStyleLabel(currentProfile.cognitiveStyle)}` : "",
+    currentProfile.practicePreference ? `练习偏好：${practicePreferenceLabel(currentProfile.practicePreference)}` : "",
+    currentProfile.resourcePreference?.length
+      ? `资源偏好：${joinText(currentProfile.resourcePreference.map(resourceTypeLabel))}`
+      : ""
+  ].filter(Boolean);
+  return parts.length ? `${parts.join("；")}。` : "画像正在等待对话抽取。";
+});
 const sortedRecommendations = computed(() =>
   [...recommendations.value].sort(
     (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
@@ -97,6 +137,14 @@ async function loadProfile() {
     const response = await profileApi.getProfile(user.value?.id ?? DEFAULT_USER_ID);
     profile.value = response.data;
     setCurrentProfile(response.data);
+    try {
+      const nodeResponse = await courseApi.getNodes(
+        response.data.currentCourseId ?? currentCourse.value?.id ?? DEFAULT_COURSE_ID
+      );
+      nodeNameMap.value = Object.fromEntries(nodeResponse.data.map((node: KnowledgeNode) => [node.id, node.name]));
+    } catch {
+      nodeNameMap.value = {};
+    }
   } catch (error) {
     errors.profile = getErrorMessage(error);
   }
@@ -155,6 +203,10 @@ function clearErrors() {
     errors[key] = "";
   });
 }
+
+function resolveNodeNames(nodeIds: string[] = []) {
+  return [...new Set(nodeIds.map((nodeId) => nodeNameMap.value[nodeId] ?? legacyNodeNameMap[nodeId] ?? "待确认的薄弱知识点"))];
+}
 </script>
 
 <template>
@@ -180,21 +232,21 @@ function clearErrors() {
       <MetricCard
         label="平均掌握度"
         :value="Math.round(evaluation?.averageMasteryScore ?? ((profile?.confidenceScore ?? 0) * 100))"
-        :hint="profile?.knowledgeBaseLevel ? `基础水平：${profile.knowledgeBaseLevel}` : '等待画像更新'"
+        :hint="profile?.knowledgeBaseLevel ? `基础水平：${difficultyLabel(profile.knowledgeBaseLevel)}` : '等待画像更新'"
         tone="success"
       />
       <MetricCard label="正确率" :value="percent(evaluation?.correctRate)" :hint="evaluation?.advice ?? '完成练习后生成改进建议'" tone="warning" />
-      <MetricCard label="薄弱节点" :value="weakNodes.length" :hint="joinText(weakNodes.slice(0, 3))" tone="danger" />
+      <MetricCard label="薄弱节点" :value="weakNodes.length" :hint="joinText(weakNodeNames.slice(0, 3))" tone="danger" />
     </section>
 
     <section class="dashboard-grid">
       <StateBlock :loading="loading" :error="errors.profile" :empty="!profile" empty-text="暂无画像" @retry="loadProfile">
         <el-card class="learning-card" shadow="never">
           <template #header>学生画像摘要</template>
-          <p class="large-text">{{ profile?.profileSummary ?? "画像正在等待对话抽取。" }}</p>
+          <p class="large-text">{{ localizedProfileSummary }}</p>
           <div class="tag-row">
-            <el-tag>{{ profile?.cognitiveStyle ?? "mixed" }}</el-tag>
-            <el-tag type="success">{{ profile?.practicePreference ?? "mixed" }}</el-tag>
+            <el-tag>{{ cognitiveStyleLabel(profile?.cognitiveStyle) }}</el-tag>
+            <el-tag type="success">{{ practicePreferenceLabel(profile?.practicePreference) }}</el-tag>
             <el-tag type="warning">{{ Math.round((profile?.confidenceScore ?? 0) * 100) }}%</el-tag>
           </div>
         </el-card>

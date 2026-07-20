@@ -1,9 +1,0 @@
-
-> nodelearn-ai-frontend@0.1.0 dev
-> vite --host 127.0.0.1 --port 5174
-
-Re-optimizing dependencies because lockfile has changed
-
-  VITE v5.4.21  ready in 518 ms
-
-  ➜  Local:   http://127.0.0.1:5174/

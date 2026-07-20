@@ -1,1 +1,0 @@
-{"userId":"user_demo_001","questionId":"programming_question_001","language":"python","sourceCode":"import sys; h=lambda n,a,b,c: n and (h(n-1,a,c,b),print(a+chr(45)+chr(62)+c),h(n-1,b,a,c));h(int(sys.stdin.readline()),chr(65),chr(66),chr(67))"}
