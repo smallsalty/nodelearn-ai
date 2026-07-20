@@ -315,13 +315,13 @@ class DigitalHumanLiveService:
                 voice_id=voice_id,
             )
             try:
+                await self.gateway.wait_ready(session_id)
                 await self.provider.drive_text(
                     provider_session=state.provider_session,
                     user_id=state.user_id,
                     text=text,
                     voice_id=voice_id,
                 )
-                await self.gateway.wait_ready(session_id)
                 self._touch(state)
                 return self._result(state)
             except Exception as exc:
@@ -357,13 +357,13 @@ class DigitalHumanLiveService:
         async with self._lock_for(session_id):
             state = self._require_running(session_id)
             try:
+                await self.gateway.wait_ready(session_id)
                 await self.provider.drive_text(
                     provider_session=state.provider_session,
                     user_id=state.user_id,
                     text=text,
                     voice_id=voice_id,
                 )
-                await self.gateway.wait_ready(session_id)
                 self._touch(state)
                 return self._result(state)
             except Exception as exc:

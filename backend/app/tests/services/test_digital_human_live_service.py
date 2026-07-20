@@ -139,6 +139,32 @@ def test_live_session_serializes_multi_turn_speech(monkeypatch: pytest.MonkeyPat
     assert provider.drive_calls == ["第一轮", "第二轮"]
 
 
+def test_live_session_waits_for_stream_before_first_text_driver(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(settings, "iflytek_digital_human_heartbeat_seconds", 3600)
+    events: list[str] = []
+
+    class OrderedProvider(FakeProvider):
+        async def drive_text(self, **kwargs):
+            events.append("drive_text")
+            return await super().drive_text(**kwargs)
+
+    class OrderedGateway(FakeGateway):
+        async def wait_ready(self, session_id: str):
+            events.append("stream_ready")
+            return await super().wait_ready(session_id)
+
+    provider = OrderedProvider()
+    gateway = OrderedGateway()
+    service = DigitalHumanLiveService(provider=provider, gateway=gateway)
+
+    async def scenario():
+        await service.speak("session-ready-order", user_id="user-001", text="解释栈。")
+        await service.stop_session("session-ready-order")
+
+    run(scenario())
+    assert events == ["stream_ready", "drive_text"]
+
+
 def test_live_session_stops_after_two_heartbeat_failures(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(settings, "iflytek_digital_human_heartbeat_seconds", 0.01)
     monkeypatch.setattr(settings, "iflytek_digital_human_idle_timeout_seconds", 60)
