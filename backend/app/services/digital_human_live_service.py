@@ -167,11 +167,12 @@ class HlsStreamGateway:
             stderr=asyncio.subprocess.PIPE,
         )
         relative_path = playlist_path.relative_to(Path(settings.file_storage_path).resolve()).as_posix()
+        storage_url_prefix = f"/{settings.file_storage_url_prefix.strip('/')}".rstrip("/")
         handle = HlsProcess(
             process=process,
             output_root=output_root,
             playlist_path=playlist_path,
-            video_url=f"{settings.file_storage_public_base_url.rstrip('/')}/{relative_path}",
+            video_url=f"{storage_url_prefix}/{relative_path}",
             stream_url=stream_url,
             transcode_video=transcode_video,
         )

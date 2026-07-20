@@ -1926,7 +1926,7 @@ created_at
 1. `POST /api/v1/resources/generate` 收到 `knowledge_video` 或 `digital_human_video` 时，内部转交多模态 workflow。
 2. 旧 `video_script` 和 `animation_script` 资源行为保持兼容。
 3. 生成内容必须经过 audit/safety；未通过时不得将 GeneratedResource.status 标记为 success。
-4. `DigitalHumanChatResult.status` 表示回答结果；`liveSession.status` 表示直播会话状态，顶层 `videoUrl` 为兼容字段。
+4. `DigitalHumanChatResult.status` 表示回答结果；`liveSession.status` 表示直播会话状态，顶层 `videoUrl` 为兼容字段。实时直播的两个 `videoUrl` 必须一致，并使用 `/storage/digital-human-live/{sessionId}/index.m3u8` 同源相对路径；持久生成资源的绝对公网地址语义不变。
 5. provider session、原始 RTMP 地址、完整讯飞 sid 和签名 URL 仅允许保留在后端，不得返回浏览器。
 6. 数字人对话固定先调用同一虚拟人接口服务授权的“大模型对话”能力，回答通过 audit/safety 后才允许启动或驱动在线虚拟人；模型失败或审核拒绝不得创建虚拟人会话。
 7. 大模型对话使用虚拟人接口服务的 `wss://apigateway.xfyousheng.com/nlp/v1/interact_nlp`（控制台专属地址可通过环境变量覆盖）；`header.scene_id` 必须取 `IFLYTEK_DIGITAL_HUMAN_SERVICE_ID`，`header.ctrl="text_interact"`，多轮对话复用服务端返回的 `header.session`。不得回退 Spark Lite、DeepSeek 或 mock。

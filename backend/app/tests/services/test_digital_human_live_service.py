@@ -257,7 +257,8 @@ def test_live_session_idle_timeout_releases_provider(monkeypatch: pytest.MonkeyP
 
 def test_hls_gateway_uses_rolling_window_and_delayed_cleanup(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setattr(settings, "file_storage_path", str(tmp_path))
-    monkeypatch.setattr(settings, "file_storage_public_base_url", "http://localhost:8000/storage")
+    monkeypatch.setattr(settings, "file_storage_url_prefix", "/storage")
+    monkeypatch.setattr(settings, "file_storage_public_base_url", "https://fixed-host.invalid/storage")
     monkeypatch.setattr(live_module, "HLS_CLEANUP_DELAY_SECONDS", 0.01)
     commands: list[list[str]] = []
 
@@ -290,17 +291,19 @@ def test_hls_gateway_uses_rolling_window_and_delayed_cleanup(monkeypatch: pytest
 
     async def scenario():
         gateway = HlsStreamGateway()
-        await gateway.start("session-hls", "rtmp://provider.invalid/live")
+        handle = await gateway.start("session-hls", "rtmp://provider.invalid/live")
         output_root = tmp_path / "digital-human-live" / "session-hls"
         (output_root / "index.m3u8").write_text("#EXTM3U", encoding="utf-8")
         await gateway.stop("session-hls")
         assert output_root.exists()
         await asyncio.sleep(0.03)
         await gateway.shutdown()
-        return output_root
+        return output_root, handle.video_url
 
-    output_root = run(scenario())
+    output_root, video_url = run(scenario())
     assert commands
+    assert video_url == "/storage/digital-human-live/session-hls/index.m3u8"
+    assert "fixed-host.invalid" not in video_url
     command = commands[0]
     assert command[command.index("-hls_list_size") + 1] == str(live_module.HLS_WINDOW_SEGMENTS)
     assert "delete_segments" in command[command.index("-hls_flags") + 1]

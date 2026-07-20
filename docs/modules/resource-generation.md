@@ -155,7 +155,7 @@
 - 数字人讲解复用脚本/分镜链路，再通过讯飞数字人 provider 创建讲解任务；无真实讯飞配置时使用 mock provider，返回结构与真实 provider adapter 保持一致。
 - 数字人对话复用 RAG、学生画像和最小 audit 流程，保存 session/message；回答由虚拟人接口服务自带的大模型对话能力生成，缺少真实配置或调用失败时直接失败，不返回 mock 回答。
 - 只有大模型返回非空文本且 audit/safety 通过后，才允许启动或复用在线虚拟人会话并发送文本驱动。
-- 真实数字人对话使用讯飞 AI 虚拟人实时流：后端将 RTMP 转为低延迟 HLS，前端只播放本地 `videoUrl`，不得获得 provider session 或原始 RTMP 地址。
+- 真实数字人对话使用讯飞 AI 虚拟人实时流：后端将 RTMP 转为低延迟 HLS，直播 `videoUrl` 使用 `/storage/digital-human-live/...` 同源相对路径，前端不得获得 provider session 或原始 RTMP 地址；持久生成资源仍使用绝对公网地址。
 - 接口服务在线驱动使用 `wss://avatar.cn-huadong-1.xf-yun.com/v1/interact` WebSocket；start 获取 RTMP 后由 FFmpeg 转 HLS，首个 HLS 播放列表就绪后，审核后的回答才通过同一连接以明文 `text_driver` 顺序追加，避免供应商流尚未就绪时返回内部错误。
 - 同一对话复用一个直播会话；后端每 5 秒心跳，空闲 5 分钟自动停止，HLS 滚动保留最近 5 分钟并在停止 10 分钟后清理。
 - 生成资源必须保留 `userId`、`courseId`、`nodeId`、`agentType`、`taskId`、`status`、`auditStatus`、`createdAt`、`updatedAt`。
